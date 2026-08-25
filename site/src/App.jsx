@@ -200,12 +200,25 @@ function Reveal({ children, className = "", delay = 0 }) {
 }
 
 function PartnerMarquee() {
-  // Duplicate the row so the CSS animation can loop seamlessly. Works fine
-  // with one confirmed partner today and scales cleanly as more are added.
-  const row = [...PARTNERS, ...PARTNERS, ...PARTNERS, ...PARTNERS];
+  // Duplicate the row so the CSS animation can loop seamlessly, and repeat
+  // generously (8x) so the track is wide enough to fill the viewport with
+  // no visible gap even with just one confirmed partner today — otherwise
+  // the row reads as left-anchored/off-center instead of a continuous loop.
+  // translateX(-50%) always shifts by exactly one full copy of PARTNERS
+  // (half the track), so this stays seamless as more partners are added.
+  const row = [
+    ...PARTNERS,
+    ...PARTNERS,
+    ...PARTNERS,
+    ...PARTNERS,
+    ...PARTNERS,
+    ...PARTNERS,
+    ...PARTNERS,
+    ...PARTNERS,
+  ];
   return (
     <div className="overflow-hidden border-y border-white/10 bg-dark py-6 [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
-      <div className="partner-track flex w-max items-center gap-16">
+      <div className="partner-track flex w-max items-center justify-center gap-16">
         {row.map((p, i) => (
           <div
             key={i}
@@ -232,21 +245,15 @@ export default function App() {
               row squeezes this link below the logo image's natural width and
               the image overflows behind the CTA button instead of resizing
               (that's what "part of the logo gets covered" was).
-              Using the icon mark + live text instead of the wordmark PNG:
-              logo-nav-light.png was exported with zero right-hand margin, so
-              the final "a" in "Nordinfra" is physically cut off inside the
-              file itself — no CSS fix can restore pixels that aren't in the
-              source image. This renders the full name correctly until a
-              properly-padded wordmark export is supplied. */}
-          <a href="/" className="flex shrink-0 items-center gap-2.5">
+              logo-nav-light.png was replaced 2026-08-25 with a properly
+              padded export (the previous file had zero right-hand margin,
+              clipping the final "a" in "Nordinfra" inside the image itself). */}
+          <a href="/" className="flex shrink-0 items-center">
             <img
-              src="/logo/logo-icon-light.png"
-              alt=""
-              className="h-8 w-auto sm:h-9"
+              src="/logo/logo-nav-light.png"
+              alt="Nordinfra"
+              className="h-9 w-auto sm:h-11"
             />
-            <span className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
-              Nordinfra
-            </span>
           </a>
           <nav className="hidden items-center gap-8 text-sm font-medium text-white/70 md:flex">
             <a href="#products" className="hover:text-white">
@@ -286,7 +293,7 @@ export default function App() {
           <div className="relative z-10 px-6 py-20 md:py-28">
             <Badge>Practical. Proven. Progressive.</Badge>
             <h1 className="mt-6 max-w-xl text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
-              Foundations that go in days,{" "}
+              Foundations installed in days,{" "}
               <span className="text-gold">not weeks.</span>
             </h1>
             <p className="mt-6 max-w-md text-lg text-white/70">
@@ -325,7 +332,7 @@ export default function App() {
             <img
               src="/photos/hero-installation.png"
               alt="NordBase DC Medium foundation with charger and site lighting"
-              className="h-full max-h-[560px] w-auto object-contain md:max-h-[640px]"
+              className="h-full max-h-[560px] w-auto max-w-full object-contain md:max-h-[640px]"
             />
           </div>
         </div>
@@ -538,9 +545,11 @@ export default function App() {
 
               {/* Full-truck density comparison. Basis: 26 standard 48"x40"
                   pallets per floor layer of a 53' dry van, 42,000-45,000 lb
-                  typical legal payload. EV Blocks unit weights/sizes are
-                  their own published US spec figures, supplied by Nordinfra
-                  and cross-checked against evblocks.com/us. */}
+                  typical legal payload. Precast unit weights/sizes (175 lb /
+                  668 lb / 1,750 lb for small/standard/large blocks) are
+                  published US specs from a representative precast supplier,
+                  supplied by Nordinfra — not attributed to a specific brand
+                  on the public page. */}
               <div className="mt-8 border-t border-white/10 pt-8">
                 <h4 className="font-bold text-white">
                   One truck, hundreds of foundations
@@ -584,10 +593,11 @@ export default function App() {
                 </div>
                 <p className="mt-4 max-w-2xl text-sm text-white/60">
                   Precast concrete doesn't nest, so a comparable delivery is
-                  bound by truck weight, not pallet count. Using EV Blocks'
-                  published US unit weights (175 lb / 668 lb / 1,750 lb for
-                  their small, standard, and large blocks) against the same
-                  42,000–45,000 lb payload cap, one truck carries roughly
+                  bound by truck weight, not pallet count. Using typical
+                  published US unit weights for precast blocks (175 lb / 668
+                  lb / 1,750 lb for small, standard, and large sizes) against
+                  the same 42,000–45,000 lb payload cap, one truck carries
+                  roughly
                   240–255 / 63–67 / 24–26 units — meaning matching
                   Nordinfra's Small, Medium, and Large truckload counts takes
                   about <strong className="text-white">4×, 2×, and 5× as many
@@ -605,8 +615,9 @@ export default function App() {
                 </p>
                 <p className="mt-4 text-xs text-steel">
                   Assumes 26 standard pallets/trailer and a 42,000–45,000 lb
-                  legal payload; EV Blocks figures per their published US
-                  spec sheet. Estimates, not a guaranteed freight plan.
+                  legal payload; precast figures per typical published US
+                  spec sheets for comparable blocks. Estimates, not a
+                  guaranteed freight plan.
                 </p>
               </div>
             </div>

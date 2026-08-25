@@ -700,16 +700,16 @@ function AccessoryImage({ src, label }) {
       <img
         src={src}
         alt={label}
-        className="w-full h-20 object-contain rounded-md"
-        style={{ background: "#FAFAF8" }}
+        className="w-full h-40 object-contain rounded-md border"
+        style={{ background: "#FFFFFF", borderColor: "#D9D9D6" }}
         onError={() => setFailed(true)}
       />
     );
   }
   return (
     <div
-      className="w-full h-20 flex items-center justify-center rounded-md border border-dashed text-[11px]"
-      style={{ borderColor: "#D9D9D6", color: brand.steel, background: "#FAFAF8" }}
+      className="w-full h-40 flex items-center justify-center rounded-md border border-dashed text-[11px]"
+      style={{ borderColor: "#D9D9D6", color: brand.steel, background: "#FFFFFF" }}
     >
       {label} — photo pending
     </div>
@@ -947,7 +947,7 @@ export default function NordBaseCalculator() {
   // step 3 — site
   const [windSpeed, setWindSpeed] = useState("110");
   const [sds, setSds] = useState("0.5");
-  const [backfillKey, setBackfillKey] = useState("A");
+  const [backfillKey, setBackfillKey] = useState("B");
   const [nevi, setNevi] = useState(false);
   const [showSdsRef, setShowSdsRef] = useState(false);
 
@@ -1108,7 +1108,7 @@ export default function NordBaseCalculator() {
     setChargerWeight("");
     setWindSpeed("110");
     setSds("0.5");
-    setBackfillKey("A");
+    setBackfillKey("B");
     setNevi(false);
     setAddBollard(false);
     setAddCover(false);
@@ -1197,22 +1197,14 @@ export default function NordBaseCalculator() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         {/* Header */}
         <div className="print:hidden flex items-center gap-3 mb-8 flex-wrap">
-          {/* Icon mark + live text instead of the wordmark PNG: the source
-              file (logo-nav-dark.png) was exported with zero right-hand
-              margin, so the final "a" in "Nordinfra" is physically cut off
-              in the image itself — this isn't fixable with sizing/CSS.
-              Swap back to the PNG once a properly-padded export exists. */}
+          {/* logo-nav-dark.png was replaced 2026-08-25 with a properly
+              padded export (the previous file had zero right-hand margin,
+              clipping the final "a" in "Nordinfra" inside the image itself). */}
           <img
-            src="/logo/logo-icon-dark.png"
-            alt=""
-            className="h-9 w-auto shrink-0"
+            src="/logo/logo-nav-dark.png"
+            alt="Nordinfra"
+            className="h-10 w-auto shrink-0"
           />
-          <span
-            className="text-xl font-extrabold tracking-tight shrink-0"
-            style={{ color: brand.dark }}
-          >
-            Nordinfra
-          </span>
           <div className="h-8 w-px shrink-0 bg-black/10" />
           <div>
             <div
@@ -1808,7 +1800,7 @@ export default function NordBaseCalculator() {
                             Schedule 40, Duplex
                           </label>
                         </div>
-                        <div className="ml-6 mt-3 max-w-[180px]">
+                        <div className="ml-6 mt-3 max-w-[360px]">
                           <AccessoryImage
                             src={BOLLARD_ACCESSORY_PHOTOS[bollardTier]}
                             label={
@@ -1847,7 +1839,7 @@ export default function NordBaseCalculator() {
                       </div>
                     )}
                     {addBollard && addCover && (
-                      <div className="ml-6 mt-3 max-w-[180px]">
+                      <div className="ml-6 mt-3 max-w-[360px]">
                         <AccessoryImage
                           src={BOLLARD_ACCESSORY_PHOTOS.cover}
                           label="Bollard cover"
@@ -1881,7 +1873,7 @@ export default function NordBaseCalculator() {
                       powder-coated OSHA safety yellow and ship separately.
                     </div>
                     {addSensorPole && (
-                      <div className="ml-6 mt-3 max-w-[180px]">
+                      <div className="ml-6 mt-3 max-w-[360px]">
                         <AccessoryImage
                           src={SENSOR_POLE_PHOTO}
                           label="Sensor pole"
@@ -1934,7 +1926,7 @@ export default function NordBaseCalculator() {
                             Schedule 40, Duplex
                           </label>
                         </div>
-                        <div className="ml-6 mt-3 max-w-[180px]">
+                        <div className="ml-6 mt-3 max-w-[360px]">
                           <AccessoryImage
                             src={BOLLARD_ACCESSORY_PHOTOS[bollardTier]}
                             label={
@@ -1972,7 +1964,7 @@ export default function NordBaseCalculator() {
                       </div>
                     )}
                     {addBollard && addCover && (
-                      <div className="ml-6 mt-3 max-w-[180px]">
+                      <div className="ml-6 mt-3 max-w-[360px]">
                         <AccessoryImage
                           src={BOLLARD_ACCESSORY_PHOTOS.cover}
                           label="Bollard cover"
@@ -2006,7 +1998,7 @@ export default function NordBaseCalculator() {
                       powder-coated OSHA safety yellow and ship separately.
                     </div>
                     {addSensorPole && (
-                      <div className="ml-6 mt-3 max-w-[180px]">
+                      <div className="ml-6 mt-3 max-w-[360px]">
                         <AccessoryImage
                           src={SENSOR_POLE_PHOTO}
                           label="Sensor pole"
@@ -2149,6 +2141,36 @@ export default function NordBaseCalculator() {
           {/* STEP 5 — REPORT */}
           {step === 5 && result && foundation && (
             <div>
+              {/* Print-only cover header — the interactive header above is
+                  print:hidden, so without this the PDF/print output carried
+                  no Nordinfra branding at all. */}
+              <div className="hidden print:flex items-center gap-3 mb-6 pb-4 border-b" style={{ borderColor: "#D9D9D6" }}>
+                <img
+                  src="/logo/logo-nav-dark.png"
+                  alt="Nordinfra"
+                  className="h-9 w-auto shrink-0"
+                />
+                <div className="h-7 w-px shrink-0 bg-black/10" />
+                <div>
+                  <div
+                    className="text-xs font-bold tracking-widest"
+                    style={{ color: brand.gold }}
+                  >
+                    NORDBASE
+                  </div>
+                  <div
+                    className="text-base font-bold"
+                    style={{ color: brand.dark, fontFamily: "Georgia, serif" }}
+                  >
+                    Foundation Selector — Submittal Package
+                  </div>
+                </div>
+                <div className="ml-auto text-right text-xs" style={{ color: brand.steel }}>
+                  <div>{projectName || "Untitled project"}</div>
+                  <div>{contactName || ""}</div>
+                </div>
+              </div>
+
               <h2
                 className="text-lg font-bold mb-1"
                 style={{ color: brand.dark }}
@@ -2395,6 +2417,62 @@ export default function NordBaseCalculator() {
                   </div>
                 )}
               </div>
+
+              {/* AVAILABLE-BUT-NOT-SELECTED ACCESSORIES — print-only (part of
+                  the submittal package, not the interactive UI): so the
+                  recipient sees what else is compatible with this foundation
+                  even if nothing, or only some, of it was added here. */}
+              {(() => {
+                const canBollard =
+                  foundation?.hasAccessories || foundation?.hasCharger;
+                const availableExtras = [
+                  canBollard &&
+                    !addBollard && {
+                      name: "Bollard assembly (foundation + pole)",
+                      desc: "Schedule 10 or Schedule 40 Duplex, with optional cover.",
+                    },
+                  addBollard &&
+                    !addCover && {
+                      name: "Bollard cover",
+                      desc: "Finishes the bollard base — many pedestals already include their own.",
+                    },
+                  canBollard &&
+                    !addSensorPole && {
+                      name: "Sensor pole (collision-protection frame)",
+                      desc: "~34 lb two-post frame, galvanized + OSHA-yellow SS304 posts.",
+                    },
+                ].filter(Boolean);
+                if (!availableExtras.length) return null;
+                return (
+                  <div
+                    className="hidden print:block border rounded-md p-4 mb-4 print:break-inside-avoid"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <div
+                      className="text-xs font-bold tracking-wide mb-2"
+                      style={{ color: brand.gold }}
+                    >
+                      ALSO AVAILABLE FOR {foundation.name.toUpperCase()}
+                    </div>
+                    <div className="text-xs mb-3" style={{ color: brand.steel }}>
+                      Not included in this configuration — ask Nordinfra to
+                      add any of these.
+                    </div>
+                    {availableExtras.map((a) => (
+                      <div
+                        key={a.name}
+                        className="py-1.5 border-b"
+                        style={{ borderColor: "#F0F0EE" }}
+                      >
+                        <div style={{ color: brand.dark }}>{a.name}</div>
+                        <div className="text-xs" style={{ color: brand.steel }}>
+                          {a.desc}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* DOCUMENT LIBRARY — manual, warranty, BABA cert (conditional
                   on the NEVI checkbox above), and technical spec. Real PDFs,

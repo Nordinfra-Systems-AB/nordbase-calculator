@@ -19,7 +19,7 @@ html {
 }
 
 .partner-track {
-  animation: partner-scroll 28s linear infinite;
+  animation: partner-scroll 16s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
