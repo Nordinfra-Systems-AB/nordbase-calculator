@@ -1190,7 +1190,7 @@ export default function NordBaseCalculator() {
           <img
             src="/logo/logo-nav-dark.png"
             alt="Nordinfra"
-            className="h-7 w-auto shrink-0"
+            className="h-10 w-auto shrink-0"
           />
           <div className="h-8 w-px shrink-0 bg-black/10" />
           <div>

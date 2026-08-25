@@ -227,7 +227,7 @@ export default function App() {
     <div className="min-h-screen bg-dark text-white">
       {/* NAV */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-screen-2xl items-center justify-between gap-3 px-4 py-3 sm:px-8">
           {/* shrink-0 is load-bearing: without it, on narrow screens the flex
               row squeezes this link below the logo image's natural width and
               the image overflows behind the CTA button instead of resizing
@@ -236,7 +236,7 @@ export default function App() {
             <img
               src="/logo/logo-nav-light.png"
               alt="Nordinfra"
-              className="h-7 w-auto sm:h-8"
+              className="h-9 w-auto sm:h-11"
             />
           </a>
           <nav className="hidden items-center gap-8 text-sm font-medium text-white/70 md:flex">
@@ -303,19 +303,21 @@ export default function App() {
             </div>
 
             <div className="mt-12 grid grid-cols-2 gap-3">
-              <StatCard icon={Clock} value="Days" label="Typical install time" />
+              <StatCard icon={Clock} value="Same-day" label="Typical install time" />
               <StatCard icon={Leaf} value="Up to 60%" label="Lower CO2e vs. concrete" />
               <StatCard icon={ShieldCheck} value="ASCE 7-22" label="Wind & seismic method" />
               <StatCard icon={Factory} value="4" label="Foundation sizes" />
             </div>
           </div>
-          <div className="relative min-h-[320px] md:min-h-full">
+          {/* Transparent-background product render, not a photo — object-contain
+              keeps the whole assembly visible and lets the dark section
+              background show through instead of a hard-edged photo crop. */}
+          <div className="relative flex min-h-[320px] items-center justify-center px-6 py-10 md:min-h-full">
             <img
-              src="/photos/hero-installation.jpg"
-              alt="NordBase steel foundations being set on a US jobsite"
-              className="absolute inset-0 h-full w-full object-cover"
+              src="/photos/hero-installation.png"
+              alt="NordBase DC Medium foundation with charger and site lighting"
+              className="h-full max-h-[560px] w-auto object-contain md:max-h-[640px]"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-dark via-dark/10 to-transparent md:bg-gradient-to-r md:from-dark md:via-transparent md:to-transparent md:w-1/4" />
           </div>
         </div>
       </section>
