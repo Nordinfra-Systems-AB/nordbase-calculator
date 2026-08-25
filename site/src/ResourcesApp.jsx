@@ -128,11 +128,12 @@ export default function ResourcesApp() {
     <div className="min-h-screen bg-bgSoft text-dark">
       <header className="border-b border-black/10 bg-dark text-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <a href="/" className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-sm bg-gold" />
-            <span className="text-lg font-bold tracking-tight">
-              NORDINFRA
-            </span>
+          <a href="/" className="flex items-center">
+            <img
+              src="/logo/logo-nav-light.png"
+              alt="Nordinfra"
+              className="h-7 w-auto"
+            />
           </a>
           <a
             href="/"

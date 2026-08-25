@@ -1171,7 +1171,12 @@ export default function NordBaseCalculator() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         {/* Header */}
         <div className="print:hidden flex items-center gap-3 mb-8 flex-wrap">
-          <div className="w-8 h-8 shrink-0" style={{ background: brand.gold }} />
+          <img
+            src="/logo/logo-nav-dark.png"
+            alt="Nordinfra"
+            className="h-7 w-auto shrink-0"
+          />
+          <div className="h-8 w-px shrink-0 bg-black/10" />
           <div>
             <div
               className="text-xs font-bold tracking-widest"

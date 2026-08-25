@@ -5,3 +5,28 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Partner marquee — a slow, continuous horizontal scroll. This is the one
+   piece of "moving" UI on the site, deliberately not tied to scroll position
+   and never sliding content in from off-screen. */
+@keyframes partner-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.partner-track {
+  animation: partner-scroll 28s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .partner-track {
+    animation: none;
+  }
+}
