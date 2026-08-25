@@ -602,16 +602,19 @@ const brand = {
   amberBg: "#FFF2CC",
 };
 
-// Schematic side-view diagram (top/bottom footprint + burial depth). Swap for
-// a real product photo by replacing the <svg> below with an <img src="..." />
-// — see FOUNDATIONS[key].photoUrl for where to plug in a real asset path.
+// Schematic side-view diagram (top/bottom footprint + burial depth). Falls
+// back to this SVG automatically if FOUNDATIONS[key].photoUrl is unset OR if
+// the real photo fails to load (bad path, file not yet uploaded) — so a
+// broken asset never shows as a broken-image icon in production.
 function FoundationDiagram({ foundation }) {
-  if (foundation.photoUrl) {
+  const [photoFailed, setPhotoFailed] = useState(false);
+  if (foundation.photoUrl && !photoFailed) {
     return (
       <img
         src={foundation.photoUrl}
         alt={foundation.name}
-        className="w-full h-28 object-contain"
+        className="w-full h-36 object-contain"
+        onError={() => setPhotoFailed(true)}
       />
     );
   }
@@ -683,13 +686,15 @@ const BOLLARD_ACCESSORY_PHOTOS = {
 };
 
 function AccessoryImage({ src, label }) {
-  if (src) {
+  const [failed, setFailed] = useState(false);
+  if (src && !failed) {
     return (
       <img
         src={src}
         alt={label}
         className="w-full h-20 object-contain rounded-md"
         style={{ background: "#FAFAF8" }}
+        onError={() => setFailed(true)}
       />
     );
   }

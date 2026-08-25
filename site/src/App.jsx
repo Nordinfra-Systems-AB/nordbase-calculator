@@ -32,21 +32,47 @@ const PRODUCTS = [
     name: "NordBase Bollard",
     level: "Bollard",
     desc: "Standalone protective foundation for a bollard or post. The smallest, lightest model in the lineup.",
+    image: "/photos/product-bollard.png",
   },
   {
     name: "NordBase Small",
     level: "Level 2",
     desc: "For Level 2 pedestal chargers. Square adapter plate, standard CC options.",
+    image: "/photos/product-small.png",
   },
   {
     name: "NordBase Medium",
     level: "Level 3",
     desc: "For Level 3 DC fast chargers. Rectangular base for a larger stabilizing footprint.",
+    image: "/photos/product-medium.png",
   },
   {
     name: "NordBase Large",
     level: "Level 4",
     desc: "For Level 4 / high-power DC charging. Widened plate, reinforced shell.",
+    image: null, // no render yet — adapter-plate CC options still in development
+  },
+];
+
+// ASSEMBLY — real 3D renders showing each foundation with a representative
+// charger/hardware mounted, so a visitor can see the full picture (not just
+// the bare steel part) without reading a paragraph. Source: Nordinfra's own
+// CAD renders, uploaded 2026-08-25.
+const ASSEMBLIES = [
+  {
+    name: "AC & Bollard",
+    image: "/photos/assembly-ac.png",
+    desc: "Pedestal-mount Level 2 charger, or a standalone protective bollard on the same base.",
+  },
+  {
+    name: "DC Small",
+    image: "/photos/assembly-small.png",
+    desc: "Level 2/3 pedestal charger with bollard protection built into the same footprint.",
+  },
+  {
+    name: "DC Medium",
+    image: "/photos/assembly-medium.png",
+    desc: "Level 3 DC fast charger, with room for site lighting and bollards on one foundation.",
   },
 ];
 
@@ -335,20 +361,71 @@ export default function App() {
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {PRODUCTS.map((p, i) => (
               <Reveal key={p.name} delay={i * 70}>
-                <div className="flex h-full flex-col rounded-xl border border-black/10 bg-white p-5 shadow-sm">
-                  <span className="w-fit rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-dark">
-                    {p.level}
-                  </span>
-                  <h3 className="mt-3 text-lg font-bold text-dark">{p.name}</h3>
-                  <p className="mt-2 flex-1 text-sm text-steel">{p.desc}</p>
-                  <a
-                    href={CALCULATOR_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-dark hover:text-gold"
-                  >
-                    Configure <ArrowRight className="h-3.5 w-3.5" />
-                  </a>
+                <div className="flex h-full flex-col rounded-xl border border-black/10 bg-white shadow-sm overflow-hidden">
+                  <div className="flex aspect-[4/5] items-center justify-center bg-white p-3">
+                    {p.image ? (
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <span className="text-center text-xs font-semibold uppercase tracking-wide text-steel/50">
+                        Render coming soon
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-5 pt-0">
+                    <span className="w-fit rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-dark">
+                      {p.level}
+                    </span>
+                    <h3 className="mt-3 text-lg font-bold text-dark">{p.name}</h3>
+                    <p className="mt-2 flex-1 text-sm text-steel">{p.desc}</p>
+                    <a
+                      href={CALCULATOR_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-dark hover:text-gold"
+                    >
+                      Configure <ArrowRight className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ASSEMBLIES — "one system, every charger level" at a glance. Real CAD
+          renders showing each foundation with representative hardware
+          mounted, so the product line reads instantly without more text. */}
+      <section className="border-t border-white/10 bg-dark py-24">
+        <div className="mx-auto max-w-7xl px-6">
+          <Reveal>
+            <h2 className="text-3xl font-extrabold tracking-tight">
+              One system. Every charger level.
+            </h2>
+            <p className="mt-2 max-w-xl text-white/60">
+              Same steel platform, same install method — sized and adapted to
+              whatever's going on top.
+            </p>
+          </Reveal>
+          <div className="mt-10 grid gap-5 sm:grid-cols-3">
+            {ASSEMBLIES.map((a, i) => (
+              <Reveal key={a.name} delay={i * 80}>
+                <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden">
+                  <div className="flex aspect-[4/5] items-center justify-center bg-white p-4">
+                    <img
+                      src={a.image}
+                      alt={a.name}
+                      className="h-full w-full object-contain"
+                    />
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-bold text-white">{a.name}</h3>
+                    <p className="mt-1.5 text-sm text-white/60">{a.desc}</p>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -415,6 +492,35 @@ export default function App() {
               </Reveal>
             </div>
           </div>
+
+          <Reveal delay={100}>
+            <div className="mt-14 rounded-xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
+              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="font-bold text-white">
+                    Ships palletized and nested
+                  </h3>
+                  <p className="mt-1 max-w-md text-sm text-white/60">
+                    Tapered shells nest inside each other — up to 15+ units
+                    per pallet, so a full site order moves in one truck
+                    instead of several.
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <img
+                    src="/photos/packaging-small.png"
+                    alt="NordBase Small foundations nested and palletized for shipping"
+                    className="h-40 w-auto rounded-lg bg-white object-contain p-2"
+                  />
+                  <img
+                    src="/photos/packaging-medium.png"
+                    alt="NordBase Medium foundations nested and palletized for shipping"
+                    className="h-40 w-auto rounded-lg bg-white object-contain p-2"
+                  />
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
