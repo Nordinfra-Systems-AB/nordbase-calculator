@@ -686,6 +686,13 @@ const BOLLARD_ACCESSORY_PHOTOS = {
   cover: "/bollard-cover.png",
 };
 
+// Two-post collision-protection frame. Spec per Complete_Sensor_Pole__IMPERIAL
+// drawing: 40.68"x33.68" footprint, ~34 lb total assembly. Frame/pipe/
+// reinforcement/brace/spacer are hot-dip galvanized per ASTM A123 as one lot;
+// the two SS304 posts are excluded from that lot and are powder-coated OSHA
+// safety yellow (RAL 1003), shipped separately.
+const SENSOR_POLE_PHOTO = "/sensor-pole.png";
+
 function AccessoryImage({ src, label }) {
   const [failed, setFailed] = useState(false);
   if (src && !failed) {
@@ -948,6 +955,7 @@ export default function NordBaseCalculator() {
   const [addBollard, setAddBollard] = useState(false);
   const [bollardTier, setBollardTier] = useState("sch10");
   const [addCover, setAddCover] = useState(false);
+  const [addSensorPole, setAddSensorPole] = useState(false);
   const [packageType, setPackageType] = useState("submittal");
   const [customAssets, setCustomAssets] = useState({
     datasheet: true,
@@ -1104,6 +1112,7 @@ export default function NordBaseCalculator() {
     setNevi(false);
     setAddBollard(false);
     setAddCover(false);
+    setAddSensorPole(false);
     setPackageType("submittal");
   }
 
@@ -1174,6 +1183,7 @@ export default function NordBaseCalculator() {
             addCover ? " + cover" : ""
           }`
         : "",
+      addSensorPole ? "Sensor pole (collision-protection frame): yes" : "",
       `Package: ${PACKAGE_TYPES[packageType].label}`,
       nevi ? "NEVI/BABA certificate: yes" : "",
     ].filter(Boolean);
@@ -1187,11 +1197,22 @@ export default function NordBaseCalculator() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         {/* Header */}
         <div className="print:hidden flex items-center gap-3 mb-8 flex-wrap">
+          {/* Icon mark + live text instead of the wordmark PNG: the source
+              file (logo-nav-dark.png) was exported with zero right-hand
+              margin, so the final "a" in "Nordinfra" is physically cut off
+              in the image itself — this isn't fixable with sizing/CSS.
+              Swap back to the PNG once a properly-padded export exists. */}
           <img
-            src="/logo/logo-nav-dark.png"
-            alt="Nordinfra"
-            className="h-10 w-auto shrink-0"
+            src="/logo/logo-icon-dark.png"
+            alt=""
+            className="h-9 w-auto shrink-0"
           />
+          <span
+            className="text-xl font-extrabold tracking-tight shrink-0"
+            style={{ color: brand.dark }}
+          >
+            Nordinfra
+          </span>
           <div className="h-8 w-px shrink-0 bg-black/10" />
           <div>
             <div
@@ -1834,6 +1855,40 @@ export default function NordBaseCalculator() {
                       </div>
                     )}
                   </div>
+                  <div
+                    className="border rounded-md p-4 mb-6"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <label
+                      className="flex items-center gap-2 font-semibold text-sm"
+                      style={{ color: brand.dark }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={addSensorPole}
+                        onChange={(e) => setAddSensorPole(e.target.checked)}
+                      />{" "}
+                      Sensor pole (collision-protection frame)
+                    </label>
+                    <div
+                      className="text-xs ml-6 mt-1"
+                      style={{ color: brand.steel }}
+                    >
+                      Two-post frame that straddles the foundation to shield a
+                      sensor/camera pole from vehicle contact. ~34 lb
+                      assembly, 40.7"×33.7" footprint. Frame hot-dip
+                      galvanized per ASTM A123; the two stainless posts are
+                      powder-coated OSHA safety yellow and ship separately.
+                    </div>
+                    {addSensorPole && (
+                      <div className="ml-6 mt-3 max-w-[180px]">
+                        <AccessoryImage
+                          src={SENSOR_POLE_PHOTO}
+                          label="Sensor pole"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               {foundation?.hasCharger && (
@@ -1921,6 +1976,40 @@ export default function NordBaseCalculator() {
                         <AccessoryImage
                           src={BOLLARD_ACCESSORY_PHOTOS.cover}
                           label="Bollard cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className="border rounded-md p-4 mb-6"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <label
+                      className="flex items-center gap-2 font-semibold text-sm"
+                      style={{ color: brand.dark }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={addSensorPole}
+                        onChange={(e) => setAddSensorPole(e.target.checked)}
+                      />{" "}
+                      Sensor pole (collision-protection frame)
+                    </label>
+                    <div
+                      className="text-xs ml-6 mt-1"
+                      style={{ color: brand.steel }}
+                    >
+                      Two-post frame that straddles the foundation to shield a
+                      sensor/camera pole from vehicle contact. ~34 lb
+                      assembly, 40.7"×33.7" footprint. Frame hot-dip
+                      galvanized per ASTM A123; the two stainless posts are
+                      powder-coated OSHA safety yellow and ship separately.
+                    </div>
+                    {addSensorPole && (
+                      <div className="ml-6 mt-3 max-w-[180px]">
+                        <AccessoryImage
+                          src={SENSOR_POLE_PHOTO}
+                          label="Sensor pole"
                         />
                       </div>
                     )}
@@ -2280,8 +2369,26 @@ export default function NordBaseCalculator() {
                   </div>
                 )}
                 {addCover && (
-                  <div className="flex justify-between text-sm py-1.5">
+                  <div
+                    className="flex justify-between text-sm py-1.5 border-b"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
                     <div style={{ color: brand.dark }}>Bollard cover</div>
+                    <div className="text-xs" style={{ color: brand.steel }}>
+                      Price on request
+                    </div>
+                  </div>
+                )}
+                {addSensorPole && (
+                  <div className="flex justify-between text-sm py-1.5">
+                    <div>
+                      <div style={{ color: brand.dark }}>
+                        Sensor pole (collision-protection frame)
+                      </div>
+                      <div className="text-xs" style={{ color: brand.steel }}>
+                        ~34 lb, galvanized frame + OSHA-yellow SS304 posts
+                      </div>
+                    </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
                       Price on request
                     </div>

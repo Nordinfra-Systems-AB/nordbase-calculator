@@ -231,13 +231,22 @@ export default function App() {
           {/* shrink-0 is load-bearing: without it, on narrow screens the flex
               row squeezes this link below the logo image's natural width and
               the image overflows behind the CTA button instead of resizing
-              (that's what "part of the logo gets covered" was). */}
-          <a href="/" className="flex shrink-0 items-center">
+              (that's what "part of the logo gets covered" was).
+              Using the icon mark + live text instead of the wordmark PNG:
+              logo-nav-light.png was exported with zero right-hand margin, so
+              the final "a" in "Nordinfra" is physically cut off inside the
+              file itself — no CSS fix can restore pixels that aren't in the
+              source image. This renders the full name correctly until a
+              properly-padded wordmark export is supplied. */}
+          <a href="/" className="flex shrink-0 items-center gap-2.5">
             <img
-              src="/logo/logo-nav-light.png"
-              alt="Nordinfra"
-              className="h-9 w-auto sm:h-11"
+              src="/logo/logo-icon-light.png"
+              alt=""
+              className="h-8 w-auto sm:h-9"
             />
+            <span className="text-xl font-extrabold tracking-tight text-white sm:text-2xl">
+              Nordinfra
+            </span>
           </a>
           <nav className="hidden items-center gap-8 text-sm font-medium text-white/70 md:flex">
             <a href="#products" className="hover:text-white">
@@ -510,6 +519,11 @@ export default function App() {
                 </div>
                 <div className="flex gap-4">
                   <img
+                    src="/photos/packaging-ac.png"
+                    alt="NordBase AC/Bollard foundations nested and palletized for shipping"
+                    className="h-40 w-auto rounded-lg bg-white object-contain p-2"
+                  />
+                  <img
                     src="/photos/packaging-small.png"
                     alt="NordBase Small foundations nested and palletized for shipping"
                     className="h-40 w-auto rounded-lg bg-white object-contain p-2"
@@ -520,6 +534,80 @@ export default function App() {
                     className="h-40 w-auto rounded-lg bg-white object-contain p-2"
                   />
                 </div>
+              </div>
+
+              {/* Full-truck density comparison. Basis: 26 standard 48"x40"
+                  pallets per floor layer of a 53' dry van, 42,000-45,000 lb
+                  typical legal payload. EV Blocks unit weights/sizes are
+                  their own published US spec figures, supplied by Nordinfra
+                  and cross-checked against evblocks.com/us. */}
+              <div className="mt-8 border-t border-white/10 pt-8">
+                <h4 className="font-bold text-white">
+                  One truck, hundreds of foundations
+                </h4>
+                <p className="mt-1 max-w-2xl text-sm text-white/60">
+                  A standard 53' trailer holds 26 pallets in a single floor
+                  layer. At Nordinfra's per-pallet nesting counts, that's:
+                </p>
+                <div className="mt-4 overflow-x-auto">
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead>
+                      <tr className="text-white/50">
+                        <th className="pb-2 font-semibold">Tier</th>
+                        <th className="pb-2 font-semibold">Per pallet</th>
+                        <th className="pb-2 font-semibold">Per truck (26 pallets)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-white/80">
+                      <tr className="border-t border-white/10">
+                        <td className="py-2">AC / Bollard</td>
+                        <td className="py-2">100</td>
+                        <td className="py-2 font-semibold text-gold">2,600</td>
+                      </tr>
+                      <tr className="border-t border-white/10">
+                        <td className="py-2">DC Small</td>
+                        <td className="py-2">40</td>
+                        <td className="py-2 font-semibold text-gold">1,040</td>
+                      </tr>
+                      <tr className="border-t border-white/10">
+                        <td className="py-2">DC Medium</td>
+                        <td className="py-2">5</td>
+                        <td className="py-2 font-semibold text-gold">130</td>
+                      </tr>
+                      <tr className="border-t border-white/10">
+                        <td className="py-2">DC Large</td>
+                        <td className="py-2">5</td>
+                        <td className="py-2 font-semibold text-gold">130</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-4 max-w-2xl text-sm text-white/60">
+                  Precast concrete doesn't nest, so a comparable delivery is
+                  bound by truck weight, not pallet count. Using EV Blocks'
+                  published US unit weights (175 lb / 668 lb / 1,750 lb for
+                  their small, standard, and large blocks) against the same
+                  42,000–45,000 lb payload cap, one truck carries roughly
+                  240–255 / 63–67 / 24–26 units — meaning matching
+                  Nordinfra's Small, Medium, and Large truckload counts takes
+                  about <strong className="text-white">4×, 2×, and 5× as many
+                  trucks</strong>.
+                </p>
+                <p className="mt-4 max-w-2xl text-sm text-white/60">
+                  Fewer trucks also means less freight carbon: at the same
+                  0.062 kg CO2/tonne-km factor cited below, each fully loaded
+                  44,000 lb truck emits roughly{" "}
+                  <strong className="text-white">2 kg CO2 per mile
+                  driven</strong> — so every precast truck trip avoided saves
+                  on the order of 600 kg (1,300 lb) CO2 over a typical
+                  300-mile delivery, on top of the per-unit embodied-carbon
+                  savings below.
+                </p>
+                <p className="mt-4 text-xs text-steel">
+                  Assumes 26 standard pallets/trailer and a 42,000–45,000 lb
+                  legal payload; EV Blocks figures per their published US
+                  spec sheet. Estimates, not a guaranteed freight plan.
+                </p>
               </div>
             </div>
           </Reveal>
