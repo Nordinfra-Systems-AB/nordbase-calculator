@@ -21,6 +21,8 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
+  Phone,
+  Globe,
 } from "lucide-react";
 
 // =====================================================================================
@@ -321,6 +323,14 @@ const PARTNERS = [
   {
     id: "postlane",
     name: "Postlane",
+    // Company-level contact info (shown when a customer expands the partner
+    // row). Website confirmed 2026-08-25 (postlaneusa.com — not postlane.com,
+    // which is an unrelated investment firm). Phone/email are not on file yet
+    // — TODO(Nordinfra): fill in once confirmed with Postlane; until then the
+    // website is the accurate way for a customer to reach them.
+    website: "https://www.postlaneusa.com/",
+    phone: "",
+    email: "",
     // TODO(Nordinfra): replace with Postlane's real branch list (~30 locations).
     // Each location needs its own entry once Postlane shares the list — this
     // single placeholder stands in for the whole network until then.
@@ -337,12 +347,12 @@ const PARTNERS = [
   },
 ];
 
+function hasConfirmedAddress(loc) {
+  return Boolean(loc.address) && !loc.address.startsWith("Address on file");
+}
+
 function directionsUrl(loc) {
-  const q = encodeURIComponent(
-    loc.address && !loc.address.startsWith("Address on file")
-      ? `${loc.address}, ${loc.city}, ${loc.state}`
-      : `${loc.lat},${loc.lon}`
-  );
+  const q = encodeURIComponent(`${loc.address}, ${loc.city}, ${loc.state}`);
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
@@ -946,6 +956,7 @@ export default function NordBaseCalculator() {
   const [consentGiven, setConsentGiven] = useState(false);
   const [showConsentWarning, setShowConsentWarning] = useState(false);
   const [partnerStateFilter, setPartnerStateFilter] = useState("");
+  const [expandedPartnerId, setExpandedPartnerId] = useState(null);
 
   // cookie consent banner — remembers the visitor's choice in this browser
   // only (localStorage), never sent anywhere. Guarded with try/catch since
@@ -2404,38 +2415,123 @@ export default function NordBaseCalculator() {
                             .toLowerCase()
                             .includes(partnerStateFilter.toLowerCase())
                       )
-                      .map((loc, i) => (
-                        <div
-                          key={`${partner.id}-${i}`}
-                          className="flex items-center justify-between gap-3 text-sm p-2 rounded-md"
-                          style={{ background: brand.bgSoft }}
-                        >
-                          <div>
-                            <div
-                              className="font-semibold"
-                              style={{ color: brand.dark }}
-                            >
-                              {partner.name} — {loc.city}, {loc.state}
-                            </div>
-                            <div
-                              className="text-xs"
-                              style={{ color: brand.steel }}
-                            >
-                              {loc.address}
-                              {loc.phone ? ` · ${loc.phone}` : ""}
-                            </div>
-                          </div>
-                          <a
-                            href={directionsUrl(loc)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="print:hidden shrink-0 text-xs px-2 py-1 rounded-md border flex items-center gap-1"
-                            style={{ borderColor: brand.gold, color: brand.dark }}
+                      .map((loc, i) => {
+                        const expanded = expandedPartnerId === partner.id;
+                        const hasContactInfo =
+                          partner.website || partner.phone || partner.email;
+                        return (
+                          <div
+                            key={`${partner.id}-${i}`}
+                            className="rounded-md overflow-hidden"
+                            style={{ background: brand.bgSoft }}
                           >
-                            <ExternalLink size={12} /> Directions
-                          </a>
-                        </div>
-                      ))
+                            <div className="flex items-center justify-between gap-3 text-sm p-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  hasContactInfo &&
+                                  setExpandedPartnerId(
+                                    expanded ? null : partner.id
+                                  )
+                                }
+                                className="print:pointer-events-none text-left flex items-start gap-1.5 min-w-0"
+                              >
+                                <div className="min-w-0">
+                                  <div
+                                    className="font-semibold flex items-center gap-1 flex-wrap"
+                                    style={{ color: brand.dark }}
+                                  >
+                                    {partner.name} — {loc.city}, {loc.state}
+                                    {hasContactInfo &&
+                                      (expanded ? (
+                                        <ChevronUp
+                                          size={14}
+                                          className="print:hidden shrink-0"
+                                          style={{ color: brand.steel }}
+                                        />
+                                      ) : (
+                                        <ChevronDown
+                                          size={14}
+                                          className="print:hidden shrink-0"
+                                          style={{ color: brand.steel }}
+                                        />
+                                      ))}
+                                  </div>
+                                  <div
+                                    className="text-xs"
+                                    style={{ color: brand.steel }}
+                                  >
+                                    {hasConfirmedAddress(loc)
+                                      ? loc.address
+                                      : "Exact branch address not yet on file"}
+                                    {loc.phone ? ` · ${loc.phone}` : ""}
+                                  </div>
+                                </div>
+                              </button>
+                              {hasConfirmedAddress(loc) ? (
+                                <a
+                                  href={directionsUrl(loc)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="print:hidden shrink-0 text-xs px-2 py-1 rounded-md border flex items-center gap-1"
+                                  style={{
+                                    borderColor: brand.gold,
+                                    color: brand.dark,
+                                  }}
+                                >
+                                  <ExternalLink size={12} /> Directions
+                                </a>
+                              ) : partner.website ? (
+                                <a
+                                  href={partner.website}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="print:hidden shrink-0 text-xs px-2 py-1 rounded-md border flex items-center gap-1"
+                                  style={{
+                                    borderColor: brand.gold,
+                                    color: brand.dark,
+                                  }}
+                                >
+                                  <Globe size={12} /> Visit website
+                                </a>
+                              ) : null}
+                            </div>
+                            {expanded && hasContactInfo && (
+                              <div
+                                className="print:hidden px-2 pb-3 pt-1 text-xs space-y-1.5 border-t"
+                                style={{ borderColor: "#E5E4E1" }}
+                              >
+                                {partner.website && (
+                                  <a
+                                    href={partner.website}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="flex items-center gap-1.5 hover:underline"
+                                    style={{ color: brand.dark }}
+                                  >
+                                    <Globe size={12} style={{ color: brand.gold }} />
+                                    {partner.website.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                                  </a>
+                                )}
+                                <div
+                                  className="flex items-center gap-1.5"
+                                  style={{ color: partner.phone ? brand.dark : brand.steel }}
+                                >
+                                  <Phone size={12} style={{ color: brand.gold }} />
+                                  {partner.phone || "Phone not yet on file — see website"}
+                                </div>
+                                <div
+                                  className="flex items-center gap-1.5"
+                                  style={{ color: partner.email ? brand.dark : brand.steel }}
+                                >
+                                  <Mail size={12} style={{ color: brand.gold }} />
+                                  {partner.email || "Email not yet on file — see website"}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
                   )}
                   {PARTNERS.flatMap((p) => p.locations).every(
                     (loc) =>
