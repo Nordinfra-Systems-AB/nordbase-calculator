@@ -10,6 +10,8 @@ export default defineConfig({
         main: resolve(__dirname, "index.html"),
         resources: resolve(__dirname, "resources.html"),
         partners: resolve(__dirname, "partners.html"),
+        product: resolve(__dirname, "product.html"),
+        installation: resolve(__dirname, "installation.html"),
       },
     },
   },
