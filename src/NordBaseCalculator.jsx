@@ -325,12 +325,11 @@ const PARTNERS = [
     name: "Postlane",
     // Company-level contact info (shown when a customer expands the partner
     // row). Website confirmed 2026-08-25 (postlaneusa.com — not postlane.com,
-    // which is an unrelated investment firm). Phone/email are not on file yet
-    // — TODO(Nordinfra): fill in once confirmed with Postlane; until then the
-    // website is the accurate way for a customer to reach them.
+    // which is an unrelated investment firm). Phone/email confirmed
+    // 2026-08-25 from postlaneusa.com's own site footer.
     website: "https://www.postlaneusa.com/",
-    phone: "",
-    email: "",
+    phone: "718.355.1808",
+    email: "Info@postlaneusa.com",
     // TODO(Nordinfra): replace with Postlane's real branch list (~30 locations).
     // Each location needs its own entry once Postlane shares the list — this
     // single placeholder stands in for the whole network until then.

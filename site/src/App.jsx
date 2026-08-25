@@ -201,12 +201,16 @@ export default function App() {
     <div className="min-h-screen bg-dark text-white">
       {/* NAV */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/90 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
-          <a href="/" className="flex items-center">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          {/* shrink-0 is load-bearing: without it, on narrow screens the flex
+              row squeezes this link below the logo image's natural width and
+              the image overflows behind the CTA button instead of resizing
+              (that's what "part of the logo gets covered" was). */}
+          <a href="/" className="flex shrink-0 items-center">
             <img
               src="/logo/logo-nav-light.png"
               alt="Nordinfra"
-              className="h-8 w-auto"
+              className="h-7 w-auto sm:h-8"
             />
           </a>
           <nav className="hidden items-center gap-8 text-sm font-medium text-white/70 md:flex">
@@ -219,6 +223,9 @@ export default function App() {
             <a href="#markets" className="hover:text-white">
               Markets
             </a>
+            <a href="/partners.html" className="hover:text-white">
+              Partners
+            </a>
             <a href="/resources.html" className="hover:text-white">
               Resources
             </a>
@@ -230,9 +237,10 @@ export default function App() {
             href={CALCULATOR_URL}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md bg-gold px-4 py-2 text-sm font-bold text-dark hover:bg-goldSoft"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-gold px-3 py-2 text-xs font-bold text-dark hover:bg-goldSoft sm:px-4 sm:text-sm"
           >
-            Calculate your foundation <ArrowRight className="h-4 w-4" />
+            Calculate<span className="hidden sm:inline"> your foundation</span>{" "}
+            <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </header>
