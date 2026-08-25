@@ -139,6 +139,7 @@ const FOUNDATIONS = {
     weightLb: 99.21, // 45 kg
     hasCharger: true,
     hasAccessories: false,
+    photoUrl: "/nordbase-large.png",
     // ---- Confirmed structural data (Nordinfra_Master_USA_ASCE7_v6 — DC Large, 2026-08-21) ----
     wallThicknessMm: 1.9, // ASTM A1011 SS Gr33 + ZM115, 14ga — same as Small/Medium
     shellBottom: { w: 36, d: 36 }, // actual tapered shell/mantle bottom (914.4mm) — narrower than the base-plate foot above

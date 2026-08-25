@@ -50,7 +50,7 @@ const PRODUCTS = [
     name: "NordBase Large",
     level: "Level 4",
     desc: "For Level 4 / high-power DC charging. Widened plate, reinforced shell.",
-    image: null, // no render yet — adapter-plate CC options still in development
+    image: "/photos/product-large.png",
   },
 ];
 
