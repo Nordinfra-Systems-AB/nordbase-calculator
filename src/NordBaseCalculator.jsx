@@ -250,6 +250,44 @@ const CHARGER_PRESETS = {
 };
 
 // ---------------------------------------------------------------------------
+// ADAPTER PLATE DRAWINGS — real, dimensioned PDF drawings supplied by
+// Nordinfra (NOT the auto-generated schematic further down in this file).
+// Once a customer picks a foundation + charger manufacturer + model, if a
+// matching entry exists here, the calculator shows a prominent "Download
+// official drawing" button — a real manufactured drawing is more accurate
+// than an algorithmically generated sketch, so it takes priority whenever
+// one is available. The generated sketch still shows underneath as a live
+// preview / fallback for models that don't have an official drawing yet.
+//
+// HOW TO ADD A NEW DRAWING (Simon — no other code changes needed):
+//   1. Drop the PDF into public/drawings/adapter-plates/ using this naming
+//      pattern:  {foundation-slug}_{manufacturer-slug}_{model-slug}.pdf
+//        e.g.  medium_kempower_satellite-c-series.pdf
+//      NordBase Small uses one shared "universal" plate today (no
+//      manufacturer/model needed) — name that one small_universal.pdf.
+//   2. Add one line to ADAPTER_PLATE_DRAWINGS below, using the exact
+//      manufacturer/model text as it appears in CHARGER_PRESETS above.
+//   3. Commit + push — Vercel rebuilds and the link goes live automatically.
+// DC Medium needs ~15 of these (one per charger model, more than the 5
+// currently listed in CHARGER_PRESETS — add new manufacturer/model entries
+// there first if a charger isn't listed yet). NordBase Small starts with a
+// single shared universal plate; a couple more may be added later.
+// ---------------------------------------------------------------------------
+function adapterDrawingKey(foundationKey, manufacturer, model) {
+  return `${foundationKey}|${manufacturer}|${model}`.toLowerCase();
+}
+function universalAdapterDrawingKey(foundationKey) {
+  return `${foundationKey}|universal`.toLowerCase();
+}
+const ADAPTER_PLATE_DRAWINGS = {
+  // Example (remove once the real PDF replaces it):
+  // [adapterDrawingKey("MEDIUM", "Kempower", "Satellite C-Series")]:
+  //   "/drawings/adapter-plates/medium_kempower_satellite-c-series.pdf",
+  // [universalAdapterDrawingKey("SMALL")]:
+  //   "/drawings/adapter-plates/small_universal.pdf",
+};
+
+// ---------------------------------------------------------------------------
 // DISTRIBUTION PARTNERS — generic partner/location directory shown on the
 // report step so a customer can be pointed to a distributor for order
 // placement (Nordinfra sells only through partners/distributors, not
@@ -916,6 +954,22 @@ export default function NordBaseCalculator() {
 
   const effectiveCc = ccChoice === "custom" ? Number(customCc) || 0 : ccChoice;
 
+  // Official (real, dimensioned) adapter-plate drawing for the selected
+  // foundation + charger manufacturer/model — see ADAPTER_PLATE_DRAWINGS
+  // above. Falls back to the shared "universal" plate drawing (NordBase
+  // Small today) when no manufacturer/model is selected yet.
+  const selectedChargerModelName =
+    presetMfr && presetModel !== ""
+      ? CHARGER_PRESETS[presetMfr]?.[Number(presetModel)]?.model
+      : "";
+  const officialDrawingUrl = foundation?.key
+    ? selectedChargerModelName
+      ? ADAPTER_PLATE_DRAWINGS[
+          adapterDrawingKey(foundation.key, presetMfr, selectedChargerModelName)
+        ]
+      : ADAPTER_PLATE_DRAWINGS[universalAdapterDrawingKey(foundation.key)]
+    : undefined;
+
   const result = useMemo(() => {
     if (!foundation || !foundation.hasCharger) {
       if (foundation && !foundation.hasCharger) {
@@ -1351,18 +1405,54 @@ export default function NordBaseCalculator() {
                   {foundation.adapterPlate.material}
                 </div>
               )}
+              {officialDrawingUrl && (
+                <div
+                  className="mb-4 flex items-center justify-between rounded-md border px-3 py-2.5"
+                  style={{ borderColor: brand.gold, background: "#FBF6E8" }}
+                >
+                  <div className="text-xs" style={{ color: brand.dark }}>
+                    <span className="font-semibold">
+                      ✓ Official manufacturer drawing available
+                    </span>
+                    <br />
+                    Dimensioned PDF — verified more accurate than the preview
+                    sketch below.
+                  </div>
+                  <a
+                    href={officialDrawingUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-semibold px-3 py-1.5 rounded-md whitespace-nowrap"
+                    style={{ background: brand.gold, color: brand.dark }}
+                  >
+                    Download PDF
+                  </a>
+                </div>
+              )}
               {foundation.adapterPlate.size && effectiveCc > 0 && (
                 <div className="mb-4">
                   <div
                     className="text-xs font-semibold mb-1"
                     style={{ color: brand.dark }}
                   >
-                    Adapter plate drawing — verify hole spacing
+                    {officialDrawingUrl
+                      ? "Preview sketch (for reference — see official drawing above)"
+                      : "Adapter plate drawing — verify hole spacing"}
                   </div>
                   <AdapterPlateDiagram
                     plate={foundation.adapterPlate.size}
                     ccIn={effectiveCc}
                   />
+                  {!officialDrawingUrl && (
+                    <div
+                      className="text-xs mt-1"
+                      style={{ color: brand.steel }}
+                    >
+                      Generated from your CC spacing — not yet an official
+                      manufacturer drawing. Contact Nordinfra to confirm
+                      before fabrication.
+                    </div>
+                  )}
                 </div>
               )}
               {foundation.wallThicknessMm && (
@@ -2099,6 +2189,17 @@ export default function NordBaseCalculator() {
                       <div className="text-xs" style={{ color: brand.steel }}>
                         {foundation.adapterPlate.material || "Material TBD"}
                       </div>
+                      {officialDrawingUrl && (
+                        <a
+                          href={officialDrawingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-semibold"
+                          style={{ color: brand.gold }}
+                        >
+                          Official drawing (PDF) ↗
+                        </a>
+                      )}
                     </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
                       Price on request
