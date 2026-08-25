@@ -288,6 +288,24 @@ const ADAPTER_PLATE_DRAWINGS = {
 };
 
 // ---------------------------------------------------------------------------
+// DOCUMENT LIBRARY — real PDFs supplied by Nordinfra, linked from the Report
+// step. Manuals are foundation-specific; warranty and technical spec are
+// universal (apply to the whole product line); the BABA certificate covers
+// only the foundations listed in BABA_COVERED_FOUNDATIONS (per the source
+// certificate's product table — NordBase Large is not yet covered, flag to
+// Nordinfra if that needs updating).
+// ---------------------------------------------------------------------------
+const FOUNDATION_MANUALS = {
+  BOLLARD: "/docs/manuals/NI_Manual_AC_001_US.pdf",
+  SMALL: "/docs/manuals/NI_Manual_DCS_001_US.pdf",
+  // MEDIUM / LARGE manuals not yet supplied — falls back to a "coming soon" note.
+};
+const BABA_CERTIFICATE_PDF = "/docs/certificates/NI_BABA_001_US_Certificate.pdf";
+const BABA_COVERED_FOUNDATIONS = new Set(["BOLLARD", "SMALL", "MEDIUM"]);
+const WARRANTY_PDF = "/docs/warranty/NI_WAR_001_US_Product_Warranty.pdf";
+const TECHNICAL_SPEC_PDF = "/docs/technical-specs/Nordinfra_Technical_Spec_US.pdf";
+
+// ---------------------------------------------------------------------------
 // DISTRIBUTION PARTNERS — generic partner/location directory shown on the
 // report step so a customer can be pointed to a distributor for order
 // placement (Nordinfra sells only through partners/distributors, not
@@ -2250,15 +2268,97 @@ export default function NordBaseCalculator() {
                 )}
               </div>
 
-              {nevi && (
+              {/* DOCUMENT LIBRARY — manual, warranty, BABA cert (conditional
+                  on the NEVI checkbox above), and technical spec. Real PDFs,
+                  see FOUNDATION_MANUALS / BABA_CERTIFICATE_PDF / etc. above. */}
+              <div
+                className="border rounded-md p-4 mb-4 print:break-inside-avoid"
+                style={{ borderColor: "#D9D9D6" }}
+              >
                 <div
-                  className="flex items-center gap-2 mb-4 text-sm p-3 rounded-md"
-                  style={{ background: brand.bgSoft, color: brand.dark }}
+                  className="text-xs font-bold tracking-wide mb-2 flex items-center gap-2"
+                  style={{ color: brand.gold }}
                 >
-                  <ShieldCheck size={16} color={brand.gold} /> Buy America /
-                  BABA Certificate of Compliance included in the package.
+                  <FileText size={14} /> DOCUMENTS FOR THIS FOUNDATION
                 </div>
-              )}
+                <div className="flex flex-col gap-2">
+                  {FOUNDATION_MANUALS[foundation.key] ? (
+                    <a
+                      href={FOUNDATION_MANUALS[foundation.key]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
+                      style={{ borderColor: "#F0F0EE" }}
+                    >
+                      <span style={{ color: brand.dark }}>
+                        Installation manual — {foundation.name}
+                      </span>
+                      <Download size={14} color={brand.steel} />
+                    </a>
+                  ) : (
+                    <div
+                      className="text-xs rounded-md border px-3 py-2"
+                      style={{ borderColor: "#F0F0EE", color: brand.steel }}
+                    >
+                      Installation manual for {foundation.name} — coming
+                      soon. Contact Nordinfra for interim guidance.
+                    </div>
+                  )}
+                  <a
+                    href={WARRANTY_PDF}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
+                    <span style={{ color: brand.dark }}>
+                      US Product &amp; Function Warranty
+                    </span>
+                    <Download size={14} color={brand.steel} />
+                  </a>
+                  <a
+                    href={TECHNICAL_SPEC_PDF}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
+                    <span style={{ color: brand.dark }}>
+                      Technical Specifications &amp; Durability (ZAM
+                      coating)
+                    </span>
+                    <Download size={14} color={brand.steel} />
+                  </a>
+                  {nevi &&
+                    (BABA_COVERED_FOUNDATIONS.has(foundation.key) ? (
+                      <a
+                        href={BABA_CERTIFICATE_PDF}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
+                        style={{ borderColor: brand.gold, background: "#FBF6E8" }}
+                      >
+                        <span
+                          className="flex items-center gap-2"
+                          style={{ color: brand.dark }}
+                        >
+                          <ShieldCheck size={14} color={brand.gold} /> Buy
+                          America / BABA Certificate of Compliance
+                        </span>
+                        <Download size={14} color={brand.steel} />
+                      </a>
+                    ) : (
+                      <div
+                        className="text-xs rounded-md border px-3 py-2"
+                        style={{ borderColor: "#F0F0EE", color: brand.steel }}
+                      >
+                        BABA certificate for {foundation.name} not yet
+                        issued — contact Nordinfra before submitting on a
+                        federally funded project.
+                      </div>
+                    ))}
+                </div>
+              </div>
 
               {/* DISTRIBUTION PARTNER LOCATOR — Nordinfra sells only through
                   partners/distributors, so orders are placed with a partner,

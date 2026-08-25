@@ -97,6 +97,9 @@ export default function App() {
             <a href="#markets" className="hover:text-white">
               Markets
             </a>
+            <a href="/resources.html" className="hover:text-white">
+              Resources
+            </a>
             <a href="#contact" className="hover:text-white">
               Contact
             </a>
