@@ -123,6 +123,36 @@ async function geocodeAddress(address) {
   return { lon, lat, placeName: feature.place_name };
 }
 
+// A transient network hiccup shouldn't need the user to retype and resubmit
+// — retry once, but don't retry a genuine "no results for this address".
+async function geocodeAddressWithRetry(address) {
+  try {
+    return await geocodeAddress(address);
+  } catch (err) {
+    if (err.message === "not_found") throw err;
+    await new Promise((r) => setTimeout(r, 400));
+    return geocodeAddress(address);
+  }
+}
+
+// Live suggestions as the user types — autocomplete=true enables Mapbox's
+// fuzzy/partial matching, so a small typo or an incomplete address still
+// surfaces the right candidate instead of requiring an exact string.
+async function geocodeSuggest(query) {
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+    query
+  )}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=5&types=address,poi,place`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.features || []).map((f) => ({
+    id: f.id,
+    placeName: f.place_name,
+    lon: f.center[0],
+    lat: f.center[1],
+  }));
+}
+
 function staticImageUrl(lon, lat, zoom) {
   return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon},${lat},${zoom},0/${IMAGE_W}x${IMAGE_H}@2x?access_token=${MAPBOX_TOKEN}`;
 }
@@ -159,6 +189,10 @@ export default function SitePlannerApp() {
   const [addressInput, setAddressInput] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | ready | error
   const [errorMsg, setErrorMsg] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState(-1);
+  const suggestDebounceRef = useRef(null);
   const [location, setLocation] = useState(null); // { lon, lat, placeName } — lon/lat is the CURRENT map center (pan moves it)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [imgTranslate, setImgTranslate] = useState({ dxPx: 0, dyPx: 0 }); // live pan feedback before commit
@@ -233,6 +267,12 @@ export default function SitePlannerApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placed, history, future]);
 
+  useEffect(() => {
+    return () => {
+      if (suggestDebounceRef.current) clearTimeout(suggestDebounceRef.current);
+    };
+  }, []);
+
   function offsetToPct(offsetM, imagePx) {
     return 50 + (offsetM / mpp / imagePx) * 100;
   }
@@ -268,29 +308,75 @@ export default function SitePlannerApp() {
     };
   }
 
+  // Shared by both the "Find address" submit and clicking a suggestion —
+  // resets the layout for a new location.
+  function applyLocation(loc) {
+    setLocation(loc);
+    setAddressInput(loc.placeName);
+    setZoom(DEFAULT_ZOOM);
+    setPlaced([]);
+    setSelectedId(null);
+    setReferenceLine(null);
+    setAddingLine(null);
+    setHistory([]);
+    setFuture([]);
+    setSuggestions([]);
+    setSuggestOpen(false);
+    setStatus("ready");
+  }
+
   async function handleSearch(e) {
     e.preventDefault();
     if (!addressInput.trim() || !MAPBOX_TOKEN) return;
+    setSuggestOpen(false);
     setStatus("loading");
     setErrorMsg("");
     try {
-      const loc = await geocodeAddress(addressInput.trim());
-      setLocation(loc);
-      setZoom(DEFAULT_ZOOM);
-      setPlaced([]);
-      setSelectedId(null);
-      setReferenceLine(null);
-      setAddingLine(null);
-      setHistory([]);
-      setFuture([]);
-      setStatus("ready");
+      const loc = await geocodeAddressWithRetry(addressInput.trim());
+      applyLocation(loc);
     } catch (err) {
       setStatus("error");
       setErrorMsg(
         err.message === "not_found"
-          ? "Couldn't find that address — try adding city and state."
+          ? "Couldn't find that address — try adding city and state, or pick a suggestion as you type."
           : "Something went wrong looking up that address. Try again."
       );
+    }
+  }
+
+  function onAddressChange(value) {
+    setAddressInput(value);
+    setHighlightIndex(-1);
+    if (suggestDebounceRef.current) clearTimeout(suggestDebounceRef.current);
+    if (!value.trim()) {
+      setSuggestions([]);
+      setSuggestOpen(false);
+      return;
+    }
+    suggestDebounceRef.current = setTimeout(async () => {
+      const results = await geocodeSuggest(value);
+      setSuggestions(results);
+      setSuggestOpen(results.length > 0);
+    }, 300);
+  }
+
+  function selectSuggestion(s) {
+    applyLocation({ lon: s.lon, lat: s.lat, placeName: s.placeName });
+  }
+
+  function onAddressKeyDown(e) {
+    if (!suggestOpen || suggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightIndex((i) => Math.min(i + 1, suggestions.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && highlightIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(suggestions[highlightIndex]);
+    } else if (e.key === "Escape") {
+      setSuggestOpen(false);
     }
   }
 
@@ -599,13 +685,38 @@ export default function SitePlannerApp() {
               onSubmit={handleSearch}
               className="no-print flex flex-col gap-3 sm:flex-row"
             >
-              <input
-                type="text"
-                value={addressInput}
-                onChange={(e) => setAddressInput(e.target.value)}
-                placeholder="e.g. 400 S Congress Ave, Austin, TX"
-                className="flex-1 rounded-md border border-black/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-gold"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={addressInput}
+                  onChange={(e) => onAddressChange(e.target.value)}
+                  onKeyDown={onAddressKeyDown}
+                  onFocus={() => suggestions.length > 0 && setSuggestOpen(true)}
+                  onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+                  placeholder="e.g. 400 S Congress Ave, Austin, TX"
+                  autoComplete="off"
+                  className="w-full rounded-md border border-black/15 bg-white px-4 py-2.5 text-sm outline-none focus:border-gold"
+                />
+                {suggestOpen && suggestions.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border border-black/15 bg-white shadow-lg">
+                    {suggestions.map((s, i) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectSuggestion(s);
+                        }}
+                        className={`block w-full px-4 py-2 text-left text-sm ${
+                          i === highlightIndex ? "bg-bgSoft" : "hover:bg-bgSoft"
+                        }`}
+                      >
+                        {s.placeName}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button
                 type="submit"
                 disabled={status === "loading"}
