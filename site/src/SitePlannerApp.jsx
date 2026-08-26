@@ -1,15 +1,18 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
+  Copy,
   Loader2,
   MapPin,
   Minus,
   Plus,
   Printer,
-  RotateCw,
+  Redo2,
+  Ruler,
   Search,
   Square,
   Trash2,
+  Undo2,
 } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
@@ -17,28 +20,30 @@ import { PRODUCTS, PRODUCT_ORDER } from "./foundationData.js";
 
 // ---------------------------------------------------------------------------
 // SITE PLANNER — "design your site": address in, satellite photo out, drag
-// correctly-scaled foundation footprints (and now custom-dimensioned
-// rectangles, e.g. parking stalls or drive aisles) onto it. See
-// 2D_Site_Layout_Tool_Scope.md (project docs) for the original scope
-// decision record, plus the 2026-08-26 follow-up: added zoom in/out
-// (still a static image per request — no interactive map SDK — just
-// re-fetched at a different zoom level) and a custom-rectangle tool
-// (typed width/depth in feet) instead of a freehand line tool, since
-// Simon wants the customer to lay out their OWN parking-lot elements
-// manually — no automatic line/stall detection from the photo.
+// correctly-scaled foundation footprints (or custom-dimensioned rectangles)
+// onto it. See 2D_Site_Layout_Tool_Scope.md (project docs) for the v1 scope
+// decision record, the 2026-08-26 follow-up (zoom + custom rectangles), and
+// this 2026-08-26 v2 follow-up per Simon's feedback list:
+//   - click-and-drag panning of the map
+//   - duplicate a placed item instead of retyping dimensions
+//   - type an exact rotation instead of relative 15° clicks
+//   - a reference line + "place N along it" array tool for rows of stalls
+//   - center-to-center dimension labels between placed items
+//   - undo/redo, since manual layouts now take real work to build
+//   - a scale bar, since printed sketches had no way to judge scale
 //
-// Still true from the original scope:
-//   - static image, not an interactive/pannable map
-//   - click-to-place + drag-to-position, rotate in fixed 15° steps
-//   - no accounts, no saved projects — browser print is the only export
-//   - no calculator prefill — selecting a placed foundation just links out
+// STILL a static image, not a full interactive map SDK (Mapbox GL JS) — a
+// deliberate scope call: panning is implemented as "drag to shift the
+// image's center + refetch", which gets the same UX win without the bundle
+// size, cost-model change, and testing burden of a full map SDK. If site
+// layouts keep growing in complexity, that's the natural next step.
 //
-// POSITION MODEL: placed items store their offset from the image's center
-// in real-world METERS (xOffsetM/yOffsetM), not screen percentage. That's
-// what makes zoom in/out work correctly — a foundation placed at a given
-// spot on the ground stays at that spot when you zoom, instead of drifting
-// as the image's meters-per-pixel ratio changes. Percentage position is
-// only computed at render time, from the current zoom.
+// POSITION MODEL (v2): every placed item and the reference line stores an
+// ABSOLUTE {lon, lat}, not an offset from the search center. That's what
+// makes panning possible at all — with v1's "meters offset from center"
+// model, panning the center would have silently moved every placed item.
+// Screen position is computed at render time from the current map center +
+// zoom, exactly like v1 did for zoom alone.
 //
 // REQUIRES a Mapbox access token (Static Images API + Geocoding API v5) —
 // see site/.env.example and SetupNotice below.
@@ -55,6 +60,8 @@ const DEFAULT_ZOOM = 20; // close enough to see individual parking stalls
 const MIN_ZOOM = 15; // ~a full city block
 const MAX_ZOOM = 21; // as close as satellite imagery reliably supports
 
+const METERS_PER_DEG_LAT = 111320;
+
 const ICON_STYLES = {
   bollard: { fill: "#6B7280", label: "B" }, // steel
   small: { fill: "#E4CE7A", label: "S" }, // goldSoft
@@ -62,8 +69,14 @@ const ICON_STYLES = {
   large: { fill: "#1B1E23", label: "L" }, // dark
 };
 
+const MAX_HISTORY = 50;
+
 function metersPerPixel(lat, zoom) {
   return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+}
+
+function metersPerDegLon(lat) {
+  return METERS_PER_DEG_LAT * Math.cos((lat * Math.PI) / 180);
 }
 
 function inchesToMeters(inches) {
@@ -72,6 +85,29 @@ function inchesToMeters(inches) {
 
 function feetToMeters(feet) {
   return feet * 0.3048;
+}
+
+function metersToFeet(meters) {
+  return meters / 0.3048;
+}
+
+// lon/lat -> meters offset from a center point (x: +east, y: +south, so it
+// matches screen-down = positive, same convention v1 used).
+function lonLatToOffsetM(lon, lat, centerLon, centerLat) {
+  const mLon = metersPerDegLon(centerLat);
+  return {
+    xM: (lon - centerLon) * mLon,
+    yM: (centerLat - lat) * METERS_PER_DEG_LAT,
+  };
+}
+
+// meters offset from a center point -> lon/lat.
+function offsetMToLonLat(xM, yM, centerLon, centerLat) {
+  const mLon = metersPerDegLon(centerLat);
+  return {
+    lon: centerLon + xM / mLon,
+    lat: centerLat - yM / METERS_PER_DEG_LAT,
+  };
 }
 
 async function geocodeAddress(address) {
@@ -90,6 +126,9 @@ async function geocodeAddress(address) {
 function staticImageUrl(lon, lat, zoom) {
   return `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${lon},${lat},${zoom},0/${IMAGE_W}x${IMAGE_H}@2x?access_token=${MAPBOX_TOKEN}`;
 }
+
+// "Nice" scale-bar lengths in feet to choose between.
+const SCALE_STEPS_FT = [5, 10, 20, 25, 50, 100, 150, 200, 300, 500, 1000, 2000];
 
 let nextId = 1;
 
@@ -120,33 +159,97 @@ export default function SitePlannerApp() {
   const [addressInput, setAddressInput] = useState("");
   const [status, setStatus] = useState("idle"); // idle | loading | ready | error
   const [errorMsg, setErrorMsg] = useState("");
-  const [location, setLocation] = useState(null); // { lon, lat, placeName }
+  const [location, setLocation] = useState(null); // { lon, lat, placeName } — lon/lat is the CURRENT map center (pan moves it)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  // placed items: foundations -> { id, kind:"foundation", type, xOffsetM, yOffsetM, rotation }
-  //               custom rects -> { id, kind:"rect", wFt, dFt, label, xOffsetM, yOffsetM, rotation }
+  const [imgTranslate, setImgTranslate] = useState({ dxPx: 0, dyPx: 0 }); // live pan feedback before commit
+
+  // placed items: foundations -> { id, kind:"foundation", type, lon, lat, rotation }
+  //               custom rects -> { id, kind:"rect", wFt, dFt, label, lon, lat, rotation }
   const [placed, setPlaced] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [rectW, setRectW] = useState("");
   const [rectD, setRectD] = useState("");
   const [rectLabel, setRectLabel] = useState("");
+
+  // reference line + array tool
+  const [addingLine, setAddingLine] = useState(null); // null | "a" | "b"
+  const [referenceLine, setReferenceLine] = useState(null); // { a:{lon,lat}, b:{lon,lat} }
+  const [arrayTemplateKind, setArrayTemplateKind] = useState("medium"); // foundation key or "rect"
+  const [arrayRectW, setArrayRectW] = useState("");
+  const [arrayRectD, setArrayRectD] = useState("");
+  const [arrayLabel, setArrayLabel] = useState("");
+  const [arraySpacing, setArraySpacing] = useState("");
+  const [arrayCount, setArrayCount] = useState("");
+  const [arrayPerpendicular, setArrayPerpendicular] = useState(false);
+
+  const [showMeasurements, setShowMeasurements] = useState(false);
+
+  // undo/redo
+  const [history, setHistory] = useState([]);
+  const [future, setFuture] = useState([]);
+
   const containerRef = useRef(null);
   const draggingRef = useRef(null); // { id, pointerId }
+  const panRef = useRef(null); // { pointerId, startClientX, startClientY, startLon, startLat, moved }
 
   const mpp = location ? metersPerPixel(location.lat, zoom) : null;
+
+  function pushHistory(snapshot) {
+    setHistory((h) => [...h.slice(-(MAX_HISTORY - 1)), snapshot]);
+    setFuture([]);
+  }
+
+  function undo() {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setFuture((f) => [placed, ...f].slice(0, MAX_HISTORY));
+    setHistory((h) => h.slice(0, -1));
+    setPlaced(prev);
+    setSelectedId((id) => (prev.some((p) => p.id === id) ? id : null));
+  }
+
+  function redo() {
+    if (future.length === 0) return;
+    const next = future[0];
+    setHistory((h) => [...h, placed].slice(-MAX_HISTORY));
+    setFuture((f) => f.slice(1));
+    setPlaced(next);
+    setSelectedId((id) => (next.some((p) => p.id === id) ? id : null));
+  }
+
+  // Global undo/redo keyboard shortcuts (skip while typing in a field).
+  useEffect(() => {
+    function onKeyDown(e) {
+      const tag = e.target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod || e.key.toLowerCase() !== "z") return;
+      e.preventDefault();
+      if (e.shiftKey) redo();
+      else undo();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [placed, history, future]);
 
   function offsetToPct(offsetM, imagePx) {
     return 50 + (offsetM / mpp / imagePx) * 100;
   }
 
-  function pointerToOffset(clientX, clientY) {
+  function lonLatToPct(lon, lat) {
+    const { xM, yM } = lonLatToOffsetM(lon, lat, location.lon, location.lat);
+    return { leftPct: offsetToPct(xM, IMAGE_W), topPct: offsetToPct(yM, IMAGE_H) };
+  }
+
+  function pointerToLonLat(clientX, clientY) {
     const box = containerRef.current?.getBoundingClientRect();
     if (!box) return null;
     const xPct = ((clientX - box.left) / box.width) * 100 - 50;
     const yPct = ((clientY - box.top) / box.height) * 100 - 50;
-    return {
-      xOffsetM: (xPct / 100) * IMAGE_W * mpp,
-      yOffsetM: (yPct / 100) * IMAGE_H * mpp,
-    };
+    const xM = (xPct / 100) * IMAGE_W * mpp;
+    const yM = (yPct / 100) * IMAGE_H * mpp;
+    return offsetMToLonLat(xM, yM, location.lon, location.lat);
   }
 
   function footprintPct(item) {
@@ -176,6 +279,10 @@ export default function SitePlannerApp() {
       setZoom(DEFAULT_ZOOM);
       setPlaced([]);
       setSelectedId(null);
+      setReferenceLine(null);
+      setAddingLine(null);
+      setHistory([]);
+      setFuture([]);
       setStatus("ready");
     } catch (err) {
       setStatus("error");
@@ -192,10 +299,11 @@ export default function SitePlannerApp() {
   }
 
   function addFoundation(type) {
+    pushHistory(placed);
     const id = nextId++;
     setPlaced((prev) => [
       ...prev,
-      { id, kind: "foundation", type, xOffsetM: 0, yOffsetM: 0, rotation: 0 },
+      { id, kind: "foundation", type, lon: location.lon, lat: location.lat, rotation: 0 },
     ]);
     setSelectedId(id);
   }
@@ -205,6 +313,7 @@ export default function SitePlannerApp() {
     const w = parseFloat(rectW);
     const d = parseFloat(rectD);
     if (!w || !d || w <= 0 || d <= 0) return;
+    pushHistory(placed);
     const id = nextId++;
     setPlaced((prev) => [
       ...prev,
@@ -214,8 +323,8 @@ export default function SitePlannerApp() {
         wFt: w,
         dFt: d,
         label: rectLabel.trim() || `${w}×${d} ft`,
-        xOffsetM: 0,
-        yOffsetM: 0,
+        lon: location.lon,
+        lat: location.lat,
         rotation: 0,
       },
     ]);
@@ -225,47 +334,208 @@ export default function SitePlannerApp() {
     setRectLabel("");
   }
 
-  function rotateSelected() {
+  function duplicateSelected() {
+    const item = placed.find((p) => p.id === selectedId);
+    if (!item) return;
+    pushHistory(placed);
+    // Offset the clone ~2m east/south so it's visibly distinct, not stacked exactly on top.
+    const { lon, lat } = offsetMToLonLat(2, 2, item.lon, item.lat);
+    const id = nextId++;
+    const clone = { ...item, id, lon, lat };
+    setPlaced((prev) => [...prev, clone]);
+    setSelectedId(id);
+  }
+
+  function setSelectedRotation(deg) {
     if (selectedId == null) return;
+    const norm = ((Math.round(deg) % 360) + 360) % 360;
     setPlaced((prev) =>
-      prev.map((p) =>
-        p.id === selectedId ? { ...p, rotation: (p.rotation + 15) % 360 } : p
-      )
+      prev.map((p) => (p.id === selectedId ? { ...p, rotation: norm } : p))
     );
+  }
+
+  function nudgeRotation(delta) {
+    const item = placed.find((p) => p.id === selectedId);
+    if (!item) return;
+    pushHistory(placed);
+    setSelectedRotation(item.rotation + delta);
   }
 
   function deleteSelected() {
     if (selectedId == null) return;
+    pushHistory(placed);
     setPlaced((prev) => prev.filter((p) => p.id !== selectedId));
     setSelectedId(null);
   }
 
-  const onPointerDownIcon = useCallback((e, id) => {
-    e.stopPropagation();
-    setSelectedId(id);
-    draggingRef.current = { id, pointerId: e.pointerId };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  }, []);
+  // --- item drag -------------------------------------------------------
+  const onPointerDownIcon = useCallback(
+    (e, id) => {
+      e.stopPropagation();
+      setSelectedId(id);
+      pushHistory(placed);
+      draggingRef.current = { id, pointerId: e.pointerId };
+      e.currentTarget.setPointerCapture(e.pointerId);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [placed]
+  );
 
   const onPointerMove = useCallback(
     (e) => {
       const drag = draggingRef.current;
-      if (!drag || drag.pointerId !== e.pointerId) return;
-      const offset = pointerToOffset(e.clientX, e.clientY);
-      if (!offset) return;
-      setPlaced((prev) =>
-        prev.map((p) => (p.id === drag.id ? { ...p, ...offset } : p))
-      );
+      if (drag && drag.pointerId === e.pointerId) {
+        const ll = pointerToLonLat(e.clientX, e.clientY);
+        if (!ll) return;
+        setPlaced((prev) =>
+          prev.map((p) => (p.id === drag.id ? { ...p, ...ll } : p))
+        );
+        return;
+      }
+      const pan = panRef.current;
+      if (pan && pan.pointerId === e.pointerId) {
+        const dxPx = e.clientX - pan.startClientX;
+        const dyPx = e.clientY - pan.startClientY;
+        if (Math.abs(dxPx) > 3 || Math.abs(dyPx) > 3) pan.moved = true;
+        setImgTranslate({ dxPx, dyPx });
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mpp, location]
+  );
+
+  const onPointerUp = useCallback(
+    (e) => {
+      if (draggingRef.current?.pointerId === e.pointerId) {
+        draggingRef.current = null;
+        return;
+      }
+      const pan = panRef.current;
+      if (pan && pan.pointerId === e.pointerId) {
+        if (pan.moved) {
+          const dxPx = e.clientX - pan.startClientX;
+          const dyPx = e.clientY - pan.startClientY;
+          // Content follows the drag, so the new center is the OLD center
+          // minus that pixel shift converted to meters (see the sign
+          // convention in offsetMToLonLat: x:+east, y:+south).
+          const { lon, lat } = offsetMToLonLat(
+            -dxPx * mpp,
+            -dyPx * mpp,
+            pan.startLon,
+            pan.startLat
+          );
+          setLocation((prev) => ({ ...prev, lon, lat }));
+        } else {
+          // plain click on empty background — deselect
+          setSelectedId(null);
+        }
+        setImgTranslate({ dxPx: 0, dyPx: 0 });
+        panRef.current = null;
+      }
+    },
     [mpp]
   );
 
-  const onPointerUp = useCallback((e) => {
-    if (draggingRef.current?.pointerId === e.pointerId) {
-      draggingRef.current = null;
+  // --- background pan / reference-line placement ------------------------
+  function onContainerPointerDown(e) {
+    if (addingLine) return; // clicks handled by onContainerClick while placing a line
+    panRef.current = {
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startLon: location.lon,
+      startLat: location.lat,
+      moved: false,
+    };
+    containerRef.current?.setPointerCapture(e.pointerId);
+  }
+
+  function onContainerClick(e) {
+    if (!addingLine) return;
+    const ll = pointerToLonLat(e.clientX, e.clientY);
+    if (!ll) return;
+    if (addingLine === "a") {
+      setReferenceLine({ a: ll, b: ll });
+      setAddingLine("b");
+    } else if (addingLine === "b") {
+      setReferenceLine((prev) => ({ ...prev, b: ll }));
+      setAddingLine(null);
     }
-  }, []);
+  }
+
+  function startAddingLine() {
+    setAddingLine("a");
+    setReferenceLine(null);
+  }
+
+  function clearReferenceLine() {
+    setReferenceLine(null);
+    setAddingLine(null);
+  }
+
+  function lineHeadingAndLength() {
+    if (!referenceLine) return null;
+    const { xM, yM } = lonLatToOffsetM(
+      referenceLine.b.lon,
+      referenceLine.b.lat,
+      referenceLine.a.lon,
+      referenceLine.a.lat
+    );
+    const lengthM = Math.hypot(xM, yM);
+    const headingDeg = (Math.atan2(yM, xM) * 180) / Math.PI;
+    return { xM, yM, lengthM, headingDeg };
+  }
+
+  function placeArray(e) {
+    e.preventDefault();
+    if (!referenceLine) return;
+    const spacingFt = parseFloat(arraySpacing);
+    const count = parseInt(arrayCount, 10);
+    if (!spacingFt || spacingFt <= 0 || !count || count <= 0) return;
+    const geo = lineHeadingAndLength();
+    if (!geo || geo.lengthM === 0) return;
+    const spacingM = feetToMeters(spacingFt);
+    const ux = geo.xM / geo.lengthM;
+    const uy = geo.yM / geo.lengthM;
+    const rotation = arrayPerpendicular ? geo.headingDeg + 90 : geo.headingDeg;
+
+    const template =
+      arrayTemplateKind === "rect"
+        ? { kind: "rect", wFt: parseFloat(arrayRectW) || 1, dFt: parseFloat(arrayRectD) || 1 }
+        : { kind: "foundation", type: arrayTemplateKind };
+
+    pushHistory(placed);
+    const newItems = [];
+    for (let i = 0; i < count; i++) {
+      const posXm = ux * spacingM * i;
+      const posYm = uy * spacingM * i;
+      const { lon, lat } = offsetMToLonLat(posXm, posYm, referenceLine.a.lon, referenceLine.a.lat);
+      const id = nextId++;
+      if (template.kind === "rect") {
+        newItems.push({
+          id,
+          kind: "rect",
+          wFt: template.wFt,
+          dFt: template.dFt,
+          label: `${arrayLabel.trim() || "Stall"} ${i + 1}`,
+          lon,
+          lat,
+          rotation: ((rotation % 360) + 360) % 360,
+        });
+      } else {
+        newItems.push({
+          id,
+          kind: "foundation",
+          type: template.type,
+          lon,
+          lat,
+          rotation: ((rotation % 360) + 360) % 360,
+        });
+      }
+    }
+    setPlaced((prev) => [...prev, ...newItems]);
+    setSelectedId(null);
+  }
 
   const counts = PRODUCT_ORDER.reduce((acc, key) => {
     acc[key] = placed.filter((p) => p.kind === "foundation" && p.type === key).length;
@@ -274,6 +544,24 @@ export default function SitePlannerApp() {
   const customShapes = placed.filter((p) => p.kind === "rect");
   const totalPlaced = placed.length;
   const selected = placed.find((p) => p.id === selectedId) || null;
+  const lineInfo = referenceLine ? lineHeadingAndLength() : null;
+  const fitsCount =
+    lineInfo && arraySpacing && parseFloat(arraySpacing) > 0
+      ? Math.max(1, Math.floor(metersToFeet(lineInfo.lengthM) / parseFloat(arraySpacing)) + 1)
+      : null;
+
+  // Scale bar: pick the largest "nice" foot value whose pixel width is
+  // still comfortably inside the image.
+  let scaleBar = null;
+  if (mpp) {
+    let chosenFt = SCALE_STEPS_FT[0];
+    for (const ft of SCALE_STEPS_FT) {
+      const px = feetToMeters(ft) / mpp;
+      if (px > IMAGE_W * 0.4) break;
+      chosenFt = ft;
+    }
+    scaleBar = { ft: chosenFt, px: feetToMeters(chosenFt) / mpp };
+  }
 
   return (
     <div className="min-h-screen bg-bgSoft text-dark">
@@ -291,11 +579,11 @@ export default function SitePlannerApp() {
           </h1>
           <p className="mt-2 max-w-2xl text-steel">
             Enter an address to pull up a satellite photo of the property,
-            then drop correctly-scaled NordBase foundations onto it — or add
-            your own custom-sized rectangle for a parking stall, drive aisle,
-            or anything else. This is a rough visual sketch for planning
-            purposes — not a substitute for a surveyed site plan or the
-            calculator's stability calculation.
+            drag to pan, drop correctly-scaled NordBase foundations, or add
+            your own custom-sized rectangles — one at a time, or a whole row
+            at once along a reference line. This is a rough visual sketch for
+            planning purposes — not a substitute for a surveyed site plan or
+            the calculator's stability calculation.
           </p>
         </div>
       </section>
@@ -338,25 +626,36 @@ export default function SitePlannerApp() {
             )}
 
             {location && (
-              <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_280px]">
+              <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_300px]">
                 {/* CANVAS */}
                 <div>
                   <div
                     ref={containerRef}
+                    onPointerDown={onContainerPointerDown}
                     onPointerMove={onPointerMove}
                     onPointerUp={onPointerUp}
+                    onClick={onContainerClick}
                     className="relative w-full select-none overflow-hidden rounded-xl border border-black/10 bg-black/5"
-                    style={{ aspectRatio: `${IMAGE_W} / ${IMAGE_H}` }}
+                    style={{
+                      aspectRatio: `${IMAGE_W} / ${IMAGE_H}`,
+                      cursor: addingLine ? "crosshair" : "grab",
+                    }}
                   >
                     <img
                       src={staticImageUrl(location.lon, location.lat, zoom)}
                       alt={`Satellite view of ${location.placeName}`}
                       className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                      style={{
+                        transform: `translate(${imgTranslate.dxPx}px, ${imgTranslate.dyPx}px)`,
+                      }}
                       draggable={false}
                     />
 
                     {/* ZOOM CONTROLS */}
-                    <div className="no-print absolute right-2 top-2 flex flex-col overflow-hidden rounded-md border border-black/10 bg-white shadow">
+                    <div
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="no-print absolute right-2 top-2 flex flex-col overflow-hidden rounded-md border border-black/10 bg-white shadow"
+                    >
                       <button
                         type="button"
                         onClick={() => zoomBy(1)}
@@ -378,11 +677,112 @@ export default function SitePlannerApp() {
                       </button>
                     </div>
 
+                    {/* UNDO/REDO */}
+                    <div
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="no-print absolute left-2 top-2 flex overflow-hidden rounded-md border border-black/10 bg-white shadow"
+                    >
+                      <button
+                        type="button"
+                        onClick={undo}
+                        disabled={history.length === 0}
+                        className="p-2 hover:bg-bgSoft disabled:opacity-30"
+                        title="Undo"
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </button>
+                      <div className="border-l border-black/10" />
+                      <button
+                        type="button"
+                        onClick={redo}
+                        disabled={future.length === 0}
+                        className="p-2 hover:bg-bgSoft disabled:opacity-30"
+                        title="Redo"
+                      >
+                        <Redo2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* REFERENCE LINE + MEASUREMENT SVG OVERLAY */}
+                    <svg className="absolute inset-0 h-full w-full" style={{ pointerEvents: "none" }}>
+                      {referenceLine &&
+                        (() => {
+                          const a = lonLatToPct(referenceLine.a.lon, referenceLine.a.lat);
+                          const b = lonLatToPct(referenceLine.b.lon, referenceLine.b.lat);
+                          const midX = (a.leftPct + b.leftPct) / 2;
+                          const midY = (a.topPct + b.topPct) / 2;
+                          const lenFt = lineInfo ? metersToFeet(lineInfo.lengthM).toFixed(1) : "";
+                          return (
+                            <g className="no-print">
+                              <line
+                                x1={`${a.leftPct}%`}
+                                y1={`${a.topPct}%`}
+                                x2={`${b.leftPct}%`}
+                                y2={`${b.topPct}%`}
+                                stroke="#C9A227"
+                                strokeWidth="2"
+                                strokeDasharray="6 4"
+                              />
+                              <circle cx={`${a.leftPct}%`} cy={`${a.topPct}%`} r="4" fill="#C9A227" />
+                              <circle cx={`${b.leftPct}%`} cy={`${b.topPct}%`} r="4" fill="#C9A227" />
+                              <text
+                                x={`${midX}%`}
+                                y={`${midY}%`}
+                                dy="-6"
+                                fontSize="11"
+                                fontWeight="bold"
+                                fill="#1B1E23"
+                                textAnchor="middle"
+                                style={{ textShadow: "0 1px 1px rgba(255,255,255,0.9)" }}
+                              >
+                                {lenFt} ft
+                              </text>
+                            </g>
+                          );
+                        })()}
+
+                      {showMeasurements &&
+                        placed.slice(1).map((item, i) => {
+                          const prev = placed[i];
+                          const a = lonLatToPct(prev.lon, prev.lat);
+                          const b = lonLatToPct(item.lon, item.lat);
+                          const { xM, yM } = lonLatToOffsetM(item.lon, item.lat, prev.lon, prev.lat);
+                          const distFt = metersToFeet(Math.hypot(xM, yM)).toFixed(1);
+                          const midX = (a.leftPct + b.leftPct) / 2;
+                          const midY = (a.topPct + b.topPct) / 2;
+                          return (
+                            <g key={`m-${item.id}`}>
+                              <line
+                                x1={`${a.leftPct}%`}
+                                y1={`${a.topPct}%`}
+                                x2={`${b.leftPct}%`}
+                                y2={`${b.topPct}%`}
+                                stroke="#1B1E23"
+                                strokeWidth="1"
+                                strokeDasharray="3 3"
+                                opacity="0.7"
+                              />
+                              <text
+                                x={`${midX}%`}
+                                y={`${midY}%`}
+                                dy="-4"
+                                fontSize="10"
+                                fontWeight="bold"
+                                fill="#1B1E23"
+                                textAnchor="middle"
+                                style={{ textShadow: "0 1px 1px rgba(255,255,255,0.9)" }}
+                              >
+                                {distFt} ft cc
+                              </text>
+                            </g>
+                          );
+                        })}
+                    </svg>
+
                     {placed.map((p) => {
                       const { wPct, hPct } = footprintPct(p);
                       const isSelected = p.id === selectedId;
-                      const left = offsetToPct(p.xOffsetM, IMAGE_W);
-                      const top = offsetToPct(p.yOffsetM, IMAGE_H);
+                      const { leftPct: left, topPct: top } = lonLatToPct(p.lon, p.lat);
                       if (p.kind === "rect") {
                         return (
                           <div
@@ -432,11 +832,21 @@ export default function SitePlannerApp() {
                         </div>
                       );
                     })}
+
+                    {/* SCALE BAR — shown both on screen and in print */}
+                    {scaleBar && (
+                      <div className="absolute bottom-2 left-2 flex flex-col items-start gap-0.5 rounded bg-white/80 px-2 py-1 text-[10px] font-semibold text-dark">
+                        <div
+                          style={{ width: `${scaleBar.px}px`, borderBottom: "2px solid #1B1E23" }}
+                        />
+                        {scaleBar.ft} ft
+                      </div>
+                    )}
                   </div>
                   <p className="no-print mt-2 text-xs text-steel">
-                    {location.placeName} — drag a placed item to move it,
-                    click it to select, then rotate or delete from the panel.
-                    Use +/− to zoom in or out.
+                    {location.placeName} — drag the map to pan, drag a placed
+                    item to move it, click it to select. Click empty map to
+                    deselect. Use +/− to zoom.
                   </p>
 
                   {/* PRINT-ONLY summary, shown below the canvas on paper */}
@@ -532,6 +942,126 @@ export default function SitePlannerApp() {
                     </form>
                   </div>
 
+                  <div>
+                    <div className="text-xs font-bold uppercase tracking-wide text-steel">
+                      Reference line &amp; row
+                    </div>
+                    <p className="mt-1 text-xs text-steel">
+                      For a row of stalls: draw a line along a curb or drive
+                      aisle, then place several evenly-spaced copies along it
+                      in one go.
+                    </p>
+                    {!referenceLine ? (
+                      <button
+                        type="button"
+                        onClick={startAddingLine}
+                        className="mt-2 inline-flex items-center justify-center gap-1.5 rounded-md border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold hover:border-gold"
+                      >
+                        <Ruler className="h-3.5 w-3.5" />
+                        {addingLine ? "Click two points on the map…" : "Draw reference line"}
+                      </button>
+                    ) : (
+                      <div className="mt-2 flex flex-col gap-2">
+                        <div className="text-xs text-steel">
+                          Line length: {lineInfo ? metersToFeet(lineInfo.lengthM).toFixed(1) : "—"} ft
+                        </div>
+                        <form onSubmit={placeArray} className="flex flex-col gap-2">
+                          <select
+                            value={arrayTemplateKind}
+                            onChange={(e) => setArrayTemplateKind(e.target.value)}
+                            className="rounded-md border border-black/15 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-gold"
+                          >
+                            {PRODUCT_ORDER.map((key) => (
+                              <option key={key} value={key}>
+                                {PRODUCTS[key].name}
+                              </option>
+                            ))}
+                            <option value="rect">Custom rectangle</option>
+                          </select>
+                          {arrayTemplateKind === "rect" && (
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                value={arrayRectW}
+                                onChange={(e) => setArrayRectW(e.target.value)}
+                                placeholder="Width (ft)"
+                                className="w-1/2 rounded-md border border-black/15 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-gold"
+                              />
+                              <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                value={arrayRectD}
+                                onChange={(e) => setArrayRectD(e.target.value)}
+                                placeholder="Depth (ft)"
+                                className="w-1/2 rounded-md border border-black/15 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-gold"
+                              />
+                            </div>
+                          )}
+                          {arrayTemplateKind === "rect" && (
+                            <input
+                              type="text"
+                              value={arrayLabel}
+                              onChange={(e) => setArrayLabel(e.target.value)}
+                              placeholder="Label prefix (e.g. Stall)"
+                              className="rounded-md border border-black/15 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-gold"
+                            />
+                          )}
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min="0.1"
+                              step="0.1"
+                              value={arraySpacing}
+                              onChange={(e) => setArraySpacing(e.target.value)}
+                              placeholder="Spacing cc (ft)"
+                              className="w-1/2 rounded-md border border-black/15 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-gold"
+                            />
+                            <input
+                              type="number"
+                              min="1"
+                              step="1"
+                              value={arrayCount}
+                              onChange={(e) => setArrayCount(e.target.value)}
+                              placeholder="Count"
+                              className="w-1/2 rounded-md border border-black/15 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-gold"
+                            />
+                          </div>
+                          {fitsCount && (
+                            <div className="text-xs text-steel">
+                              Line fits ~{fitsCount} at this spacing.
+                            </div>
+                          )}
+                          <label className="flex items-center gap-1.5 text-xs text-steel">
+                            <input
+                              type="checkbox"
+                              checked={arrayPerpendicular}
+                              onChange={(e) => setArrayPerpendicular(e.target.checked)}
+                            />
+                            Rotate 90° from line (perpendicular stalls)
+                          </label>
+                          <div className="flex gap-2">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center justify-center gap-1.5 rounded-md bg-gold px-3 py-1.5 text-sm font-bold text-dark hover:bg-goldSoft"
+                            >
+                              Place along line
+                            </button>
+                            <button
+                              type="button"
+                              onClick={clearReferenceLine}
+                              className="inline-flex items-center justify-center rounded-md border border-black/15 bg-white px-3 py-1.5 text-sm font-semibold hover:border-red-300"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+                  </div>
+
                   {selected && (
                     <div className="rounded-md border border-gold/40 bg-gold/10 p-3">
                       <div className="text-xs font-bold uppercase tracking-wide text-dark">
@@ -540,12 +1070,38 @@ export default function SitePlannerApp() {
                           ? selected.label
                           : PRODUCTS[selected.type].name}
                       </div>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => nudgeRotation(-15)}
+                          className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold hover:border-gold"
+                          title="Rotate -15°"
+                        >
+                          -15°
+                        </button>
+                        <input
+                          type="number"
+                          value={Math.round(selected.rotation)}
+                          onChange={(e) => setSelectedRotation(parseFloat(e.target.value) || 0)}
+                          onFocus={() => pushHistory(placed)}
+                          className="w-16 rounded-md border border-black/15 bg-white px-2 py-1.5 text-center text-xs outline-none focus:border-gold"
+                        />
+                        <span className="text-xs text-steel">°</span>
+                        <button
+                          type="button"
+                          onClick={() => nudgeRotation(15)}
+                          className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-xs font-semibold hover:border-gold"
+                          title="Rotate +15°"
+                        >
+                          +15°
+                        </button>
+                      </div>
                       <div className="mt-2 flex gap-2">
                         <button
-                          onClick={rotateSelected}
+                          onClick={duplicateSelected}
                           className="inline-flex items-center gap-1.5 rounded-md border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold hover:border-gold"
                         >
-                          <RotateCw className="h-3.5 w-3.5" /> Rotate 15°
+                          <Copy className="h-3.5 w-3.5" /> Duplicate
                         </button>
                         <button
                           onClick={deleteSelected}
@@ -567,6 +1123,15 @@ export default function SitePlannerApp() {
                       )}
                     </div>
                   )}
+
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-steel">
+                    <input
+                      type="checkbox"
+                      checked={showMeasurements}
+                      onChange={(e) => setShowMeasurements(e.target.checked)}
+                    />
+                    Show CC measurements between items
+                  </label>
 
                   <div>
                     <div className="text-xs font-bold uppercase tracking-wide text-steel">
