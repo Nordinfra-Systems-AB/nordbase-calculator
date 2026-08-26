@@ -9,11 +9,7 @@ import {
 } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
-import {
-  PRODUCTS,
-  PRODUCT_ORDER,
-  CHARGER_MANUFACTURERS,
-} from "./foundationData.js";
+import { PRODUCTS, PRODUCT_ORDER } from "./foundationData.js";
 
 // ---------------------------------------------------------------------------
 // PRODUCT DETAIL — one shared template, not four separate static pages
@@ -238,11 +234,11 @@ export default function ProductApp() {
                       <DimRow label="Material" value={product.adapterPlate.material} />
                     </>
                   ) : null}
-                  {product.adapterPlate.ccOptions.length > 0 ? (
-                    <div className="flex items-center justify-between border-b border-black/5 py-2.5 text-sm last:border-0">
-                      <span className="text-steel">Standard CC options</span>
-                      <span className="flex gap-1.5">
-                        {product.adapterPlate.ccOptions.map((cc) => (
+                  {product.adapterPlate.ccOptionsX?.length > 0 ? (
+                    <div className="flex items-center justify-between border-b border-black/5 py-2.5 text-sm">
+                      <span className="text-steel">Width (X) CC options</span>
+                      <span className="flex flex-wrap justify-end gap-1.5">
+                        {product.adapterPlate.ccOptionsX.map((cc) => (
                           <span
                             key={cc}
                             className="rounded-md bg-gold/15 px-2 py-0.5 text-xs font-bold text-dark"
@@ -252,6 +248,29 @@ export default function ProductApp() {
                         ))}
                       </span>
                     </div>
+                  ) : null}
+                  {product.adapterPlate.ccOptionsY?.length > 0 ? (
+                    <div className="flex items-center justify-between border-b border-black/5 py-2.5 text-sm last:border-0">
+                      <span className="text-steel">Depth (Y) CC options</span>
+                      <span className="flex flex-wrap justify-end gap-1.5">
+                        {product.adapterPlate.ccOptionsY.map((cc) => (
+                          <span
+                            key={cc}
+                            className="rounded-md bg-gold/15 px-2 py-0.5 text-xs font-bold text-dark"
+                          >
+                            {cc}"
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null}
+                  {product.adapterPlate.ccOptionsX?.length > 0 &&
+                  product.adapterPlate.ccOptionsY?.length > 0 ? (
+                    <p className="pt-2.5 text-xs text-steel">
+                      Pick any width × depth combination — matching values
+                      give a square bolt pattern, different values give a
+                      rectangular one.
+                    </p>
                   ) : null}
                   {product.adapterPlate.note && (
                     <p className="pt-2.5 text-xs text-steel">
@@ -272,22 +291,26 @@ export default function ProductApp() {
         </div>
       </section>
 
-      {/* CHARGER MANUFACTURERS */}
-      {product.hasCharger && (
+      {/* CHARGER MANUFACTURERS — only rendered when this product has a
+          verified pedestal-bolt-pattern survey on file (SMALL today).
+          Medium/Large intentionally show nothing here rather than implying
+          compatibility that hasn't been confirmed for those sizes. */}
+      {product.chargerManufacturers?.length > 0 && (
         <section className="border-b border-black/10 bg-white py-14">
           <div className="mx-auto max-w-6xl px-6">
             <h2 className="text-2xl font-extrabold tracking-tight">
               Sized for the chargers you're already speccing
             </h2>
             <p className="mt-2 max-w-2xl text-steel">
-              The adapter plate is field-drillable to match essentially any
-              pedestal charger's bolt pattern — enter your model in the
-              calculator for an exact custom CC dimension. These
-              manufacturers' pedestal footprints are already dialed into the
-              calculator's sizing tool:
+              Pick your pedestal in the calculator and it fills in the exact
+              bolt spacing automatically wherever we have a confirmed hole
+              pattern on file — otherwise it flags a quick compatibility
+              check with Nordinfra instead of guessing. These manufacturers'
+              pedestal footprints are already dialed into the calculator's
+              sizing tool:
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              {CHARGER_MANUFACTURERS.map((m) => (
+              {product.chargerManufacturers.map((m) => (
                 <span
                   key={m.name}
                   className="rounded-full border border-black/10 bg-bgSoft px-4 py-2 text-sm font-semibold text-dark"

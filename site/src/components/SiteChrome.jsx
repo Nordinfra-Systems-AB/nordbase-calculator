@@ -9,17 +9,18 @@ import { CALCULATOR_URL } from "../constants.js";
 // Resources.jsx keep their own simpler header on purpose (they're reference
 // directories, not primary content pages) — this is not used there.
 //
-// Section anchors (#products, #sustainability, #markets, #contact) are
-// written as "/#anchor" rather than "#anchor" so they resolve correctly from
-// any page, not just the homepage. On the homepage itself this behaves
-// identically to a plain hash link (same document, so the browser just
-// scrolls).
+// Section anchors (#products, #sustainability, #contact) are written as
+// "/#anchor" rather than "#anchor" so they resolve correctly from any page,
+// not just the homepage. On the homepage itself this behaves identically to
+// a plain hash link (same document, so the browser just scrolls).
+//
+// "Markets" nav item + homepage section removed 2026-08-26 (Simon Gullberg)
+// — Nordinfra is focusing on the US market only for now.
 // ---------------------------------------------------------------------------
 
 const NAV_LINKS = [
   { label: "Products", href: "/#products" },
   { label: "Sustainability", href: "/#sustainability" },
-  { label: "Markets", href: "/#markets" },
   { label: "Installation", href: "/installation.html" },
   { label: "Site Planner", href: "/site-planner.html" },
   { label: "Partners", href: "/partners.html" },

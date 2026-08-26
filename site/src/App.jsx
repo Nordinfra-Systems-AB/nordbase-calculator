@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Clock,
   Factory,
-  Globe2,
   Layers,
   Wrench,
   Ruler,
@@ -85,8 +84,6 @@ const CO2_STATS = [
   { product: "DC Level 3/4", saving: "60%" },
   { product: "Charger Island", saving: "42%" },
 ];
-
-const MARKETS = ["United States", "Sweden", "United Kingdom", "Canada", "Australia"];
 
 // HOW IT WORKS — the 3-step visual explainer. This exists specifically so a
 // visitor understands what Nordinfra does in five seconds without reading a
@@ -652,25 +649,6 @@ export default function App() {
             (EAF steel), freight factor 0.062 kg CO₂/tonne-km. Figures are
             estimates pending third-party verification.
           </p>
-        </div>
-      </section>
-
-      {/* MARKETS */}
-      <section id="markets" className="border-t border-white/10 bg-dark py-20">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <div className="flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wider text-white/50">
-            <Globe2 className="h-4 w-4" /> Expanding across five markets
-          </div>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            {MARKETS.map((m) => (
-              <span
-                key={m}
-                className="rounded-full border border-white/15 px-4 py-1.5 text-sm text-white/80"
-              >
-                {m}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
 

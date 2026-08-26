@@ -1,33 +1,29 @@
 // ---------------------------------------------------------------------------
 // PRODUCT DETAIL DATA — one shared template page (product.html?f=<slug>)
 // reads this instead of four separate static pages. Every number here is
-// pulled directly from the FOUNDATIONS object in the calculator's
-// NordBaseCalculator.jsx (source: Nordinfra_Master_USA_ASCE7_v6, confirmed
-// 2026-08-21) — nothing here is estimated or re-derived. The calculator and
-// this site are separate deployments with no shared imports, so this is kept
-// in sync manually, same as PARTNERS and the document-library PDFs.
+// pulled directly from the FOUNDATIONS/CHARGER_PRESETS objects in the
+// calculator's NordBaseCalculator.jsx — nothing here is estimated or
+// re-derived. The calculator and this site are separate deployments with no
+// shared imports, so this is kept in sync manually, same as PARTNERS and the
+// document-library PDFs.
 //
 // HOW TO ADD/UPDATE A FOUNDATION: edit the matching entry below. If a
 // dimension changes in the calculator's FOUNDATIONS object, mirror the
 // change here too.
 //
-// CHARGER FOOTPRINTS — deliberately NOT presented as a per-foundation
-// "compatible with X charger" claim. There is no verified foundation +
-// manufacturer + model pairing on file yet (that's what
+// CHARGER/PEDESTAL COMPATIBILITY (updated 2026-08-26 to match the
+// calculator's CHARGER_PRESETS + adapter-plate grid rework) — each product's
+// `chargerManufacturers` list is scoped to that product only. Only SMALL has
+// a verified pedestal-bolt-pattern survey on file, so it's the only product
+// with a manufacturer list; Medium/Large intentionally have none rather than
+// implying compatibility we haven't confirmed. This still isn't a "verified
+// foundation + manufacturer + model pairing" claim (that's what
 // ADAPTER_PLATE_DRAWINGS in the calculator is for, and it's currently
-// empty). Instead this lists the manufacturers whose pedestal footprints
-// are already dialed into the calculator's adapter-plate sizing tool, with
-// an honest note that the plate is field-drillable to match essentially any
-// pedestal charger — closer to EV Blocks' "universal adapter plate" framing,
-// but naming the real manufacturers behind it since we do have that data.
+// empty) — it lists the manufacturers whose pedestal footprints are dialed
+// into the calculator's sizing tool, several with an auto-matched adapter
+// plate hole pattern and a few still needing a Nordinfra compatibility check
+// (see the calculator itself for which is which).
 // ---------------------------------------------------------------------------
-
-export const CHARGER_MANUFACTURERS = [
-  { name: "Kempower", models: 2 },
-  { name: "ABB", models: 2 },
-  { name: "Alpitronic", models: 2 },
-  { name: "Tritium", models: 1 },
-];
 
 export const PRODUCTS = {
   bollard: {
@@ -63,9 +59,9 @@ export const PRODUCTS = {
     level: "Level 2",
     levelDesc: "Pedestal-mounted chargers",
     tagline:
-      "For Level 2 pedestal chargers — square adapter plate, three standard CC options.",
+      "For Level 2 pedestal chargers — a grid of confirmed hole positions covers square and rectangular bolt patterns.",
     blurb:
-      "NordBase Small is sized for Level 2 pedestal chargers. Its square adapter plate ships with three standard center-to-center (CC) spacing options, or a custom dimension for any square hole pattern — the calculator generates the exact drawing once you pick your charger's footprint.",
+      "NordBase Small is sized for Level 2 pedestal chargers. Its adapter plate has a grid of confirmed hole positions — square or rectangular — or a custom dimension for anything not yet on the grid. Pick your pedestal in the calculator and it fills in the exact bolt spacing automatically wherever we have a confirmed match.",
     images: ["/photos/product-small.png", "/photos/assembly-small.png"],
     hasCharger: true,
     dims: {
@@ -81,9 +77,21 @@ export const PRODUCTS = {
       thicknessIn: 0.25,
       material: '1/4" A36, hot-dip galvanized',
       weightLb: 11.02,
-      ccOptions: [6, 7.5, 9],
+      ccOptionsX: [6, 8, 9, 10.6],
+      ccOptionsY: [5, 6, 8, 9, 10.6],
       note: null,
     },
+    chargerManufacturers: [
+      { name: "Kempower", models: 1 },
+      { name: "ABB", models: 1 },
+      { name: "WiLLev", models: 1 },
+      { name: "Postlane", models: 2 },
+      { name: "Pedestal PRO", models: 1 },
+      { name: "BHS", models: 1 },
+      { name: "Eaton", models: 1 },
+      { name: "Leviton", models: 2 },
+      { name: "Chargepoint", models: 1 },
+    ],
     manual: "/docs/manuals/NI_Manual_DCS_001_US.pdf",
     baba: true,
   },
@@ -113,7 +121,8 @@ export const PRODUCTS = {
       thicknessIn: 0.25,
       material: '1/4" A36, hot-dip galvanized',
       weightLb: 44.09,
-      ccOptions: [],
+      ccOptionsX: [],
+      ccOptionsY: [],
       note: "Standard CC options for this size are still in development — enter your charger's exact footprint in the calculator for a custom-dimensioned plate today.",
     },
     manual: null,
@@ -145,7 +154,8 @@ export const PRODUCTS = {
       thicknessIn: null,
       material: null,
       weightLb: 70.55,
-      ccOptions: [],
+      ccOptionsX: [],
+      ccOptionsY: [],
       note: "Adapter-plate dimensions and standard CC options for this size are still in development — contact Nordinfra with your charger's footprint for engineering support.",
     },
     structuralNote:
