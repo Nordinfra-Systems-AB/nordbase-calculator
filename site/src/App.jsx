@@ -7,7 +7,6 @@ import {
   Clock,
   Factory,
   Layers,
-  Wrench,
   Ruler,
   FileCheck2,
   MapPin,
@@ -415,7 +414,7 @@ export default function App() {
             {PRODUCTS.map((p, i) => (
               <Reveal key={p.name} delay={i * 70}>
                 <div className="flex h-full flex-col rounded-xl border border-black/10 bg-white shadow-sm overflow-hidden">
-                  <div className="flex aspect-[4/5] items-center justify-center bg-white p-3">
+                  <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-white p-3">
                     {p.image ? (
                       <img
                         src={p.image}
@@ -476,7 +475,7 @@ export default function App() {
             {ASSEMBLIES.map((a, i) => (
               <Reveal key={a.name} delay={i * 80}>
                 <div className="flex h-full flex-col rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden">
-                  <div className="flex aspect-[4/5] items-center justify-center bg-white p-4">
+                  <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-white p-4">
                     <img
                       src={a.image}
                       alt={a.name}
@@ -494,96 +493,42 @@ export default function App() {
         </div>
       </section>
 
-      {/* WHY STEEL — paired with real fabrication photography instead of
-          icon-only text, so the claim is visible, not just asserted. */}
-      <section className="border-t border-white/10 bg-dark py-24">
+      {/* SHIPPING & FREIGHT — was nested inside a since-removed "Why steel,
+          not concrete" section (2026-08-26: that copy was redundant with
+          the hero stats + the CO2 numbers section below, and Simon wanted
+          a light-background break here instead of three dark sections in a
+          row). Restyled for bg-bgSoft (was styled for a dark parent). */}
+      <section className="border-t border-white/10 bg-bgSoft py-24 text-dark">
         <div className="mx-auto max-w-7xl px-6">
           <Reveal>
             <h2 className="text-3xl font-extrabold tracking-tight">
-              Why steel, not concrete
+              Ships palletized and nested
             </h2>
+            <p className="mt-2 max-w-xl text-steel">
+              Tapered shells nest inside each other — up to 15+ units per
+              pallet, so a full site order moves in one truck instead of
+              several.
+            </p>
           </Reveal>
-          <div className="mt-10 grid gap-10 md:grid-cols-2 md:items-center">
-            <Reveal>
-              <img
-                src="/photos/steel-fabrication.jpg"
-                alt="Laser-cut galvanized steel foundation component"
-                className="aspect-[4/5] w-full rounded-xl object-cover"
-              />
-            </Reveal>
-            <div className="flex flex-col gap-8">
-              <Reveal delay={80}>
-                <div className="flex gap-4">
-                  <Wrench className="h-6 w-6 shrink-0 text-gold" />
-                  <div>
-                    <h3 className="font-bold">Fast to make, fast to ship</h3>
-                    <p className="mt-2 text-sm text-white/60">
-                      Kerf-folding needs no press-brake step — just laser
-                      cutting, hand folding, and riveting. No concrete cure
-                      time, no pre-cast lead times.
-                    </p>
-                  </div>
-                </div>
-              </Reveal>
-              <Reveal delay={160}>
-                <div className="flex gap-4">
-                  <Leaf className="h-6 w-6 shrink-0 text-gold" />
-                  <div>
-                    <h3 className="font-bold">Meaningfully lower carbon</h3>
-                    <p className="mt-2 text-sm text-white/60">
-                      Laser-cut recycled-content steel vs. cast concrete cuts
-                      embodied CO2e substantially across the whole line — see
-                      the numbers below.
-                    </p>
-                  </div>
-                </div>
-              </Reveal>
-              <Reveal delay={240}>
-                <div className="flex gap-4">
-                  <ShieldCheck className="h-6 w-6 shrink-0 text-gold" />
-                  <div>
-                    <h3 className="font-bold">Engineered to US code</h3>
-                    <p className="mt-2 text-sm text-white/60">
-                      Wind and seismic stability calculated per ASCE 7-22 /
-                      IBC 2021. Every configuration ships with a preliminary
-                      calculation report.
-                    </p>
-                  </div>
-                </div>
-              </Reveal>
-            </div>
-          </div>
 
           <Reveal delay={100}>
-            <div className="mt-14 rounded-xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
-              <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="font-bold text-white">
-                    Ships palletized and nested
-                  </h3>
-                  <p className="mt-1 max-w-md text-sm text-white/60">
-                    Tapered shells nest inside each other — up to 15+ units
-                    per pallet, so a full site order moves in one truck
-                    instead of several.
-                  </p>
-                </div>
-                <div className="flex gap-4">
-                  <img
-                    src="/photos/packaging-ac.png"
-                    alt="NordBase AC/Bollard foundations nested and palletized for shipping"
-                    className="h-40 w-auto rounded-lg bg-white object-contain p-2"
-                  />
-                  <img
-                    src="/photos/packaging-small.png"
-                    alt="NordBase Small foundations nested and palletized for shipping"
-                    className="h-40 w-auto rounded-lg bg-white object-contain p-2"
-                  />
-                  <img
-                    src="/photos/packaging-medium.png"
-                    alt="NordBase Medium foundations nested and palletized for shipping"
-                    className="h-40 w-auto rounded-lg bg-white object-contain p-2"
-                  />
-                </div>
+            <div className="mt-10 rounded-xl border border-black/10 bg-white p-6 shadow-sm sm:p-8">
+              <div className="flex flex-wrap justify-center gap-3 sm:justify-start sm:gap-4">
+                <img
+                  src="/photos/packaging-ac.png"
+                  alt="NordBase AC/Bollard foundations nested and palletized for shipping"
+                  className="h-20 w-auto rounded-lg bg-white object-contain p-2 sm:h-40"
+                />
+                <img
+                  src="/photos/packaging-small.png"
+                  alt="NordBase Small foundations nested and palletized for shipping"
+                  className="h-20 w-auto rounded-lg bg-white object-contain p-2 sm:h-40"
+                />
+                <img
+                  src="/photos/packaging-medium.png"
+                  alt="NordBase Medium foundations nested and palletized for shipping"
+                  className="h-20 w-auto rounded-lg bg-white object-contain p-2 sm:h-40"
+                />
               </div>
 
               {/* Full-truck density comparison. Basis: 26 standard 48"x40"
@@ -593,40 +538,40 @@ export default function App() {
                   published US specs from a representative precast supplier,
                   supplied by Nordinfra — not attributed to a specific brand
                   on the public page. */}
-              <div className="mt-8 border-t border-white/10 pt-8">
-                <h4 className="font-bold text-white">
+              <div className="mt-8 border-t border-black/10 pt-8">
+                <h3 className="font-bold text-dark">
                   One truck, hundreds of foundations
-                </h4>
-                <p className="mt-1 max-w-2xl text-sm text-white/60">
+                </h3>
+                <p className="mt-1 max-w-2xl text-sm text-steel">
                   A standard 53' trailer holds 26 pallets in a single floor
                   layer. At Nordinfra's per-pallet nesting counts, that's:
                 </p>
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full min-w-[480px] text-left text-sm">
                     <thead>
-                      <tr className="text-white/50">
+                      <tr className="text-steel">
                         <th className="pb-2 font-semibold">Tier</th>
                         <th className="pb-2 font-semibold">Per pallet</th>
                         <th className="pb-2 font-semibold">Per truck (26 pallets)</th>
                       </tr>
                     </thead>
-                    <tbody className="text-white/80">
-                      <tr className="border-t border-white/10">
+                    <tbody className="text-dark">
+                      <tr className="border-t border-black/10">
                         <td className="py-2">AC / Bollard</td>
                         <td className="py-2">100</td>
                         <td className="py-2 font-semibold text-gold">2,600</td>
                       </tr>
-                      <tr className="border-t border-white/10">
+                      <tr className="border-t border-black/10">
                         <td className="py-2">DC Small</td>
                         <td className="py-2">40</td>
                         <td className="py-2 font-semibold text-gold">1,040</td>
                       </tr>
-                      <tr className="border-t border-white/10">
+                      <tr className="border-t border-black/10">
                         <td className="py-2">DC Medium</td>
                         <td className="py-2">5</td>
                         <td className="py-2 font-semibold text-gold">130</td>
                       </tr>
-                      <tr className="border-t border-white/10">
+                      <tr className="border-t border-black/10">
                         <td className="py-2">DC Large</td>
                         <td className="py-2">5</td>
                         <td className="py-2 font-semibold text-gold">130</td>
@@ -634,7 +579,7 @@ export default function App() {
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-4 max-w-2xl text-sm text-white/60">
+                <p className="mt-4 max-w-2xl text-sm text-steel">
                   Precast concrete doesn't nest, so a comparable delivery is
                   bound by truck weight, not pallet count. Using typical
                   published US unit weights for precast blocks (175 lb / 668
@@ -643,14 +588,14 @@ export default function App() {
                   roughly
                   240–255 / 63–67 / 24–26 units — meaning matching
                   Nordinfra's Small, Medium, and Large truckload counts takes
-                  about <strong className="text-white">4×, 2×, and 5× as many
+                  about <strong className="text-dark">4×, 2×, and 5× as many
                   trucks</strong>.
                 </p>
-                <p className="mt-4 max-w-2xl text-sm text-white/60">
+                <p className="mt-4 max-w-2xl text-sm text-steel">
                   Fewer trucks also means less freight carbon: at the same
                   0.062 kg CO2/tonne-km factor cited below, each fully loaded
                   44,000 lb truck emits roughly{" "}
-                  <strong className="text-white">2 kg CO2 per mile
+                  <strong className="text-dark">2 kg CO2 per mile
                   driven</strong> — so every precast truck trip avoided saves
                   on the order of 600 kg (1,300 lb) CO2 over a typical
                   300-mile delivery, on top of the per-unit embodied-carbon
