@@ -252,15 +252,32 @@ const SDS_REFERENCE = [
 // is set to the flat 100 lb standard value Simon specified ("max 100 lbs
 // inkl. laddare") since none of these pedestals have a manufacturer-quoted
 // weight yet — treat it as a conservative placeholder, not a spec value.
-// `boltPatternIn` is reference-only (not consumed by the calc engine) —
-// it documents which SMALL adapter-plate grid hole(s) (see
-// FOUNDATIONS.SMALL.adapterPlate.ccOptionsX/Y) each model's own bolt pattern
-// is meant to land on. Height is the manufacturer's MAX value where the
-// source gave a range (worst case for wind load), per Simon's instruction.
+// Height is the manufacturer's MAX value where the source gave a range
+// (worst case for wind load), per Simon's instruction.
+//
+// `ccW`/`ccD` — the model's OWN bolt-pattern spacing (width x depth, inches),
+// where known. This drives the adapter-plate CC auto-fill (2026-08-26): the
+// UI only auto-selects a CC value when ccW is in
+// FOUNDATIONS.SMALL.adapterPlate.ccOptionsX AND ccD is in …ccOptionsY — i.e.
+// the model's real pattern lands exactly on a hole Nordinfra has actually
+// drilled per the Plate-2 grid drawing. Everything else (ccW/ccD null, OR a
+// pattern that doesn't land on the grid) shows a "contact Nord-Infra to
+// verify compatibility" prompt instead of guessing — we only have confirmed
+// hole positions for the grid on that drawing.
+// `basePlateW`/`basePlateD` — the pedestal's own base-plate footprint
+// (informational display only, not fed into the structural calc).
 // ---------------------------------------------------------------------------
 const CHARGER_PRESETS = {
   Kempower: [
-    { model: "Satellite C-Series", w: 11.8, d: 11.8, h: 59.1, weight: 132 },
+    {
+      model: "Satellite C-Series",
+      w: 11.8,
+      d: 11.8,
+      h: 59.1,
+      weight: 132,
+      ccW: null, // no confirmed bolt pattern on file yet for this unit
+      ccD: null,
+    },
   ],
   ABB: [
     {
@@ -269,7 +286,8 @@ const CHARGER_PRESETS = {
       d: 5.9,
       h: 55.1,
       weight: 99,
-      boltPatternIn: "6.5x9.5", // confirmed by Simon 2026-08-26 — NOT yet on the SMALL grid, needs its own hole pair
+      ccW: 6.5, // confirmed by Simon 2026-08-26 — NOT on the current SMALL grid yet
+      ccD: 9.5,
     },
   ],
   WiLLev: [
@@ -279,7 +297,10 @@ const CHARGER_PRESETS = {
       d: 4,
       h: 96, // range given as 4-8 ft; using max (8 ft) per worst-case rule
       weight: 100,
-      boltPatternIn: "6x6",
+      ccW: 6,
+      ccD: 6,
+      basePlateW: 8.5,
+      basePlateD: 8.5,
     },
   ],
   Postlane: [
@@ -289,7 +310,10 @@ const CHARGER_PRESETS = {
       d: 4,
       h: 84,
       weight: 100,
-      boltPatternIn: "9x9",
+      ccW: 9,
+      ccD: 9,
+      basePlateW: 12,
+      basePlateD: 12,
     },
     {
       model: "6ft Aluminium CW (triangular)",
@@ -297,7 +321,10 @@ const CHARGER_PRESETS = {
       d: 12,
       h: 72, // confirmed by Simon 2026-08-26
       weight: 100,
-      boltPatternIn: "9x9",
+      ccW: 9,
+      ccD: 9,
+      basePlateW: 12,
+      basePlateD: 12,
     },
   ],
   "Pedestal PRO": [
@@ -307,7 +334,10 @@ const CHARGER_PRESETS = {
       d: 4,
       h: 95, // range given as 64"-95"; using max per worst-case rule
       weight: 100,
-      boltPatternIn: "8x5",
+      ccW: 8,
+      ccD: 5,
+      basePlateW: 6.5,
+      basePlateD: 20,
     },
   ],
   BHS: [
@@ -317,7 +347,10 @@ const CHARGER_PRESETS = {
       d: 4,
       h: 96, // range given as 60"-96"; using max per worst-case rule
       weight: 100,
-      boltPatternIn: "8x8",
+      ccW: 8,
+      ccD: 8,
+      basePlateW: 9.25,
+      basePlateD: 9.25,
     },
   ],
   Eaton: [
@@ -330,7 +363,10 @@ const CHARGER_PRESETS = {
       // FLAG FOR SIMON: needs a real confirmed height before this is final.
       h: 96,
       weight: 100,
-      boltPatternIn: "Custom made — pattern not yet documented, needs mfr spec/photo",
+      ccW: null, // "Custom made" — bolt pattern not documented anywhere in the source
+      ccD: null,
+      basePlateW: 11,
+      basePlateD: 14.5,
     },
   ],
   Leviton: [
@@ -340,7 +376,10 @@ const CHARGER_PRESETS = {
       d: 4,
       h: 55,
       weight: 100,
-      boltPatternIn: "5.3x5.3",
+      ccW: 5.3, // does NOT land on the current SMALL grid (X grid has no 5.3/5)
+      ccD: 5.3,
+      basePlateW: 7.1,
+      basePlateD: 7.1,
     },
     {
       model: "EPED1 / EPED2",
@@ -348,7 +387,10 @@ const CHARGER_PRESETS = {
       d: 3.07,
       h: 55,
       weight: 100,
-      boltPatternIn: "8.62x3.67",
+      ccW: 8.62, // does not land on the grid (nearest is 9" — 0.38" off)
+      ccD: 3.67, // does not land on the grid (grid's shortest Y is 5")
+      basePlateW: 6.1,
+      basePlateD: 10.63,
     },
   ],
   Chargepoint: [
@@ -358,7 +400,10 @@ const CHARGER_PRESETS = {
       d: 13.7,
       h: 71.1, // confirmed by Simon 2026-08-26
       weight: 100,
-      boltPatternIn: "Custom made — triangular pattern, not yet documented",
+      ccW: null, // triangular pattern — not documented, doesn't fit a 4-hole grid anyway
+      ccD: null,
+      basePlateW: 13,
+      basePlateD: 11,
     },
   ],
 };
@@ -1047,11 +1092,14 @@ export default function NordBaseCalculator() {
   const foundation = foundationKey ? FOUNDATIONS[foundationKey] : null;
 
   // step 2 — configuration (adapter plate + pedestal) — skipped for BOLLARD
-  // Adapter-plate CC spacing is picked independently per axis (width/X and
-  // depth/Y) so the grid of hole positions can express both square (X===Y)
-  // and rectangular (X!==Y) bolt patterns — see FOUNDATIONS.*.adapterPlate.
-  const [ccChoiceW, setCcChoiceW] = useState(null); // number or "custom"
-  const [ccChoiceD, setCcChoiceD] = useState(null); // number or "custom"
+  // Adapter-plate CC spacing (2026-08-26 rework): when a manufacturer/model
+  // is picked, its own bolt pattern (CHARGER_PRESETS[...].ccW/ccD) drives the
+  // CC automatically IF that exact pattern lands on the grid of holes we've
+  // actually drilled (FOUNDATIONS.SMALL.adapterPlate.ccOptionsX/Y) — no more
+  // manual button-picking from the grid. `useCustomCc` lets the customer
+  // override that auto-fill (or is the only path when no model is selected,
+  // or when the model's pattern isn't on the grid yet).
+  const [useCustomCc, setUseCustomCc] = useState(false);
   const [customCcW, setCustomCcW] = useState("");
   const [customCcD, setCustomCcD] = useState("");
   const [presetMfr, setPresetMfr] = useState("");
@@ -1111,10 +1159,32 @@ export default function NordBaseCalculator() {
 
   const backfill = BACKFILL_OPTIONS.find((b) => b.key === backfillKey);
 
-  const effectiveCcW =
-    ccChoiceW === "custom" ? Number(customCcW) || 0 : ccChoiceW;
-  const effectiveCcD =
-    ccChoiceD === "custom" ? Number(customCcD) || 0 : ccChoiceD;
+  // The selected manufacturer/model's full preset record (dimensions, weight,
+  // its own bolt pattern, base-plate size) — null when nothing is picked yet.
+  const presetModelData =
+    presetMfr && presetModel !== ""
+      ? CHARGER_PRESETS[presetMfr]?.[Number(presetModel)]
+      : null;
+  const selectedChargerModelName = presetModelData?.model || "";
+
+  // Does the selected model's OWN bolt pattern land exactly on a hole
+  // Nordinfra has actually drilled on this foundation's adapter plate (the
+  // Plate-2 grid, ccOptionsX/Y)? Only then can the CC be auto-filled —
+  // otherwise we don't have a confirmed hole to point to.
+  const modelCcOnGrid =
+    !!presetModelData &&
+    presetModelData.ccW != null &&
+    presetModelData.ccD != null &&
+    !!foundation?.adapterPlate?.ccOptionsX?.includes(presetModelData.ccW) &&
+    !!foundation?.adapterPlate?.ccOptionsY?.includes(presetModelData.ccD);
+  const ccAutoFilled = modelCcOnGrid && !useCustomCc;
+
+  const effectiveCcW = ccAutoFilled
+    ? presetModelData.ccW
+    : Number(customCcW) || 0;
+  const effectiveCcD = ccAutoFilled
+    ? presetModelData.ccD
+    : Number(customCcD) || 0;
   // Bolt-tension check needs a single lever-arm spacing. For a rectangular
   // pattern (width CC !== depth CC) the shorter axis gives the smaller lever
   // arm and therefore the higher (worst-case/conservative) bolt demand, so
@@ -1128,10 +1198,6 @@ export default function NordBaseCalculator() {
   // foundation + charger manufacturer/model — see ADAPTER_PLATE_DRAWINGS
   // above. Falls back to the shared "universal" plate drawing (NordBase
   // Small today) when no manufacturer/model is selected yet.
-  const selectedChargerModelName =
-    presetMfr && presetModel !== ""
-      ? CHARGER_PRESETS[presetMfr]?.[Number(presetModel)]?.model
-      : "";
   const officialDrawingUrl = foundation?.key
     ? selectedChargerModelName
       ? ADAPTER_PLATE_DRAWINGS[
@@ -1226,8 +1292,7 @@ export default function NordBaseCalculator() {
     setContactEmail("");
     setQuantity("1");
     setFoundationKey(null);
-    setCcChoiceW(null);
-    setCcChoiceD(null);
+    setUseCustomCc(false);
     setCustomCcW("");
     setCustomCcD("");
     setPresetMfr("");
@@ -1252,6 +1317,11 @@ export default function NordBaseCalculator() {
     setChargerD(String(m.d));
     setChargerH(String(m.h));
     setChargerWeight(String(m.weight));
+    // Every new model selection starts fresh in auto-fill/banner mode —
+    // don't carry over a manual CC override from a previously selected model.
+    setUseCustomCc(false);
+    setCustomCcW("");
+    setCustomCcD("");
   }
 
   const PACKAGE_TYPES = {
@@ -1523,9 +1593,106 @@ export default function NordBaseCalculator() {
                 Adapter plate &amp; charger
               </h2>
               <p className="text-sm mb-6" style={{ color: brand.steel }}>
-                Choosing a manufacturer/model really just selects an adapter
-                plate — the foundation is already chosen.
+                Pick a manufacturer/model first — it fills in the pedestal's
+                dimensions and, where we have a confirmed hole pattern, the
+                adapter-plate bolt spacing below.
               </p>
+
+              <div
+                className="text-sm font-semibold mb-2"
+                style={{ color: brand.dark }}
+              >
+                Charger / pedestal — dimensions
+              </div>
+              <div className="flex gap-2 mb-4">
+                <select
+                  value={presetMfr}
+                  onChange={(e) => {
+                    setPresetMfr(e.target.value);
+                    setPresetModel("");
+                    setUseCustomCc(false);
+                    setCustomCcW("");
+                    setCustomCcD("");
+                  }}
+                  className="border rounded-md px-3 py-2 text-sm flex-1"
+                  style={{ borderColor: "#D9D9D6" }}
+                >
+                  <option value="">Quick-fill manufacturer (optional)…</option>
+                  {Object.keys(CHARGER_PRESETS).map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                {presetMfr && (
+                  <select
+                    value={presetModel}
+                    onChange={(e) => {
+                      setPresetModel(e.target.value);
+                      applyPreset(presetMfr, Number(e.target.value));
+                    }}
+                    className="border rounded-md px-3 py-2 text-sm flex-1"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <option value="">Model…</option>
+                    {CHARGER_PRESETS[presetMfr].map((m, i) => (
+                      <option key={m.model} value={i}>
+                        {m.model}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Field label="Width (in)">
+                  <input
+                    type="number"
+                    value={chargerW}
+                    onChange={(e) => setChargerW(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
+                <Field label="Depth (in)">
+                  <input
+                    type="number"
+                    value={chargerD}
+                    onChange={(e) => setChargerD(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
+                <Field label="Height (in)">
+                  <input
+                    type="number"
+                    value={chargerH}
+                    onChange={(e) => setChargerH(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
+                <Field label="Weight (lb)">
+                  <input
+                    type="number"
+                    value={chargerWeight}
+                    onChange={(e) => setChargerWeight(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
+              </div>
+              {presetModelData?.basePlateW && presetModelData?.basePlateD && (
+                <div className="text-xs mt-2" style={{ color: brand.steel }}>
+                  Pedestal base plate ({selectedChargerModelName}):{" "}
+                  <span style={{ fontWeight: 700, color: brand.dark }}>
+                    {presetModelData.basePlateW}"×{presetModelData.basePlateD}
+                    "
+                  </span>{" "}
+                  — per manufacturer spec, informational only.
+                </div>
+              )}
+
+              <div className="h-px my-5" style={{ background: "#F0F0EE" }} />
 
               <div
                 className="text-sm font-semibold mb-2"
@@ -1533,113 +1700,105 @@ export default function NordBaseCalculator() {
               >
                 Adapter plate — bolt spacing (CC)
               </div>
-              <div className="text-xs mb-2" style={{ color: brand.steel }}>
-                Pick a width (X) and depth (Y) hole position from the grid —
-                matching values give a square bolt pattern, different values
-                give a rectangular one.
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4 mb-3">
-                <div>
-                  <div
-                    className="text-xs font-semibold mb-1.5"
-                    style={{ color: brand.dark }}
+
+              {presetModelData && modelCcOnGrid && !useCustomCc && (
+                <div
+                  className="mb-3 flex items-start justify-between gap-3 rounded-md border px-3 py-2.5"
+                  style={{ borderColor: brand.gold, background: "#FBF6E8" }}
+                >
+                  <div className="text-xs" style={{ color: brand.dark }}>
+                    <span className="font-semibold">
+                      ✓ Bolt pattern for {selectedChargerModelName}:{" "}
+                      {presetModelData.ccW}"×{presetModelData.ccD}" CC
+                    </span>
+                    <br />
+                    Matches a hole position we've confirmed on the adapter
+                    plate — filled in automatically.
+                  </div>
+                  <button
+                    onClick={() => setUseCustomCc(true)}
+                    className="text-xs font-semibold whitespace-nowrap underline"
+                    style={{ color: brand.steel }}
                   >
-                    Width (X) CC
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {foundation.adapterPlate.ccOptionsX.map((cc) => (
-                      <button
-                        key={cc}
-                        onClick={() => setCcChoiceW(cc)}
-                        className="px-3 py-1.5 rounded-md border text-sm"
-                        style={{
-                          borderColor:
-                            ccChoiceW === cc ? brand.gold : "#D9D9D6",
-                          background: ccChoiceW === cc ? brand.gold : "white",
-                          color: brand.dark,
-                          fontWeight: ccChoiceW === cc ? 700 : 400,
-                        }}
-                      >
-                        {cc}"
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCcChoiceW("custom")}
-                      className="px-3 py-1.5 rounded-md border text-sm"
-                      style={{
-                        borderColor:
-                          ccChoiceW === "custom" ? brand.gold : "#D9D9D6",
-                        background:
-                          ccChoiceW === "custom" ? brand.gold : "white",
-                        fontWeight: ccChoiceW === "custom" ? 700 : 400,
-                      }}
-                    >
-                      Custom
-                    </button>
-                  </div>
-                  {ccChoiceW === "custom" && (
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={customCcW}
-                      onChange={(e) => setCustomCcW(e.target.value)}
-                      placeholder="Width CC, e.g. 8.5"
-                      className="w-full mt-2 border rounded-md px-3 py-2 text-sm"
-                      style={{ borderColor: "#D9D9D6" }}
-                    />
-                  )}
+                    Enter custom measurement
+                  </button>
                 </div>
-                <div>
-                  <div
-                    className="text-xs font-semibold mb-1.5"
-                    style={{ color: brand.dark }}
+              )}
+
+              {presetModelData && !modelCcOnGrid && !useCustomCc && (
+                <Banner>
+                  <span className="font-semibold">
+                    We don't have a confirmed adapter-plate hole pattern for{" "}
+                    {selectedChargerModelName} yet.
+                  </span>{" "}
+                  Please contact Nord-Infra to verify compatibility before
+                  ordering.{" "}
+                  <button
+                    onClick={() => setUseCustomCc(true)}
+                    className="font-semibold underline"
                   >
-                    Depth (Y) CC
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {foundation.adapterPlate.ccOptionsY.map((cc) => (
-                      <button
-                        key={cc}
-                        onClick={() => setCcChoiceD(cc)}
-                        className="px-3 py-1.5 rounded-md border text-sm"
-                        style={{
-                          borderColor:
-                            ccChoiceD === cc ? brand.gold : "#D9D9D6",
-                          background: ccChoiceD === cc ? brand.gold : "white",
-                          color: brand.dark,
-                          fontWeight: ccChoiceD === cc ? 700 : 400,
-                        }}
-                      >
-                        {cc}"
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCcChoiceD("custom")}
-                      className="px-3 py-1.5 rounded-md border text-sm"
-                      style={{
-                        borderColor:
-                          ccChoiceD === "custom" ? brand.gold : "#D9D9D6",
-                        background:
-                          ccChoiceD === "custom" ? brand.gold : "white",
-                        fontWeight: ccChoiceD === "custom" ? 700 : 400,
-                      }}
+                    Enter a measured CC instead
+                  </button>
+                </Banner>
+              )}
+
+              {(!presetModelData || useCustomCc) && (
+                <>
+                  {presetModelData && (
+                    <div
+                      className="text-xs mb-2 flex items-center justify-between"
+                      style={{ color: brand.steel }}
                     >
-                      Custom
-                    </button>
-                  </div>
-                  {ccChoiceD === "custom" && (
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={customCcD}
-                      onChange={(e) => setCustomCcD(e.target.value)}
-                      placeholder="Depth CC, e.g. 5"
-                      className="w-full mt-2 border rounded-md px-3 py-2 text-sm"
-                      style={{ borderColor: "#D9D9D6" }}
-                    />
+                      <span>Enter the width/depth CC you've measured.</span>
+                      {modelCcOnGrid && (
+                        <button
+                          onClick={() => setUseCustomCc(false)}
+                          className="font-semibold underline whitespace-nowrap ml-2"
+                        >
+                          Use confirmed pattern instead
+                        </button>
+                      )}
+                    </div>
                   )}
-                </div>
-              </div>
+                  <div className="grid sm:grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <div
+                        className="text-xs font-semibold mb-1.5"
+                        style={{ color: brand.dark }}
+                      >
+                        Width (X) CC
+                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={customCcW}
+                        onChange={(e) => setCustomCcW(e.target.value)}
+                        placeholder="Width CC, e.g. 8.5"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        style={{ borderColor: "#D9D9D6" }}
+                      />
+                    </div>
+                    <div>
+                      <div
+                        className="text-xs font-semibold mb-1.5"
+                        style={{ color: brand.dark }}
+                      >
+                        Depth (Y) CC
+                      </div>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={customCcD}
+                        onChange={(e) => setCustomCcD(e.target.value)}
+                        placeholder="Depth CC, e.g. 5"
+                        className="w-full border rounded-md px-3 py-2 text-sm"
+                        style={{ borderColor: "#D9D9D6" }}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
               {foundation.adapterPlate.note && (
                 <Banner>{foundation.adapterPlate.note}</Banner>
               )}
@@ -1711,89 +1870,6 @@ export default function NordBaseCalculator() {
                   Charger bolts: {BOLT_SPEC_LABEL}
                 </div>
               )}
-
-              <div className="h-px my-5" style={{ background: "#F0F0EE" }} />
-
-              <div
-                className="text-sm font-semibold mb-2"
-                style={{ color: brand.dark }}
-              >
-                Charger / pedestal — dimensions
-              </div>
-              <div className="flex gap-2 mb-4">
-                <select
-                  value={presetMfr}
-                  onChange={(e) => {
-                    setPresetMfr(e.target.value);
-                    setPresetModel("");
-                  }}
-                  className="border rounded-md px-3 py-2 text-sm flex-1"
-                  style={{ borderColor: "#D9D9D6" }}
-                >
-                  <option value="">Quick-fill manufacturer (optional)…</option>
-                  {Object.keys(CHARGER_PRESETS).map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-                {presetMfr && (
-                  <select
-                    value={presetModel}
-                    onChange={(e) => {
-                      setPresetModel(e.target.value);
-                      applyPreset(presetMfr, Number(e.target.value));
-                    }}
-                    className="border rounded-md px-3 py-2 text-sm flex-1"
-                    style={{ borderColor: "#D9D9D6" }}
-                  >
-                    <option value="">Model…</option>
-                    {CHARGER_PRESETS[presetMfr].map((m, i) => (
-                      <option key={m.model} value={i}>
-                        {m.model}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Field label="Width (in)">
-                  <input
-                    type="number"
-                    value={chargerW}
-                    onChange={(e) => setChargerW(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
-                  />
-                </Field>
-                <Field label="Depth (in)">
-                  <input
-                    type="number"
-                    value={chargerD}
-                    onChange={(e) => setChargerD(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
-                  />
-                </Field>
-                <Field label="Height (in)">
-                  <input
-                    type="number"
-                    value={chargerH}
-                    onChange={(e) => setChargerH(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
-                  />
-                </Field>
-                <Field label="Weight (lb)">
-                  <input
-                    type="number"
-                    value={chargerWeight}
-                    onChange={(e) => setChargerWeight(e.target.value)}
-                    className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
-                  />
-                </Field>
-              </div>
             </div>
           )}
 
