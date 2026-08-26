@@ -93,11 +93,15 @@ const FOUNDATIONS = {
       size: { w: 13.39, d: 13.39 },
       thicknessIn: 0.25,
       material: '1/4" A36, hot-dip galvanized',
-      ccOptions: [6, 7.5, 9],
+      // Full hole grid verified against the pedestal bolt-pattern survey
+      // (Simon Gullberg, 2026-08-26) — pick any width x depth combination;
+      // matching X and Y gives a square pattern, mismatched gives rectangular.
+      ccOptionsX: [6, 8, 9, 10.6],
+      ccOptionsY: [5, 6, 8, 9, 10.6],
       note: null,
     },
     blurb:
-      "For Level 2 pedestals. Square adapter plate with three standard CC options or a custom dimension for square hole patterns.",
+      "For Level 2 pedestals. Adapter plate with a grid of standard hole positions (square or rectangular bolt patterns) or a custom dimension.",
   },
   MEDIUM: {
     key: "MEDIUM",
@@ -121,7 +125,8 @@ const FOUNDATIONS = {
       size: { w: 28.7, d: 24.8 },
       thicknessIn: 0.25,
       material: '1/4" A36, hot-dip galvanized',
-      ccOptions: [],
+      ccOptionsX: [],
+      ccOptionsY: [],
       note: "Standard CC options are still in development — enter a custom dimension for now.",
     },
     blurb:
@@ -149,7 +154,8 @@ const FOUNDATIONS = {
       size: null,
       thicknessIn: null,
       material: null,
-      ccOptions: [],
+      ccOptionsX: [],
+      ccOptionsY: [],
       note: "Adapter-plate dimensions and standard CC options are still in development — enter a custom dimension for now.",
     },
     // Stability (overturning/sliding), wall-plate bending, and bolt-tension are now
@@ -235,21 +241,126 @@ const SDS_REFERENCE = [
 
 // ---------------------------------------------------------------------------
 // CHARGER QUICK-FILL PRESETS (optional — customer can always override manually)
+// -----------------------------------------------------------------------------------
+// Kempower + ABB below are the two confirmed DC charger units kept from the
+// original list (2026-08-26, Simon Gullberg) — every other charger unit that
+// used to be here (Kempower Movable C-Series, ABB Terra 54 CJG, both
+// Alpitronic models, Tritium PKM150) was removed per that same instruction.
+//
+// Everything below ABB is the verified Level-2 PEDESTAL survey (Simon
+// Gullberg, 2026-08-26 — EV_Charger_Pedestals_US_Dimensions.xlsx). `weight`
+// is set to the flat 100 lb standard value Simon specified ("max 100 lbs
+// inkl. laddare") since none of these pedestals have a manufacturer-quoted
+// weight yet — treat it as a conservative placeholder, not a spec value.
+// `boltPatternIn` is reference-only (not consumed by the calc engine) —
+// it documents which SMALL adapter-plate grid hole(s) (see
+// FOUNDATIONS.SMALL.adapterPlate.ccOptionsX/Y) each model's own bolt pattern
+// is meant to land on. Height is the manufacturer's MAX value where the
+// source gave a range (worst case for wind load), per Simon's instruction.
 // ---------------------------------------------------------------------------
 const CHARGER_PRESETS = {
   Kempower: [
     { model: "Satellite C-Series", w: 11.8, d: 11.8, h: 59.1, weight: 132 },
-    { model: "Movable C-Series", w: 15.7, d: 15.7, h: 63.0, weight: 209 },
   ],
   ABB: [
-    { model: "Terra AC Wallbox Pedestal", w: 5.9, d: 5.9, h: 55.1, weight: 99 },
-    { model: "Terra 54 CJG", w: 23.6, d: 23.6, h: 59.1, weight: 485 },
+    {
+      model: "Terra AC Wallbox Pedestal",
+      w: 5.9,
+      d: 5.9,
+      h: 55.1,
+      weight: 99,
+      boltPatternIn: "6.5x9.5", // confirmed by Simon 2026-08-26 — NOT yet on the SMALL grid, needs its own hole pair
+    },
   ],
-  Alpitronic: [
-    { model: "HYC50", w: 15.7, d: 15.7, h: 61.0, weight: 309 },
-    { model: "HYC400", w: 23.6, d: 27.6, h: 74.8, weight: 838 },
+  WiLLev: [
+    {
+      model: "EV-SSAA",
+      w: 4,
+      d: 4,
+      h: 96, // range given as 4-8 ft; using max (8 ft) per worst-case rule
+      weight: 100,
+      boltPatternIn: "6x6",
+    },
   ],
-  Tritium: [{ model: "PKM150", w: 15.7, d: 15.7, h: 63.0, weight: 331 }],
+  Postlane: [
+    {
+      model: "7ft Steel",
+      w: 4,
+      d: 4,
+      h: 84,
+      weight: 100,
+      boltPatternIn: "9x9",
+    },
+    {
+      model: "6ft Aluminium CW (triangular)",
+      w: 2,
+      d: 12,
+      h: 72, // confirmed by Simon 2026-08-26
+      weight: 100,
+      boltPatternIn: "9x9",
+    },
+  ],
+  "Pedestal PRO": [
+    {
+      model: "BASE+ Brandable EV Pedestal (186EVCS-02B)",
+      w: 8,
+      d: 4,
+      h: 95, // range given as 64"-95"; using max per worst-case rule
+      weight: 100,
+      boltPatternIn: "8x5",
+    },
+  ],
+  BHS: [
+    {
+      model: "EVCS (CSEV-1-96 / CSEV-2-96 / CSEV-1-60 / CSEV-2-60)",
+      w: 4,
+      d: 4,
+      h: 96, // range given as 60"-96"; using max per worst-case rule
+      weight: 100,
+      boltPatternIn: "8x8",
+    },
+  ],
+  Eaton: [
+    {
+      model: "Universal EV Pedestal",
+      w: 4,
+      d: 11.75,
+      // No height given anywhere in the source (not even a range) — using the
+      // tallest comparable pedestal (96") as a conservative placeholder.
+      // FLAG FOR SIMON: needs a real confirmed height before this is final.
+      h: 96,
+      weight: 100,
+      boltPatternIn: "Custom made — pattern not yet documented, needs mfr spec/photo",
+    },
+  ],
+  Leviton: [
+    {
+      model: "EPED1-1 / EPED2-2 / EPCMX-6 / EPCMY-6",
+      w: 4,
+      d: 4,
+      h: 55,
+      weight: 100,
+      boltPatternIn: "5.3x5.3",
+    },
+    {
+      model: "EPED1 / EPED2",
+      w: 7.87,
+      d: 3.07,
+      h: 55,
+      weight: 100,
+      boltPatternIn: "8.62x3.67",
+    },
+  ],
+  Chargepoint: [
+    {
+      model: "CT4000 Level 2",
+      w: 11.4,
+      d: 13.7,
+      h: 71.1, // confirmed by Simon 2026-08-26
+      weight: 100,
+      boltPatternIn: "Custom made — triangular pattern, not yet documented",
+    },
+  ],
 };
 
 // ---------------------------------------------------------------------------
@@ -720,13 +831,14 @@ function AccessoryImage({ src, label }) {
 // pattern drawn live from the customer's selected/custom CC spacing, so they
 // can visually verify hole layout before ordering. Renders nothing until both
 // a confirmed plate size and a CC value are available.
-function AdapterPlateDiagram({ plate, ccIn }) {
-  if (!plate || !ccIn || ccIn <= 0) return null;
+function AdapterPlateDiagram({ plate, ccWIn, ccDIn }) {
+  if (!plate || !ccWIn || ccWIn <= 0 || !ccDIn || ccDIn <= 0) return null;
   const maxPx = 150;
   const scale = maxPx / Math.max(plate.w, plate.d);
   const pw = plate.w * scale;
   const pd = plate.d * scale;
-  const cc = ccIn * scale;
+  const ccW = ccWIn * scale; // hole spacing along the plate's width (X) axis
+  const ccD = ccDIn * scale; // hole spacing along the plate's depth (Y) axis
   const padL = 34,
     padT = 14,
     padR = 20,
@@ -739,10 +851,10 @@ function AdapterPlateDiagram({ plate, ccIn }) {
     cy = y0 + pd / 2;
   const holeR = Math.max(2.2, scale * 0.3);
   const holeOffsets = [
-    [-cc / 2, -cc / 2],
-    [cc / 2, -cc / 2],
-    [cc / 2, cc / 2],
-    [-cc / 2, cc / 2],
+    [-ccW / 2, -ccD / 2],
+    [ccW / 2, -ccD / 2],
+    [ccW / 2, ccD / 2],
+    [-ccW / 2, ccD / 2],
   ];
   return (
     <svg
@@ -772,31 +884,31 @@ function AdapterPlateDiagram({ plate, ccIn }) {
         />
       ))}
       <line
-        x1={cx - cc / 2}
-        y1={cy - cc / 2}
-        x2={cx + cc / 2}
-        y2={cy - cc / 2}
+        x1={cx - ccW / 2}
+        y1={cy - ccD / 2}
+        x2={cx + ccW / 2}
+        y2={cy - ccD / 2}
         stroke={brand.steel}
         strokeWidth="0.5"
         strokeDasharray="2,2"
       />
       <line
-        x1={cx - cc / 2}
-        y1={cy - cc / 2}
-        x2={cx - cc / 2}
-        y2={cy + cc / 2}
+        x1={cx - ccW / 2}
+        y1={cy - ccD / 2}
+        x2={cx - ccW / 2}
+        y2={cy + ccD / 2}
         stroke={brand.steel}
         strokeWidth="0.5"
         strokeDasharray="2,2"
       />
       <text
         x={cx}
-        y={cy - cc / 2 - 3}
+        y={cy - ccD / 2 - 3}
         fontSize="7"
         textAnchor="middle"
         fill={brand.steel}
       >
-        {ccIn}" CC
+        {ccWIn}"×{ccDIn}" CC
       </text>
       <line
         x1={x0}
@@ -935,8 +1047,13 @@ export default function NordBaseCalculator() {
   const foundation = foundationKey ? FOUNDATIONS[foundationKey] : null;
 
   // step 2 — configuration (adapter plate + pedestal) — skipped for BOLLARD
-  const [ccChoice, setCcChoice] = useState(null); // number or "custom"
-  const [customCc, setCustomCc] = useState("");
+  // Adapter-plate CC spacing is picked independently per axis (width/X and
+  // depth/Y) so the grid of hole positions can express both square (X===Y)
+  // and rectangular (X!==Y) bolt patterns — see FOUNDATIONS.*.adapterPlate.
+  const [ccChoiceW, setCcChoiceW] = useState(null); // number or "custom"
+  const [ccChoiceD, setCcChoiceD] = useState(null); // number or "custom"
+  const [customCcW, setCustomCcW] = useState("");
+  const [customCcD, setCustomCcD] = useState("");
   const [presetMfr, setPresetMfr] = useState("");
   const [presetModel, setPresetModel] = useState("");
   const [chargerW, setChargerW] = useState("");
@@ -994,7 +1111,18 @@ export default function NordBaseCalculator() {
 
   const backfill = BACKFILL_OPTIONS.find((b) => b.key === backfillKey);
 
-  const effectiveCc = ccChoice === "custom" ? Number(customCc) || 0 : ccChoice;
+  const effectiveCcW =
+    ccChoiceW === "custom" ? Number(customCcW) || 0 : ccChoiceW;
+  const effectiveCcD =
+    ccChoiceD === "custom" ? Number(customCcD) || 0 : ccChoiceD;
+  // Bolt-tension check needs a single lever-arm spacing. For a rectangular
+  // pattern (width CC !== depth CC) the shorter axis gives the smaller lever
+  // arm and therefore the higher (worst-case/conservative) bolt demand, so
+  // that's what feeds the structural check below.
+  const effectiveCc =
+    effectiveCcW > 0 && effectiveCcD > 0
+      ? Math.min(effectiveCcW, effectiveCcD)
+      : 0;
 
   // Official (real, dimensioned) adapter-plate drawing for the selected
   // foundation + charger manufacturer/model — see ADAPTER_PLATE_DRAWINGS
@@ -1098,8 +1226,10 @@ export default function NordBaseCalculator() {
     setContactEmail("");
     setQuantity("1");
     setFoundationKey(null);
-    setCcChoice(null);
-    setCustomCc("");
+    setCcChoiceW(null);
+    setCcChoiceD(null);
+    setCustomCcW("");
+    setCustomCcD("");
     setPresetMfr("");
     setPresetModel("");
     setChargerW("");
@@ -1170,7 +1300,9 @@ export default function NordBaseCalculator() {
       foundation?.hasCharger
         ? `Charger: ${chargerW}"×${chargerD}"×${chargerH}", ${chargerWeight} lb`
         : "",
-      foundation?.hasCharger ? `Adapter plate CC: ${effectiveCc}"` : "",
+      foundation?.hasCharger
+        ? `Adapter plate CC: ${effectiveCcW}"×${effectiveCcD}"`
+        : "",
       `Wind speed: ${windSpeed} mph  |  SDS: ${sds} g`,
       `Backfill: ${backfill.label}`,
       `Governing check: ${result.governing.label} — DCR ${(
@@ -1401,51 +1533,113 @@ export default function NordBaseCalculator() {
               >
                 Adapter plate — bolt spacing (CC)
               </div>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {foundation.adapterPlate.ccOptions.map((cc) => (
-                  <button
-                    key={cc}
-                    onClick={() => setCcChoice(cc)}
-                    className="px-3 py-1.5 rounded-md border text-sm"
-                    style={{
-                      borderColor: ccChoice === cc ? brand.gold : "#D9D9D6",
-                      background: ccChoice === cc ? brand.gold : "white",
-                      color: ccChoice === cc ? brand.dark : brand.dark,
-                      fontWeight: ccChoice === cc ? 700 : 400,
-                    }}
-                  >
-                    {cc}"
-                  </button>
-                ))}
-                <button
-                  onClick={() => setCcChoice("custom")}
-                  className="px-3 py-1.5 rounded-md border text-sm"
-                  style={{
-                    borderColor: ccChoice === "custom" ? brand.gold : "#D9D9D6",
-                    background: ccChoice === "custom" ? brand.gold : "white",
-                    fontWeight: ccChoice === "custom" ? 700 : 400,
-                  }}
-                >
-                  Custom
-                </button>
+              <div className="text-xs mb-2" style={{ color: brand.steel }}>
+                Pick a width (X) and depth (Y) hole position from the grid —
+                matching values give a square bolt pattern, different values
+                give a rectangular one.
               </div>
-              {ccChoice === "custom" && (
-                <div className="mb-3">
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={customCc}
-                    onChange={(e) => setCustomCc(e.target.value)}
-                    placeholder="CC spacing in inches, e.g. 8.5"
-                    className="w-40 border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
-                  />
-                  <div className="text-xs mt-1" style={{ color: brand.steel }}>
-                    Only square hole patterns are supported today. A rectangular
-                    adapter plate will be developed later.
+              <div className="grid sm:grid-cols-2 gap-4 mb-3">
+                <div>
+                  <div
+                    className="text-xs font-semibold mb-1.5"
+                    style={{ color: brand.dark }}
+                  >
+                    Width (X) CC
                   </div>
+                  <div className="flex flex-wrap gap-2">
+                    {foundation.adapterPlate.ccOptionsX.map((cc) => (
+                      <button
+                        key={cc}
+                        onClick={() => setCcChoiceW(cc)}
+                        className="px-3 py-1.5 rounded-md border text-sm"
+                        style={{
+                          borderColor:
+                            ccChoiceW === cc ? brand.gold : "#D9D9D6",
+                          background: ccChoiceW === cc ? brand.gold : "white",
+                          color: brand.dark,
+                          fontWeight: ccChoiceW === cc ? 700 : 400,
+                        }}
+                      >
+                        {cc}"
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCcChoiceW("custom")}
+                      className="px-3 py-1.5 rounded-md border text-sm"
+                      style={{
+                        borderColor:
+                          ccChoiceW === "custom" ? brand.gold : "#D9D9D6",
+                        background:
+                          ccChoiceW === "custom" ? brand.gold : "white",
+                        fontWeight: ccChoiceW === "custom" ? 700 : 400,
+                      }}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                  {ccChoiceW === "custom" && (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={customCcW}
+                      onChange={(e) => setCustomCcW(e.target.value)}
+                      placeholder="Width CC, e.g. 8.5"
+                      className="w-full mt-2 border rounded-md px-3 py-2 text-sm"
+                      style={{ borderColor: "#D9D9D6" }}
+                    />
+                  )}
                 </div>
-              )}
+                <div>
+                  <div
+                    className="text-xs font-semibold mb-1.5"
+                    style={{ color: brand.dark }}
+                  >
+                    Depth (Y) CC
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {foundation.adapterPlate.ccOptionsY.map((cc) => (
+                      <button
+                        key={cc}
+                        onClick={() => setCcChoiceD(cc)}
+                        className="px-3 py-1.5 rounded-md border text-sm"
+                        style={{
+                          borderColor:
+                            ccChoiceD === cc ? brand.gold : "#D9D9D6",
+                          background: ccChoiceD === cc ? brand.gold : "white",
+                          color: brand.dark,
+                          fontWeight: ccChoiceD === cc ? 700 : 400,
+                        }}
+                      >
+                        {cc}"
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCcChoiceD("custom")}
+                      className="px-3 py-1.5 rounded-md border text-sm"
+                      style={{
+                        borderColor:
+                          ccChoiceD === "custom" ? brand.gold : "#D9D9D6",
+                        background:
+                          ccChoiceD === "custom" ? brand.gold : "white",
+                        fontWeight: ccChoiceD === "custom" ? 700 : 400,
+                      }}
+                    >
+                      Custom
+                    </button>
+                  </div>
+                  {ccChoiceD === "custom" && (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={customCcD}
+                      onChange={(e) => setCustomCcD(e.target.value)}
+                      placeholder="Depth CC, e.g. 5"
+                      className="w-full mt-2 border rounded-md px-3 py-2 text-sm"
+                      style={{ borderColor: "#D9D9D6" }}
+                    />
+                  )}
+                </div>
+              </div>
               {foundation.adapterPlate.note && (
                 <Banner>{foundation.adapterPlate.note}</Banner>
               )}
@@ -1481,7 +1675,9 @@ export default function NordBaseCalculator() {
                   </a>
                 </div>
               )}
-              {foundation.adapterPlate.size && effectiveCc > 0 && (
+              {foundation.adapterPlate.size &&
+                effectiveCcW > 0 &&
+                effectiveCcD > 0 && (
                 <div className="mb-4">
                   <div
                     className="text-xs font-semibold mb-1"
@@ -1493,7 +1689,8 @@ export default function NordBaseCalculator() {
                   </div>
                   <AdapterPlateDiagram
                     plate={foundation.adapterPlate.size}
-                    ccIn={effectiveCc}
+                    ccWIn={effectiveCcW}
+                    ccDIn={effectiveCcD}
                   />
                   {!officialDrawingUrl && (
                     <div
@@ -2334,7 +2531,7 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Adapter plate, CC {effectiveCc}"
+                        Adapter plate, CC {effectiveCcW}"×{effectiveCcD}"
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
                         {foundation.adapterPlate.material || "Material TBD"}
