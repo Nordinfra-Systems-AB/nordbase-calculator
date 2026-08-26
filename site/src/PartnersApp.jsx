@@ -32,10 +32,6 @@ const REGIONS = [
       },
     ],
   },
-  { country: "Sweden", states: [] },
-  { country: "United Kingdom", states: [] },
-  { country: "Canada", states: [] },
-  { country: "Australia", states: [] },
 ];
 
 // Feeds the map's pin set — US-only since Nordinfra is US-focused today
@@ -169,10 +165,10 @@ export default function PartnersApp() {
                   No distribution partner confirmed yet — Nordinfra is
                   expanding into this market. Contact{" "}
                   <a
-                    href="mailto:simon@nord-infra.com"
+                    href="mailto:info@nord-infra.com"
                     className="font-semibold text-dark underline"
                   >
-                    simon@nord-infra.com
+                    info@nord-infra.com
                   </a>{" "}
                   directly in the meantime.
                 </p>

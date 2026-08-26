@@ -266,8 +266,15 @@ const SDS_REFERENCE = [
 // hole positions for the grid on that drawing.
 // `basePlateW`/`basePlateD` — the pedestal's own base-plate footprint
 // (informational display only, not fed into the structural calc).
+// FOUNDATION-SCOPED (2026-08-26, Simon: "jag såg att på dc-medium och
+// dc-large ligger pedestaler med i lista över tillverkare och modeller" —
+// pedestal manufacturers like Postlane don't belong on Medium/Large, those
+// are freestanding DC fast chargers, not Level 2 pedestals). This set below
+// is PEDESTAL_CHARGER_PRESETS — used only for NordBase Small. Medium/Large
+// use DC_FAST_CHARGER_PRESETS further down instead — see
+// chargerPresetsForFoundation() for the actual per-foundation lookup.
 // ---------------------------------------------------------------------------
-const CHARGER_PRESETS = {
+const PEDESTAL_CHARGER_PRESETS = {
   Kempower: [
     {
       model: "Satellite C-Series",
@@ -409,6 +416,45 @@ const CHARGER_PRESETS = {
 };
 
 // ---------------------------------------------------------------------------
+// DC FAST CHARGER MANUFACTURERS — for NordBase Medium and Large (freestanding
+// Level 3/4 DC fast chargers, not pedestals). List + alphabetical order per
+// Simon Gullberg, 2026-08-26. Models intentionally left empty for now —
+// "Jag återkommer med olika modeller för samtliga" (he'll follow up with
+// model dimensions/bolt patterns per manufacturer). Until a manufacturer has
+// at least one model here, the UI shows a "models coming soon" note instead
+// of an empty dropdown — see the Configuration step below.
+// HOW TO ADD A MODEL: add an entry to that manufacturer's array using the
+// same shape as PEDESTAL_CHARGER_PRESETS above ({ model, w, d, h, weight,
+// ccW, ccD, basePlateW?, basePlateD? }) — ccW/ccD null until a confirmed
+// bolt pattern is on file.
+// ---------------------------------------------------------------------------
+const DC_FAST_CHARGER_PRESETS = {
+  ABB: [],
+  Alpitronic: [],
+  Autel: [],
+  "BTC Power": [],
+  ChargePoint: [],
+  "Delta Electronics": [],
+  Ekoenergetyka: [],
+  FreeWire: [],
+  Kempower: [],
+  "Power Electronics": [],
+  Siemens: [],
+  Tesla: [],
+  Tritium: [],
+};
+
+// Returns the manufacturer/model preset set for a given foundation key —
+// pedestal presets for Small, DC fast charger presets for Medium/Large,
+// nothing for foundations without a charger step (Bollard).
+function chargerPresetsForFoundation(foundationKey) {
+  if (foundationKey === "SMALL") return PEDESTAL_CHARGER_PRESETS;
+  if (foundationKey === "MEDIUM" || foundationKey === "LARGE")
+    return DC_FAST_CHARGER_PRESETS;
+  return {};
+}
+
+// ---------------------------------------------------------------------------
 // ADAPTER PLATE DRAWINGS — real, dimensioned PDF drawings supplied by
 // Nordinfra (NOT the auto-generated schematic further down in this file).
 // Once a customer picks a foundation + charger manufacturer + model, if a
@@ -425,12 +471,13 @@ const CHARGER_PRESETS = {
 //      NordBase Small uses one shared "universal" plate today (no
 //      manufacturer/model needed) — name that one small_universal.pdf.
 //   2. Add one line to ADAPTER_PLATE_DRAWINGS below, using the exact
-//      manufacturer/model text as it appears in CHARGER_PRESETS above.
+//      manufacturer/model text as it appears in PEDESTAL_CHARGER_PRESETS or
+//      DC_FAST_CHARGER_PRESETS above (whichever applies to that foundation).
 //   3. Commit + push — Vercel rebuilds and the link goes live automatically.
-// DC Medium needs ~15 of these (one per charger model, more than the 5
-// currently listed in CHARGER_PRESETS — add new manufacturer/model entries
-// there first if a charger isn't listed yet). NordBase Small starts with a
-// single shared universal plate; a couple more may be added later.
+// DC Medium/Large need one of these per charger model once
+// DC_FAST_CHARGER_PRESETS has models on file (currently empty — models
+// pending from Simon). NordBase Small starts with a single shared universal
+// plate; a couple more may be added later.
 // ---------------------------------------------------------------------------
 function adapterDrawingKey(foundationKey, manufacturer, model) {
   return `${foundationKey}|${manufacturer}|${model}`.toLowerCase();
@@ -1090,6 +1137,10 @@ export default function NordBaseCalculator() {
   // step 1 — foundation
   const [foundationKey, setFoundationKey] = useState(null);
   const foundation = foundationKey ? FOUNDATIONS[foundationKey] : null;
+  // Manufacturer/model preset set for the SELECTED foundation only (2026-08-26
+  // fix — Postlane and other pedestal brands were previously showing up as
+  // options on Medium/Large, which don't take a pedestal at all).
+  const chargerPresets = chargerPresetsForFoundation(foundation?.key);
 
   // step 2 — configuration (adapter plate + pedestal) — skipped for BOLLARD
   // Adapter-plate CC spacing (2026-08-26 rework): when a manufacturer/model
@@ -1163,7 +1214,7 @@ export default function NordBaseCalculator() {
   // its own bolt pattern, base-plate size) — null when nothing is picked yet.
   const presetModelData =
     presetMfr && presetModel !== ""
-      ? CHARGER_PRESETS[presetMfr]?.[Number(presetModel)]
+      ? chargerPresets[presetMfr]?.[Number(presetModel)]
       : null;
   const selectedChargerModelName = presetModelData?.model || "";
 
@@ -1312,7 +1363,7 @@ export default function NordBaseCalculator() {
   }
 
   function applyPreset(mfr, modelIdx) {
-    const m = CHARGER_PRESETS[mfr][modelIdx];
+    const m = chargerPresets[mfr][modelIdx];
     setChargerW(String(m.w));
     setChargerD(String(m.d));
     setChargerH(String(m.h));
@@ -1352,7 +1403,7 @@ export default function NordBaseCalculator() {
 
   function buildMailto() {
     if (!result) return "#";
-    const to = "simon@nord-infra.com";
+    const to = "info@nord-infra.com";
     const subject = `NordBase calc — ${contactName || "Customer"} — ${
       foundation?.name || ""
     }`;
@@ -1618,13 +1669,13 @@ export default function NordBaseCalculator() {
                   style={{ borderColor: "#D9D9D6" }}
                 >
                   <option value="">Quick-fill manufacturer (optional)…</option>
-                  {Object.keys(CHARGER_PRESETS).map((m) => (
+                  {Object.keys(chargerPresets).map((m) => (
                     <option key={m} value={m}>
                       {m}
                     </option>
                   ))}
                 </select>
-                {presetMfr && (
+                {presetMfr && chargerPresets[presetMfr]?.length > 0 && (
                   <select
                     value={presetModel}
                     onChange={(e) => {
@@ -1635,7 +1686,7 @@ export default function NordBaseCalculator() {
                     style={{ borderColor: "#D9D9D6" }}
                   >
                     <option value="">Model…</option>
-                    {CHARGER_PRESETS[presetMfr].map((m, i) => (
+                    {chargerPresets[presetMfr].map((m, i) => (
                       <option key={m.model} value={i}>
                         {m.model}
                       </option>
@@ -1643,6 +1694,16 @@ export default function NordBaseCalculator() {
                   </select>
                 )}
               </div>
+              {presetMfr && chargerPresets[presetMfr]?.length === 0 && (
+                <div
+                  className="text-xs mb-4 -mt-2"
+                  style={{ color: brand.steel }}
+                >
+                  Models for {presetMfr} aren't on file yet — enter its
+                  dimensions manually below, or contact Nord-Infra to confirm
+                  compatibility.
+                </div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Width (in)">
                   <input

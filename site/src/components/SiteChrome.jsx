@@ -85,8 +85,8 @@ export function SiteFooter() {
           </div>
           <div className="flex items-center gap-2 text-sm text-white/60">
             <Mail className="h-4 w-4" />
-            <a href="mailto:simon@nord-infra.com" className="hover:text-white">
-              simon@nord-infra.com
+            <a href="mailto:info@nord-infra.com" className="hover:text-white">
+              info@nord-infra.com
             </a>
           </div>
         </div>

@@ -12,18 +12,43 @@
 // change here too.
 //
 // CHARGER/PEDESTAL COMPATIBILITY (updated 2026-08-26 to match the
-// calculator's CHARGER_PRESETS + adapter-plate grid rework) — each product's
-// `chargerManufacturers` list is scoped to that product only. Only SMALL has
-// a verified pedestal-bolt-pattern survey on file, so it's the only product
-// with a manufacturer list; Medium/Large intentionally have none rather than
-// implying compatibility we haven't confirmed. This still isn't a "verified
+// calculator's PEDESTAL_CHARGER_PRESETS/DC_FAST_CHARGER_PRESETS split +
+// adapter-plate grid rework) — each product's `chargerManufacturers` list is
+// scoped to that product only. SMALL has a verified pedestal-bolt-pattern
+// survey on file, so its entries carry real model counts. MEDIUM/LARGE now
+// also list manufacturers (the DC fast charger brands Simon named
+// 2026-08-26), but every entry has `models: 0` — no dimensions/bolt patterns
+// on file yet ("jag återkommer med olika modeller för samtliga"). See how
+// ProductApp.jsx's chargerManufacturers section renders the two differently:
+// a manufacturer with models shows a count pill, a manufacturer with none
+// shows a "models coming soon" note instead. This still isn't a "verified
 // foundation + manufacturer + model pairing" claim (that's what
 // ADAPTER_PLATE_DRAWINGS in the calculator is for, and it's currently
-// empty) — it lists the manufacturers whose pedestal footprints are dialed
-// into the calculator's sizing tool, several with an auto-matched adapter
-// plate hole pattern and a few still needing a Nordinfra compatibility check
-// (see the calculator itself for which is which).
+// empty) — it lists the manufacturers whose footprints are (or will be)
+// dialed into the calculator's sizing tool.
 // ---------------------------------------------------------------------------
+
+// DC fast charger manufacturers for Medium/Large (freestanding Level 3/4
+// units, not pedestals) — list + alphabetical order per Simon Gullberg,
+// 2026-08-26. Mirrors DC_FAST_CHARGER_PRESETS in NordBaseCalculator.jsx.
+// `models: 0` on every entry until Simon supplies model-level dimensions —
+// see the `chargerManufacturers` rendering below for how a manufacturer with
+// zero models on file is shown differently from one with confirmed models.
+const DC_FAST_CHARGER_MANUFACTURERS = [
+  "ABB",
+  "Alpitronic",
+  "Autel",
+  "BTC Power",
+  "ChargePoint",
+  "Delta Electronics",
+  "Ekoenergetyka",
+  "FreeWire",
+  "Kempower",
+  "Power Electronics",
+  "Siemens",
+  "Tesla",
+  "Tritium",
+].map((name) => ({ name, models: 0 }));
 
 export const PRODUCTS = {
   bollard: {
@@ -125,6 +150,7 @@ export const PRODUCTS = {
       ccOptionsY: [],
       note: "Standard CC options for this size are still in development — enter your charger's exact footprint in the calculator for a custom-dimensioned plate today.",
     },
+    chargerManufacturers: DC_FAST_CHARGER_MANUFACTURERS,
     manual: null,
     baba: true,
   },
@@ -158,6 +184,7 @@ export const PRODUCTS = {
       ccOptionsY: [],
       note: "Adapter-plate dimensions and standard CC options for this size are still in development — contact Nordinfra with your charger's footprint for engineering support.",
     },
+    chargerManufacturers: DC_FAST_CHARGER_MANUFACTURERS,
     structuralNote:
       "Global stability, wall-plate bending, and bolt tension are calculated per ASCE 7-22 / IBC 2021, the same methodology as NordBase Small/Medium. Local wall-panel buckling under backfill compaction load is a separate failure mode not covered by these checks and has not yet been independently verified for this larger panel size.",
     manual: null,
@@ -166,3 +193,36 @@ export const PRODUCTS = {
 };
 
 export const PRODUCT_ORDER = ["bollard", "small", "medium", "large"];
+
+// ---------------------------------------------------------------------------
+// ACCESSORIES — same three add-ons the calculator offers on every foundation
+// (Simon, 2026-08-26: product landing pages should show "våra tillbehör" —
+// "samma logik på alla fundament"). Mirrors NordBaseCalculator.jsx's Step 4
+// (addBollard/addCover/addSensorPole) — kept in sync manually like the rest
+// of this file. Bollard mounts directly on NordBase Bollard itself, or as a
+// standalone assembly (its own foundation + pole) alongside any charger
+// foundation; the cover and sensor pole work the same way everywhere.
+// ---------------------------------------------------------------------------
+export const ACCESSORIES = [
+  {
+    key: "bollard",
+    name: "Bollard",
+    image: "/photos/accessory-bollard-sch10.png",
+    blurb:
+      "Schedule 10 (standard) or Schedule 40, Duplex — a protective bollard pole configured in the calculator alongside your foundation.",
+  },
+  {
+    key: "cover",
+    name: "Bollard cover",
+    image: "/photos/accessory-bollard-cover.png",
+    blurb:
+      "Snap-on cover for the bollard pole. Requires the bollard above — many pedestals already include their own base cover.",
+  },
+  {
+    key: "sensor-pole",
+    name: "Sensor pole (collision-protection frame)",
+    image: "/photos/accessory-sensor-pole.png",
+    blurb:
+      'Two-post frame that straddles the foundation to shield a sensor/camera pole from vehicle contact. ~34 lb assembly, 40.7"×33.7" footprint. Frame hot-dip galvanized per ASTM A123; the two stainless posts are powder-coated OSHA safety yellow and ship separately.',
+  },
+];

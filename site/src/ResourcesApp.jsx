@@ -86,11 +86,6 @@ const CATEGORIES = [
     desc: "Independent pull-out / anchorage test results.",
     items: [{ label: "Pull-out test report", available: false }],
   },
-  {
-    title: "FDV",
-    desc: "Forvaltning, drift og vedlikehold — operations & maintenance documentation.",
-    items: [{ label: "FDV documentation", available: false }],
-  },
 ];
 
 function Row({ item }) {

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
-import { PRODUCTS, PRODUCT_ORDER } from "./foundationData.js";
+import { PRODUCTS, PRODUCT_ORDER, ACCESSORIES } from "./foundationData.js";
 
 // ---------------------------------------------------------------------------
 // PRODUCT DETAIL — one shared template, not four separate static pages
@@ -292,23 +292,42 @@ export default function ProductApp() {
       </section>
 
       {/* CHARGER MANUFACTURERS — only rendered when this product has a
-          verified pedestal-bolt-pattern survey on file (SMALL today).
-          Medium/Large intentionally show nothing here rather than implying
-          compatibility that hasn't been confirmed for those sizes. */}
+          manufacturer list on file. SMALL's entries carry real model counts
+          (verified pedestal survey); MEDIUM/LARGE list DC fast charger
+          brands with models:0 — copy and pill styling below adapt per
+          entry so a "coming soon" manufacturer never reads as confirmed. */}
       {product.chargerManufacturers?.length > 0 && (
         <section className="border-b border-black/10 bg-white py-14">
           <div className="mx-auto max-w-6xl px-6">
-            <h2 className="text-2xl font-extrabold tracking-tight">
-              Sized for the chargers you're already speccing
-            </h2>
-            <p className="mt-2 max-w-2xl text-steel">
-              Pick your pedestal in the calculator and it fills in the exact
-              bolt spacing automatically wherever we have a confirmed hole
-              pattern on file — otherwise it flags a quick compatibility
-              check with Nordinfra instead of guessing. These manufacturers'
-              pedestal footprints are already dialed into the calculator's
-              sizing tool:
-            </p>
+            {product.chargerManufacturers.some((m) => m.models > 0) ? (
+              <>
+                <h2 className="text-2xl font-extrabold tracking-tight">
+                  Sized for the chargers you're already speccing
+                </h2>
+                <p className="mt-2 max-w-2xl text-steel">
+                  Pick your pedestal in the calculator and it fills in the
+                  exact bolt spacing automatically wherever we have a
+                  confirmed hole pattern on file — otherwise it flags a quick
+                  compatibility check with Nordinfra instead of guessing.
+                  These manufacturers' pedestal footprints are already dialed
+                  into the calculator's sizing tool:
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-extrabold tracking-tight">
+                  Compatible charger manufacturers
+                </h2>
+                <p className="mt-2 max-w-2xl text-steel">
+                  {product.name} is sized for freestanding DC fast chargers
+                  from these manufacturers. Model-level dimensions and bolt
+                  patterns are being added to the calculator — until then,
+                  enter your charger's exact footprint for a
+                  custom-dimensioned adapter plate, or contact Nordinfra to
+                  confirm compatibility for a specific model.
+                </p>
+              </>
+            )}
             <div className="mt-5 flex flex-wrap gap-3">
               {product.chargerManufacturers.map((m) => (
                 <span
@@ -317,7 +336,9 @@ export default function ProductApp() {
                 >
                   {m.name}{" "}
                   <span className="font-normal text-steel">
-                    ({m.models} model{m.models > 1 ? "s" : ""})
+                    {m.models > 0
+                      ? `(${m.models} model${m.models > 1 ? "s" : ""})`
+                      : "(models coming soon)"}
                   </span>
                 </span>
               ))}
@@ -325,12 +346,59 @@ export default function ProductApp() {
             <p className="mt-4 text-xs text-steel">
               This reflects footprints we've sized reference dimensions for —
               not an exhaustive or certified compatibility list. Don't see
-              your charger? The calculator accepts a custom footprint for any
-              pedestal.
+              your charger? The calculator accepts a custom footprint for
+              any unit.
             </p>
           </div>
         </section>
       )}
+
+      {/* ACCESSORIES — same three add-ons on every foundation (2026-08-26,
+          Simon: "på landningsida finnas våra tillbehör också. Samma logik
+          på alla fundament."). Copy adapts one line depending on whether
+          this IS the bollard foundation or a charger foundation getting a
+          standalone bollard alongside it — matches the calculator's Step 4. */}
+      <section className="border-b border-black/10 bg-white py-14">
+        <div className="mx-auto max-w-6xl px-6">
+          <h2 className="text-2xl font-extrabold tracking-tight">
+            Accessories
+          </h2>
+          <p className="mt-2 max-w-2xl text-steel">
+            {product.slug === "bollard"
+              ? "Optional add-ons that mount directly on this foundation, configured in the calculator."
+              : `Optional add-ons alongside ${product.name} — including a standalone bollard assembly with its own foundation, configured as a separate line item in the calculator.`}
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-3">
+            {ACCESSORIES.map((a) => (
+              <div
+                key={a.key}
+                className="flex h-full flex-col overflow-hidden rounded-xl border border-black/10 bg-bgSoft"
+              >
+                <div className="flex aspect-[4/3] items-center justify-center bg-white p-4">
+                  <img
+                    src={a.image}
+                    alt={a.name}
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <div className="flex flex-1 flex-col p-4">
+                  <h3 className="font-bold text-dark">{a.name}</h3>
+                  <p className="mt-1.5 flex-1 text-sm text-steel">{a.blurb}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <a
+            href={CALCULATOR_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 inline-flex items-center gap-1.5 text-sm font-bold text-dark hover:text-gold"
+          >
+            Add accessories in the calculator{" "}
+            <ArrowRight className="h-3.5 w-3.5" />
+          </a>
+        </div>
+      </section>
 
       {/* DOCUMENTS */}
       <section className="border-b border-black/10 bg-bgSoft py-14">
