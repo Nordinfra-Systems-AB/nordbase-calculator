@@ -9,6 +9,9 @@ import {
   Layers,
   Wrench,
   Ruler,
+  FileCheck2,
+  MapPin,
+  FileDown,
 } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
@@ -24,6 +27,27 @@ import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
 // This is a working draft for review — swap any copy that doesn't match how
 // Nordinfra wants to sound in market.
 // ---------------------------------------------------------------------------
+
+// CALCULATOR SHOWCASE — a prominent homepage section for the foundation
+// calculator, not just a small nav/hero button (Simon, 2026-08-26, comparing
+// to a competitor's homepage: "dom har en stor sida som visar att dom har
+// ett beräkningsprogram - vi har bara små diskreta knappar - kanske göra
+// samma?"). Screenshot below is the calculator's own live Report step
+// (NordBase Small + Postlane 7ft Steel), captured 2026-08-26 — not a mockup.
+const CALC_HIGHLIGHTS = [
+  {
+    icon: FileCheck2,
+    text: "Wind & seismic overturning check per ASCE 7-22 / IBC 2021, with a pass/fail DCR shown instantly.",
+  },
+  {
+    icon: MapPin,
+    text: "Points you to the nearest authorized distribution partner for that exact configuration.",
+  },
+  {
+    icon: FileDown,
+    text: "Downloadable submittal package — bill of materials, install manual, warranty, and spec sheet.",
+  },
+];
 
 const PRODUCTS = [
   {
@@ -320,6 +344,55 @@ export default function App() {
               See the full installation guide <ArrowRight className="h-3.5 w-3.5" />
             </a>
           </Reveal>
+        </div>
+      </section>
+
+      {/* CALCULATOR SHOWCASE — prominent, not a discreet nav button. */}
+      <section className="border-b border-white/10 bg-dark py-24">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="grid gap-12 md:grid-cols-2 md:items-center">
+            <Reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldSoft">
+                Free engineering tool
+              </span>
+              <h2 className="mt-6 text-3xl font-extrabold tracking-tight md:text-4xl">
+                Get an engineered foundation spec in under 5 minutes
+              </h2>
+              <p className="mt-4 max-w-lg text-white/70">
+                The NordBase Foundation Selector runs a real preliminary wind
+                and seismic check on your project, right in the browser — no
+                account, no waiting on a quote request.
+              </p>
+              <div className="mt-8 flex flex-col gap-4">
+                {CALC_HIGHLIGHTS.map((h) => (
+                  <div key={h.text} className="flex items-start gap-3">
+                    <h.icon className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
+                    <span className="text-sm text-white/70">{h.text}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a
+                  href={CALCULATOR_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-md bg-gold px-6 py-3 text-sm font-bold text-dark hover:bg-goldSoft"
+                >
+                  Open the calculator <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
+            </Reveal>
+            <Reveal delay={100}>
+              <div className="relative">
+                <div className="absolute -inset-6 -z-10 rounded-3xl bg-gold/10 blur-2xl" />
+                <img
+                  src="/photos/calculator-showcase.png"
+                  alt="NordBase Foundation Selector — live calculation report screen"
+                  className="w-full rounded-2xl border border-white/10 shadow-2xl"
+                />
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 

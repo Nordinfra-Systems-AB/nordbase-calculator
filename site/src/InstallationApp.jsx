@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Download, Zap, Bolt } from "lucide-react";
+import { ArrowRight, Download, ListChecks } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
 
@@ -7,15 +7,20 @@ import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
 // INSTALLATION GUIDE — a simplified, highly-visual walkthrough distinct from
 // the full PDF manuals (Simon, 2026-08-25: "iblnad vill folk bara ta den
 // enkla vägen" — sometimes people just want the easy path). Structure
-// mirrors EV Blocks' numbered-step installation page, but as ONE page with
-// two sections (AC/L2 vs. DC) rather than two separate pages behind a nav
-// dropdown — confirmed with Simon. Photos are Nordinfra's own real jobsite /
-// fabrication photography already vetted for the homepage gallery (not new
-// or unverified imagery) — see site/public/photos/. Full step-by-step
-// manuals remain the authoritative source; this page links out to them.
+// mirrors EV Blocks' numbered-step installation page.
+//
+// UNIFIED 2026-08-26 (Simon): bollard and charger foundations go in the
+// ground the same way — excavate, place & backfill, compact, mount — so
+// this is now ONE four-step sequence instead of two separate 3-step
+// sections that duplicated the same process. Step 1 keeps its original
+// photo/copy ("bra som det är med bild"); steps 2-4 use Simon's own
+// jobsite photos from 2026-08-26 (site/public/photos/install-*.jpg).
+// Manuals still differ by product line, so the download CTA at the bottom
+// offers both rather than picking one.
 // ---------------------------------------------------------------------------
 
-function StepCard({ n, title, children, image, caption }) {
+function StepCard({ n, title, children, image, images, caption }) {
+  const imgs = images || (image ? [{ src: image, caption }] : []);
   return (
     <div className="grid gap-6 rounded-xl border border-black/10 bg-white p-6 md:grid-cols-[auto_1fr_260px] md:items-start">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold text-sm font-extrabold text-dark">
@@ -27,143 +32,76 @@ function StepCard({ n, title, children, image, caption }) {
           {children}
         </div>
       </div>
-      {image && (
-        <div>
-          <div className="overflow-hidden rounded-lg border border-black/10">
-            <img src={image} alt={caption || title} className="h-40 w-full object-cover" />
-          </div>
-          {caption && (
-            <p className="mt-1.5 text-xs text-steel/70">{caption}</p>
-          )}
+      {imgs.length > 0 && (
+        <div className="flex flex-col gap-3">
+          {imgs.map((img) => (
+            <div key={img.src}>
+              <div className="overflow-hidden rounded-lg border border-black/10">
+                <img
+                  src={img.src}
+                  alt={img.caption || title}
+                  className="h-40 w-full object-cover"
+                />
+              </div>
+              {img.caption && (
+                <p className="mt-1.5 text-xs text-steel/70">{img.caption}</p>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function GuideSection({ icon: Icon, eyebrow, title, intro, steps, manual, manualNote, tiers }) {
-  return (
-    <section className="border-b border-black/10 bg-bgSoft py-16">
-      <div className="mx-auto max-w-5xl px-6">
-        <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gold">
-          <Icon className="h-4 w-4" /> {eyebrow}
-        </div>
-        <h2 className="mt-2 text-3xl font-extrabold tracking-tight">{title}</h2>
-        <p className="mt-3 max-w-2xl text-steel">{intro}</p>
-        {tiers && (
-          <p className="mt-2 max-w-2xl text-sm text-steel">
-            Applies to: {tiers}
-          </p>
-        )}
-
-        <div className="mt-8 flex flex-col gap-4">
-          {steps.map((s, i) => (
-            <StepCard key={s.title} n={i + 1} title={s.title} image={s.image} caption={s.caption}>
-              <ul className="flex flex-col gap-1.5">
-                {s.points.map((p) => (
-                  <li key={p} className="flex gap-2">
-                    <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gold" />
-                    <span>{p}</span>
-                  </li>
-                ))}
-              </ul>
-            </StepCard>
-          ))}
-        </div>
-
-        <div className="mt-8 flex flex-wrap items-center gap-3">
-          {manual ? (
-            <a
-              href={manual}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
-            >
-              <Download className="h-4 w-4" /> Download the full manual (PDF)
-            </a>
-          ) : (
-            <span className="inline-flex items-center gap-2 rounded-md border border-black/15 px-5 py-2.5 text-sm font-semibold text-steel">
-              Full manual for this size — coming soon
-            </span>
-          )}
-          {manualNote && (
-            <span className="text-xs text-steel">{manualNote}</span>
-          )}
-          <a
-            href="/resources.html"
-            className="text-sm font-bold text-dark hover:text-gold"
-          >
-            All documentation →
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-const BOLLARD_STEPS = [
+const INSTALL_STEPS = [
   {
     title: "Excavate",
     points: [
       "Standard excavation equipment — no forms, no rebar cage, no concrete truck.",
-      "Dig to the foundation's specified depth — about 20\" for NordBase Bollard.",
+      "Dig to the foundation's specified depth: about 20\" for NordBase Bollard, 25.8\" across Small, Medium, and Large.",
       "No specialty crew required — this is the same excavation any utility or paving crew already runs.",
     ],
     image: "/photos/excavator-wide.jpg",
     caption: "Standard excavation equipment, no specialty crew required.",
   },
   {
-    title: "Place & backfill",
+    title: "Place the foundation & backfill",
     points: [
-      "Laser-cut, hot-dip galvanized steel foundation drops straight into the pit — no cure time to wait out. At 16.3 lb, it's a one-person set.",
-      "Backfill with engineered crushed stone (1/2\"–5/8\" is the calculator's default gradation); the passive-pressure rating is pre-engineered per material, so there's no separate friction-angle calculation on site.",
-      "Compact per the manual's lift schedule.",
-    ],
-    image: "/photos/steel-fabrication.jpg",
-    caption: "Laser-cut, hot-dip galvanized steel — no concrete cure time.",
-  },
-  {
-    title: "Mount the bollard or accessories",
-    points: [
-      "Set your bollard or protective post — this foundation has no adapter plate or charger mount.",
-      "Optional accessories bolt on the same day: bollard assembly, bollard cover, or the sensor pole collision-protection frame.",
-      "Foundation is load-ready as soon as backfill compaction is complete — no waiting on a cure schedule.",
-    ],
-    image: "/photos/assembly-ac.png",
-    caption: "AC & Bollard assembly, ready for a bollard or protective post.",
-  },
-];
-
-const CHARGER_STEPS = [
-  {
-    title: "Excavate",
-    points: [
-      "Standard excavation, sized to the foundation footprint — up to about 47\" × 47\" at the base on NordBase Large.",
-      "Depth is 25.8\" across Small, Medium, and Large.",
-      "No forms, no rebar cage, no concrete truck.",
-    ],
-    image: "/photos/excavator-wide.jpg",
-    caption: "Standard excavation equipment, no specialty crew required.",
-  },
-  {
-    title: "Place & backfill",
-    points: [
-      "These foundations run roughly 33–99 lb — Small and Medium are a two-person lift, Large typically wants a small crane or excavator-assisted set.",
-      "Backfill with engineered crushed stone (1/2\"–5/8\" default gradation) and compact per the manual's lift schedule.",
+      "Laser-cut, hot-dip galvanized steel foundation drops straight into the pit — no cure time to wait out.",
+      "Backfill with engineered crushed stone (1/2\"–5/8\" is the calculator's default gradation); the passive-pressure rating is pre-engineered per material.",
       "Every mounting hole is already cut to spec before it leaves the shop — no field drilling on the foundation itself.",
     ],
-    image: "/photos/steel-detail.jpg",
-    caption: "Every mounting hole cut to spec before it leaves the shop.",
+    image: "/photos/install-place-backfill.jpg",
+    caption: "Backfilling around the foundations with engineered crushed stone.",
   },
   {
-    title: "Mount the charger",
+    title: "Compact the backfill",
     points: [
-      "Adapter plate bolts to your charger's pedestal footprint — standard CC options on Small, custom-dimensioned via the calculator on Medium and Large today.",
-      "Field-drillable plate accommodates essentially any pedestal charger's bolt pattern.",
-      "Foundation is load-ready as soon as backfill compaction is complete.",
+      "Compact in lifts per the manual's schedule — this is what the passive-pressure rating is engineered around.",
+      "A standard plate compactor is all the equipment this step needs.",
+      "Repeat after each backfill lift, not just once at the top.",
     ],
-    image: "/photos/assembly-medium.png",
-    caption: "DC Medium assembly, charger and site lighting mounted.",
+    images: [
+      {
+        src: "/photos/install-compact-overview.jpg",
+        caption: "Backfill compacted in lifts around a set of foundations.",
+      },
+      {
+        src: "/photos/install-compact-detail.jpg",
+        caption: "A standard plate compactor is all this step needs.",
+      },
+    ],
+  },
+  {
+    title: "Mount & you're ready",
+    points: [
+      "Set your bollard, protective post, or charger pedestal — foundation is load-ready as soon as backfill compaction is complete.",
+      "No waiting on a concrete cure schedule — most installs finish in a single day.",
+      "Adapter plate (charger foundations) or accessory mounts (bollard) bolt on the same day.",
+    ],
+    image: "/photos/install-complete.jpg",
+    caption: "Installed and load-ready — no concrete cure time.",
   },
 ];
 
@@ -178,7 +116,7 @@ export default function InstallationApp() {
             Installation guide
           </span>
           <h1 className="mt-6 max-w-2xl text-4xl font-extrabold leading-tight tracking-tight md:text-5xl">
-            The simple version — three steps, no concrete cure time.
+            The simple version — four steps, no concrete cure time.
           </h1>
           <p className="mt-4 max-w-2xl text-white/70">
             This is the quick, visual walkthrough. For a project-specific,
@@ -205,28 +143,74 @@ export default function InstallationApp() {
         </div>
       </section>
 
-      <div className="bg-bgSoft text-dark">
-        <GuideSection
-          icon={Bolt}
-          eyebrow="Section 1"
-          title="Bollard installation"
-          intro="No charger, no adapter plate — the lightest, fastest install in the lineup."
-          tiers="NordBase Bollard"
-          steps={BOLLARD_STEPS}
-          manual="/docs/manuals/NI_Manual_AC_001_US.pdf"
-        />
+      <section className="border-b border-black/10 bg-bgSoft py-16 text-dark">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gold">
+            <ListChecks className="h-4 w-4" /> Installation steps
+          </div>
+          <h2 className="mt-2 text-3xl font-extrabold tracking-tight">
+            Same process, every foundation
+          </h2>
+          <p className="mt-3 max-w-2xl text-steel">
+            Bollard and charger foundations go in the ground the same way —
+            only the equipment you bolt on at the end changes.
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-steel">
+            Applies to: NordBase Bollard, Small, Medium, Large
+          </p>
 
-        <GuideSection
-          icon={Zap}
-          eyebrow="Section 2"
-          title="Charger foundation installation"
-          intro="Level 2 pedestal through Level 4 high-power DC charging — same three-step process, sized up for heavier equipment."
-          tiers="NordBase Small, Medium, Large"
-          steps={CHARGER_STEPS}
-          manual="/docs/manuals/NI_Manual_DCS_001_US.pdf"
-          manualNote="Covers NordBase Small — Medium and Large manuals not yet published."
-        />
-      </div>
+          <div className="mt-8 flex flex-col gap-4">
+            {INSTALL_STEPS.map((s, i) => (
+              <StepCard
+                key={s.title}
+                n={i + 1}
+                title={s.title}
+                image={s.image}
+                images={s.images}
+                caption={s.caption}
+              >
+                <ul className="flex flex-col gap-1.5">
+                  {s.points.map((p) => (
+                    <li key={p} className="flex gap-2">
+                      <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-gold" />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </StepCard>
+            ))}
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <a
+              href="/docs/manuals/NI_Manual_AC_001_US.pdf"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
+            >
+              <Download className="h-4 w-4" /> Bollard manual (PDF)
+            </a>
+            <a
+              href="/docs/manuals/NI_Manual_DCS_001_US.pdf"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
+            >
+              <Download className="h-4 w-4" /> Charger manual (PDF)
+            </a>
+            <span className="text-xs text-steel">
+              Charger manual covers NordBase Small — Medium and Large not yet
+              published.
+            </span>
+            <a
+              href="/resources.html"
+              className="text-sm font-bold text-dark hover:text-gold"
+            >
+              All documentation →
+            </a>
+          </div>
+        </div>
+      </section>
 
       <SiteFooter />
     </div>

@@ -1,5 +1,6 @@
 import React from "react";
-import { ArrowLeft, Globe2, Phone, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, Globe2, Phone, Mail, MapPin, ChevronRight } from "lucide-react";
+import UsPartnersMap from "./components/UsPartnersMap.jsx";
 
 // ---------------------------------------------------------------------------
 // DISTRIBUTION PARTNERS — public directory, organized Country → State → list.
@@ -37,20 +38,31 @@ const REGIONS = [
   { country: "Australia", states: [] },
 ];
 
-function PartnerCard({ p }) {
+// Feeds the map's pin set — US-only since Nordinfra is US-focused today
+// (the "Markets" section was removed site-wide 2026-08-26 for the same
+// reason). Add a state name here automatically once it appears in REGIONS.
+const US_PARTNER_STATES = new Set(
+  (REGIONS.find((r) => r.country === "United States")?.states || []).map((s) => s.state)
+);
+
+// "Block" styling below (dark navy header bar + light body, chevron rows)
+// mirrors the state-directory layout Simon referenced from a competitor
+// site (2026-08-26: "block enligt bild med info om partner") — one block
+// per state, listing every partner in it.
+function PartnerRow({ p }) {
   return (
-    <div className="rounded-lg border border-black/10 bg-white p-4">
-      <div className="flex items-start gap-2 text-sm">
+    <div className="flex flex-col gap-2 border-b border-black/5 py-3 last:border-b-0 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex items-start gap-2">
         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
         <div>
           <div className="font-bold text-dark">{p.name}</div>
-          <div className="text-steel">{p.city}</div>
+          <div className="text-sm text-steel">{p.city}</div>
           {p.addressNote && (
             <div className="mt-0.5 text-xs text-steel/70">{p.addressNote}</div>
           )}
         </div>
       </div>
-      <div className="mt-3 flex flex-col gap-1.5 border-t border-black/5 pt-3 text-xs">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 pl-6 text-xs sm:pl-0 sm:text-right">
         {p.website && (
           <a
             href={p.website}
@@ -78,6 +90,24 @@ function PartnerCard({ p }) {
             <Mail className="h-3.5 w-3.5 text-gold" /> {p.email}
           </a>
         )}
+      </div>
+    </div>
+  );
+}
+
+function StateBlock({ state, partners }) {
+  return (
+    <div className="overflow-hidden rounded-lg border border-black/10 bg-white shadow-sm">
+      <div className="flex items-center justify-between bg-dark px-4 py-2.5">
+        <span className="text-sm font-extrabold uppercase tracking-wide text-white">
+          {state}
+        </span>
+        <ChevronRight className="h-4 w-4 text-gold" />
+      </div>
+      <div className="bg-bgSoft px-4 py-1">
+        {partners.map((p) => (
+          <PartnerRow key={p.name + p.city} p={p} />
+        ))}
       </div>
     </div>
   );
@@ -126,6 +156,10 @@ export default function PartnersApp() {
           to get pointed to one for a specific project.
         </p>
 
+        <div className="mt-10">
+          <UsPartnersMap partnerStates={US_PARTNER_STATES} />
+        </div>
+
         <div className="mt-10 flex flex-col gap-10">
           {REGIONS.map((region) => (
             <div key={region.country}>
@@ -143,18 +177,9 @@ export default function PartnersApp() {
                   directly in the meantime.
                 </p>
               ) : (
-                <div className="mt-4 flex flex-col gap-6">
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   {region.states.map((s) => (
-                    <div key={s.state}>
-                      <div className="text-xs font-bold uppercase tracking-wide text-steel">
-                        {s.state}
-                      </div>
-                      <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                        {s.partners.map((p) => (
-                          <PartnerCard key={p.name + p.city} p={p} />
-                        ))}
-                      </div>
-                    </div>
+                    <StateBlock key={s.state} state={s.state} partners={s.partners} />
                   ))}
                 </div>
               )}
