@@ -30,3 +30,12 @@ html {
     animation: none;
   }
 }
+
+/* Site Planner print output — hide interactive chrome (header, footer,
+   address form, sidebar controls) and print just the satellite canvas with
+   placed foundations plus the print-only summary block. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

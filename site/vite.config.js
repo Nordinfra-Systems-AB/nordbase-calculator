@@ -12,6 +12,7 @@ export default defineConfig({
         partners: resolve(__dirname, "partners.html"),
         product: resolve(__dirname, "product.html"),
         installation: resolve(__dirname, "installation.html"),
+        siteplanner: resolve(__dirname, "site-planner.html"),
       },
     },
   },

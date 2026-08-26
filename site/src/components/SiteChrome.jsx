@@ -21,6 +21,7 @@ const NAV_LINKS = [
   { label: "Sustainability", href: "/#sustainability" },
   { label: "Markets", href: "/#markets" },
   { label: "Installation", href: "/installation.html" },
+  { label: "Site Planner", href: "/site-planner.html" },
   { label: "Partners", href: "/partners.html" },
   { label: "Resources", href: "/resources.html" },
   { label: "Contact", href: "/#contact" },
