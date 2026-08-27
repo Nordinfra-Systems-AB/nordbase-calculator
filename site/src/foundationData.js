@@ -87,7 +87,14 @@ export const PRODUCTS = {
       "For Level 2 pedestal chargers — a grid of confirmed hole positions covers square and rectangular bolt patterns.",
     blurb:
       "NordBase Small is sized for Level 2 pedestal chargers. Its adapter plate has a grid of confirmed hole positions — square or rectangular — or a custom dimension for anything not yet on the grid. Pick your pedestal in the calculator and it fills in the exact bolt spacing automatically wherever we have a confirmed match.",
-    images: ["/photos/product-small.png", "/photos/assembly-small.png"],
+    images: [
+      "/photos/product-small.png",
+      "/photos/assembly-small.png",
+      "/photos/small-pedestal-full.png",
+      "/photos/small-pedestal-detail.png",
+      "/photos/small-sensor-detail1.png",
+      "/photos/small-sensor-detail2.png",
+    ],
     hasCharger: true,
     dims: {
       top: { w: 12, d: 12 },
@@ -131,7 +138,18 @@ export const PRODUCTS = {
       "For Level 3 DC fast chargers — rectangular base for a larger stabilizing footprint.",
     blurb:
       "NordBase Medium is built for Level 3 DC fast chargers. Its rectangular base plate gives heavier equipment a wider stabilizing footprint than the square Small tier, and it shares the same passive-pressure-engineered backfill approach across the whole line.",
-    images: ["/photos/product-medium.png", "/photos/assembly-medium.png"],
+    images: [
+      "/photos/product-medium.png",
+      "/photos/assembly-medium.png",
+      "/photos/medium-nested-stack.png",
+      "/photos/medium-shells-angle1.png",
+      "/photos/medium-shells-angle2.png",
+      "/photos/medium-array-front.png",
+      "/photos/medium-single-iso.png",
+      "/photos/medium-assembly-iso1.png",
+      "/photos/medium-assembly-iso2.png",
+      "/photos/medium-assembly-iso3.png",
+    ],
     hasCharger: true,
     dims: {
       top: { w: 19.6, d: 25.6 },
