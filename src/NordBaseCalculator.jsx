@@ -41,6 +41,8 @@ import {
 // ---------------------------------------------------------------------------
 const inToM = (inches) => inches * 0.0254;
 const lbToKN = (lb) => (lb * 0.45359237 * 9.81) / 1000; // lbmass -> kN (weight force)
+const mmToIn = (mm) => mm / 25.4;
+const kgToLb = (kg) => kg * 2.2046226;
 
 // ---------------------------------------------------------------------------
 // FOUNDATION CATALOGUE
@@ -169,9 +171,96 @@ const FOUNDATIONS = {
     blurb:
       "For Level 4 / high-power DC charging. Widened base plate and reinforced shell for larger equipment — adapter-plate CC options are still in development.",
   },
+  // ---------------------------------------------------------------------------
+  // POWER BLOCK — C503 (added 2026-08-27, Simon Gullberg build authorization:
+  // "du kan bygga med preliminär flagga"). Three NordBase Medium foundations
+  // tied together with a hat-profile (36x SS304 rivets) plus one shared
+  // adapter plate, sized specifically for the Kempower C503 cabinet (one
+  // welded unit spanning all 3 foundations — NOT three separate charger
+  // cabinets). Structural methodology validated against
+  // Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx, itself built on top of
+  // the confirmed single-foundation Nordinfra_Master_USA_ASCE7_v6 workbook —
+  // see runPowerBlockCheck() below for the calc engine.
+  //
+  // SCOPE NOTE: only C503 (3-unit) is implemented. C501 (single foundation)
+  // needs no new machinery — it belongs in DC_FAST_CHARGER_PRESETS.Kempower
+  // as a normal NordBase Medium charger preset once Simon supplies its own
+  // dims. C502 (2-unit) is not implemented — no confirmed geometry supplied
+  // yet; do not add it without real drawings (do not extrapolate from C503).
+  // ---------------------------------------------------------------------------
+  POWER_BLOCK_C503: {
+    key: "POWER_BLOCK_C503",
+    name: "NordBase Power Block — C503",
+    subtitle: "DC foundation group",
+    levelLabel: "Level 3 group",
+    levelDesc: "3× DC Medium + shared adapter plate",
+    // Informational footprint only (diagram + product card) — the structural
+    // check below is geometry-driven from the fields further down, not from
+    // top/bottom/depthIn. "Top" = the shared plate's own footprint; "bottom"
+    // is an approximate buried envelope for 3 Medium foundations in a row
+    // (2052mm overall width per Simon's assembly drawing; depth taken as one
+    // Medium foundation's own base-plate depth, 39.4", since the group is a
+    // single row, not stacked in that direction).
+    top: { w: Number(mmToIn(1810).toFixed(1)), d: Number(mmToIn(785).toFixed(1)) },
+    bottom: { w: Number(mmToIn(2052).toFixed(1)), d: 39.4 },
+    depthIn: 25.8, // burial depth — same as NordBase Medium (confirmed link, xlsx C27 ≈ 650mm)
+    weightLb: Number((3 * 61.26 + kgToLb(55.77)).toFixed(1)), // 3× Medium foundation + shared plate (charger weight is separate, see chargerSpec)
+    photoUrl: null, // no product photo yet — falls back to the schematic diagram
+    hasCharger: true,
+    hasAccessories: false,
+    isPowerBlock: true,
+    unitCount: 3,
+    preliminary: true,
+    structuralNote:
+      "Preliminary release. Group overturning/sliding resistance, hat-profile rivet connection, and adapter-plate bolt tension are calculated per ASCE 7-22 / IBC 2021 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the 3-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case — see code comments). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern (6 internal cross-walls + 2 long edges) that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Hat-profile rivet shear capacity uses a placeholder value pending a manufacturer spec sheet. Not PE-stamped.",
+    // Kempower C503 cabinet — ONE welded unit spanning all 3 foundations.
+    // Confirmed by Simon 2026-08-27 (previously modeled, incorrectly, as 3
+    // separate cabinets — corrected before this was ever shipped).
+    chargerSpec: {
+      manufacturer: "Kempower",
+      model: "C503",
+      widthIn: mmToIn(2000), // wind-face width, whole cabinet
+      depthIn: mmToIn(857),
+      heightIn: mmToIn(2150),
+      weightLb: kgToLb(1500),
+    },
+    // Shared adapter plate — fixed size for this configuration, not user-adjustable.
+    groupPlate: {
+      widthIn: mmToIn(1810), // bolt-pattern width — group tipping lever arm below
+      heightIn: mmToIn(785),
+      thicknessMm: 5,
+      weightLb: kgToLb(55.77), // area x thickness x 7850 kg/m3 estimate — see xlsx note, direction of error uncertain
+      material:
+        "Solid steel plate, bent edges 50mm down all around — grade to confirm (Simon: Gr50; assumed same as foundation shell, ASTM A1011 SS Gr33, for the (uncalculated) bending check only)",
+    },
+    hatProfile: {
+      rivetsPerSide: 18,
+      sides: 2,
+      totalRivets: 36,
+      rivetSpec: "4.8mm SS304 blind rivet",
+      rivetCapacityEachKn: 4, // ⚠ PLACEHOLDER — not yet a manufacturer-confirmed spec value
+      phi: 0.75,
+    },
+    boltGroups: {
+      // M12 class 8.8 — different spec from the M16 8.8 used on Small/Medium/
+      // Large's own charger-plate connection (BOLT_SPEC_LABEL/BOLT_TENSION_*).
+      plateToFoundation: { count: 14, pitchIn: mmToIn(612) },
+      chargerToPlate: { count: 12, pitchIn: mmToIn(608) },
+    },
+    adapterPlate: {
+      size: { w: Number(mmToIn(1810).toFixed(1)), d: Number(mmToIn(785).toFixed(1)) },
+      thicknessIn: Number(mmToIn(5).toFixed(2)),
+      material: "Solid steel plate, bent edges — grade to confirm",
+      ccOptionsX: [],
+      ccOptionsY: [],
+      note: "Fixed group plate sized specifically for the Kempower C503 array — not user-adjustable. Bolt tension for both bolt groups is already included in the structural check above.",
+    },
+    blurb:
+      "Three NordBase Medium foundations joined by a hat-profile (36× SS304 rivets) with one shared adapter plate, sized for the Kempower C503 cabinet. Preliminary — group methodology validated against Nordinfra's confirmed single-foundation calc; adapter-plate bending not yet independently checked.",
+  },
 };
 
-const FOUNDATION_ORDER = ["BOLLARD", "SMALL", "MEDIUM", "LARGE"];
+const FOUNDATION_ORDER = ["BOLLARD", "SMALL", "MEDIUM", "LARGE", "POWER_BLOCK_C503"];
 
 // ---------------------------------------------------------------------------
 // BACKFILL / SOIL — from Master ASCE7 sheet "2 - Basic Data"
@@ -225,6 +314,15 @@ const BOLT_AS_MM2 = 157; // M16 tensile stress area per ISO 898-1
 const BOLT_TENSION_PHI = 0.75; // ACI 318-19 §17.6.1
 const BOLT_TENSION_CAPACITY_KN =
   BOLT_TENSION_PHI * BOLT_AS_MM2 * (BOLT_FUB_MPA / 1000); // = 94.2 kN (2 bolts in tension, per adapter-plate bolt pattern)
+
+// M12 class 8.8 — Power Block plate bolts (plate-to-foundation, charger-to-
+// plate). Different spec from the M16 8.8 above used on Small/Medium/Large.
+// Confirmed 2026-08-27 against Nordinfra_Master_USA_ASCE7_v6's own corrective
+// comment (M12 tensile stress area = 84.3mm² per ISO 898-1).
+const BOLT_M12_SPEC_LABEL = "M12 class 8.8 (ISO 898-1)";
+const BOLT_M12_AS_MM2 = 84.3;
+const BOLT_M12_TENSION_CAPACITY_KN =
+  BOLT_TENSION_PHI * BOLT_M12_AS_MM2 * (BOLT_FUB_MPA / 1000); // = 50.58 kN
 
 const SDS_REFERENCE = [
   { city: "Los Angeles, CA", sds: 1.25 },
@@ -444,6 +542,26 @@ const DC_FAST_CHARGER_PRESETS = {
   Tritium: [],
 };
 
+// Power Block C503's charger is fixed (one confirmed Kempower C503 cabinet
+// spanning all 3 foundations) — this preset exists mainly so Step 2 can
+// display it through the same manufacturer/model UI pattern as the rest of
+// the product line, NOT so the customer can pick a different model. See
+// FOUNDATIONS.POWER_BLOCK_C503.chargerSpec, which is what the structural
+// check actually reads from (fixed, not tied to this preset/UI state).
+const POWER_BLOCK_CHARGER_PRESETS = {
+  Kempower: [
+    {
+      model: "C503",
+      w: Number(mmToIn(2000).toFixed(1)),
+      d: Number(mmToIn(857).toFixed(1)),
+      h: Number(mmToIn(2150).toFixed(1)),
+      weight: Number(kgToLb(1500).toFixed(0)),
+      ccW: null,
+      ccD: null,
+    },
+  ],
+};
+
 // Returns the manufacturer/model preset set for a given foundation key —
 // pedestal presets for Small, DC fast charger presets for Medium/Large,
 // nothing for foundations without a charger step (Bollard).
@@ -451,6 +569,7 @@ function chargerPresetsForFoundation(foundationKey) {
   if (foundationKey === "SMALL") return PEDESTAL_CHARGER_PRESETS;
   if (foundationKey === "MEDIUM" || foundationKey === "LARGE")
     return DC_FAST_CHARGER_PRESETS;
+  if (foundationKey === "POWER_BLOCK_C503") return POWER_BLOCK_CHARGER_PRESETS;
   return {};
 }
 
@@ -574,8 +693,16 @@ const EXPECTED_TIPPING_ARM_M = {
   MEDIUM: 0.3962, // 31.2" / 2 (short side of the 31.2x39.4 base plate)
   LARGE: 0.5969, // 47" / 2 — matches Nordinfra's Excel worked example exactly
 };
+// Single-foundation keys only — Power Block's tipping-arm formula is
+// different (shared-plate bolt-pattern width / 2, computed in
+// runPowerBlockCheck, not calcStability) and isn't covered by this
+// generic-engine regression guard, so it's excluded here rather than added
+// to EXPECTED_TIPPING_ARM_M with a mismatched formula.
+const SELF_TEST_FOUNDATION_KEYS = FOUNDATION_ORDER.filter(
+  (key) => !FOUNDATIONS[key].isPowerBlock
+);
 function runSelfTest() {
-  const results = FOUNDATION_ORDER.map((key) => {
+  const results = SELF_TEST_FOUNDATION_KEYS.map((key) => {
     const f = FOUNDATIONS[key];
     const basePlateShortIn = Math.min(f.bottom.w, f.bottom.d);
     const aM = inToM(basePlateShortIn) / 2;
@@ -790,6 +917,188 @@ function runCheck({
     governing,
     pass,
     chargerDepthIn: d,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// POWER BLOCK CALC ENGINE — group-passive-resistance / group-wind-seismic
+// checks for a 3-foundation array (NordBase Power Block C503). Mirrors
+// runCheck()'s shape (same checks[]/governing/pass return contract, so the
+// Step-5 report UI works unmodified) but implements the group logic
+// validated in Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx. Geometry,
+// bolt counts, rivet counts and lever arms come from the foundation object
+// itself (FOUNDATIONS.POWER_BLOCK_C503) — this function is not parametrized
+// by foundation.key beyond that, so a future C502 would need its own
+// unitCount/groupPlate/hatProfile/boltGroups data, not new code here.
+// ---------------------------------------------------------------------------
+function runPowerBlockCheck({ foundation, windSpeedMph, sds, backfill }) {
+  if (!foundation || !foundation.isPowerBlock) return null;
+  const V = Number(windSpeedMph) || 0;
+  const SDS = Number(sds) || 0;
+  const unitCount = foundation.unitCount;
+  const charger = foundation.chargerSpec;
+  const plate = foundation.groupPlate;
+
+  // Single-unit passive soil resistance, from the underlying NordBase Medium
+  // geometry — matches "3 - Input & Calcs" of the confirmed per-unit
+  // workbook (this IS the same calcStability() used for the standalone
+  // Medium foundation elsewhere in this file; WpKn is irrelevant to FpSoilKn
+  // so 0 is passed here — the group's own weight is applied further down).
+  const singleStability = calcStability({
+    foundation: FOUNDATIONS.MEDIUM,
+    Kpd: backfill.Kpd,
+    sds: SDS,
+    WpKn: 0,
+  });
+  const FpSoilSingleKn = singleStability.FpSoilKn;
+  const hM = singleStability.hM;
+
+  // Group efficiency factor η = 1.0 — validated 2026-08-27: for the governing
+  // wind-on-cabinet-long-side load case, the 3 foundations sit side-by-side
+  // PERPENDICULAR to that load, so their passive-pressure wedges don't
+  // shadow each other (consistent with AASHTO/Reese p-y group-reduction-
+  // factor literature for laterally-loaded element groups). Converse-Labarre
+  // (proposed by an independent second-opinion review) does NOT apply here —
+  // that formula is for axial pile-group capacity, a different mechanism
+  // from lateral passive-earth resistance on squat, wide-based shells like
+  // these. This value is direction-dependent: it would drop toward ~0.4–0.5
+  // if gable/short-end wind ever governed instead — that case is not
+  // modeled. See claude/PowerBlock_C503_Draft_Calc_20260827.md for the full
+  // derivation.
+  const ETA_GROUP = 1.0;
+  const FpSoilNaiveSumKn = FpSoilSingleKn * unitCount;
+  const FpSoilGroupKn = ETA_GROUP * FpSoilNaiveSumKn;
+
+  // Wind — ONE welded cabinet spans the whole group (confirmed by Simon
+  // 2026-08-27 — do NOT multiply by unitCount; the width Simon supplied
+  // (2000mm) already matches the group's own envelope width, not a single
+  // per-slot charger).
+  const wind = calcWind({
+    chargerWidthIn: charger.widthIn,
+    chargerHeightIn: charger.heightIn,
+    windSpeedMph: V,
+  });
+
+  // Seismic — combined weight = N foundations + 1 shared plate + 1 cabinet
+  // (not x unitCount on the plate or the cabinet).
+  const WpGroupKn = lbToKN(
+    unitCount * FOUNDATIONS.MEDIUM.weightLb + plate.weightLb + charger.weightLb
+  );
+  const seismic = calcSeismic({ WpKn: WpGroupKn, sds: SDS, zcM: wind.zcM });
+
+  // Stability — tipping lever arm uses the shared plate's own bolt-pattern
+  // width (half), not any single foundation's base plate. Short-axis
+  // overturning only, matching the xlsx's own flagged simplification —
+  // overturning about the long axis / differential effects between units are
+  // not modeled.
+  const aGroupM = inToM(plate.widthIn) / 2;
+  const MpGroupKnm = FpSoilGroupKn * ((2 * hM) / 3);
+  const seismicDeadFactor = 0.9 - 0.2 * SDS;
+  const MstbWindGroup = GRAVITY_STAB_FACTOR * (WpGroupKn * aGroupM + MpGroupKnm);
+  const MstbSeisGroup = seismicDeadFactor * WpGroupKn * aGroupM + MpGroupKnm;
+  // Same φ=0.9 resistance factor on passive-earth sliding capacity applied to
+  // BOTH load cases, consistent with calcStability() above (the confirmed
+  // single-foundation engine uses one slideCapacityKn for wind and seismic
+  // alike). This is a deliberate unification, more conservative than the
+  // draft xlsx (which used the un-factored value for seismic sliding only) —
+  // removes an asymmetry that was never independently reviewed.
+  const slideCapacityGroupKn = 0.9 * FpSoilGroupKn;
+
+  const checks = [
+    {
+      key: "ot-wind",
+      label: "Overturning — wind (group)",
+      capacity: MstbWindGroup,
+      demand: wind.MdWindKnm,
+      unit: "kNm",
+    },
+    {
+      key: "sl-wind",
+      label: "Sliding — wind (group)",
+      capacity: slideCapacityGroupKn,
+      demand: wind.FwKn,
+      unit: "kN",
+    },
+    {
+      key: "ot-seis",
+      label: "Overturning — seismic (group)",
+      capacity: MstbSeisGroup,
+      demand: seismic.MdSeisKnm,
+      unit: "kNm",
+    },
+    {
+      key: "sl-seis",
+      label: "Sliding — seismic (group)",
+      capacity: slideCapacityGroupKn,
+      demand: seismic.FpDesign,
+      unit: "kN",
+    },
+  ];
+
+  const governingMomentKnm = Math.max(wind.MdWindKnm, seismic.MdSeisKnm);
+
+  // Hat-profile rivet connection (one long side) — PLACEHOLDER capacity
+  // (foundation.hatProfile.rivetCapacityEachKn), not yet a manufacturer-
+  // confirmed spec value. Conservative simplifying assumption carried from
+  // the xlsx: one long side's rivets must carry the full lateral demand of
+  // one end unit (group demand / unitCount), direct shear only — moment/
+  // eccentricity in the joint is not modeled.
+  const hat = foundation.hatProfile;
+  const rivetSideCapacityKn = hat.rivetsPerSide * hat.rivetCapacityEachKn * hat.phi;
+  const rivetDemandKn = Math.max(wind.FwKn, seismic.FpDesign) / unitCount;
+  checks.push({
+    key: "rivet-shear",
+    label: "Hat-profile rivet connection — shear",
+    capacity: rivetSideCapacityKn,
+    demand: rivetDemandKn,
+    unit: "kN",
+  });
+
+  // Plate-to-foundation and charger-to-plate bolt tension — M12 class 8.8,
+  // same φNsa formula as the confirmed M16 spec used elsewhere in this file,
+  // scaled to this connection's own bolt spec and each group's measured
+  // pitch/lever arm (foundation.boltGroups).
+  const bolts = foundation.boltGroups;
+  const demandPlateToFoundationKn =
+    governingMomentKnm / (2 * inToM(bolts.plateToFoundation.pitchIn));
+  checks.push({
+    key: "bolt-plate-foundation",
+    label: `Plate-to-foundation bolts (${bolts.plateToFoundation.count}×${BOLT_M12_SPEC_LABEL.split(" ")[0]}) — tension`,
+    capacity: BOLT_M12_TENSION_CAPACITY_KN,
+    demand: demandPlateToFoundationKn,
+    unit: "kN",
+  });
+
+  const demandChargerToPlateKn =
+    governingMomentKnm / (2 * inToM(bolts.chargerToPlate.pitchIn));
+  checks.push({
+    key: "bolt-charger-plate",
+    label: `Charger-to-plate bolts (${bolts.chargerToPlate.count}×${BOLT_M12_SPEC_LABEL.split(" ")[0]}) — tension`,
+    capacity: BOLT_M12_TENSION_CAPACITY_KN,
+    demand: demandChargerToPlateKn,
+    unit: "kN",
+  });
+
+  const scoredChecks = checks.map((c) => ({
+    ...c,
+    dcr: c.capacity > 0 ? c.demand / c.capacity : Infinity,
+  }));
+
+  const governing = scoredChecks.reduce(
+    (a, b) => (b.dcr > a.dcr ? b : a),
+    scoredChecks[0]
+  );
+  const pass = governing.dcr <= 1.0;
+
+  return {
+    wind,
+    seismic,
+    WpKn: WpGroupKn,
+    governingMomentKnm,
+    checks: scoredChecks,
+    governing,
+    pass,
+    chargerDepthIn: charger.depthIn,
   };
 }
 
@@ -1258,6 +1567,14 @@ export default function NordBaseCalculator() {
     : undefined;
 
   const result = useMemo(() => {
+    if (foundation?.isPowerBlock) {
+      return runPowerBlockCheck({
+        foundation,
+        windSpeedMph: windSpeed,
+        sds,
+        backfill,
+      });
+    }
     if (!foundation || !foundation.hasCharger) {
       if (foundation && !foundation.hasCharger) {
         // Bollard: no charger wind load, but still check the bare foundation
@@ -1323,7 +1640,9 @@ export default function NordBaseCalculator() {
   const canNext = [
     true, // project info optional
     !!foundation,
-    skipConfig
+    foundation?.isPowerBlock
+      ? true // fixed cabinet/plate geometry — nothing to configure
+      : skipConfig
       ? true
       : !!chargerW &&
         !!chargerD &&
@@ -1418,10 +1737,12 @@ export default function NordBaseCalculator() {
       `Foundation: ${foundation?.name || "-"} (${
         foundation?.levelLabel || "-"
       })`,
-      foundation?.hasCharger
+      foundation?.isPowerBlock
+        ? `Charger: ${foundation.chargerSpec.manufacturer} ${foundation.chargerSpec.model} (fixed, ${foundation.unitCount}-foundation array)`
+        : foundation?.hasCharger
         ? `Charger: ${chargerW}"×${chargerD}"×${chargerH}", ${chargerWeight} lb`
         : "",
-      foundation?.hasCharger
+      foundation?.hasCharger && !foundation?.isPowerBlock
         ? `Adapter plate CC: ${effectiveCcW}"×${effectiveCcD}"`
         : "",
       `Wind speed: ${windSpeed} mph  |  SDS: ${sds} g`,
@@ -1635,7 +1956,7 @@ export default function NordBaseCalculator() {
           )}
 
           {/* STEP 2 — CONFIGURATION (adapter plate + charger) */}
-          {step === 2 && foundation && !skipConfig && (
+          {step === 2 && foundation && !skipConfig && !foundation.isPowerBlock && (
             <div>
               <h2
                 className="text-lg font-bold mb-1"
@@ -1930,6 +2251,130 @@ export default function NordBaseCalculator() {
                   SS Gr 33 + ZM115 · Base plate: {foundation.basePlateType} ·
                   Charger bolts: {BOLT_SPEC_LABEL}
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 2 (Power Block variant) — fixed cabinet + shared-plate
+              hardware summary, read-only. Nothing to configure: geometry,
+              bolt counts and rivet counts are all confirmed and fixed for
+              this configuration (see FOUNDATIONS.POWER_BLOCK_C503). */}
+          {step === 2 && foundation && foundation.isPowerBlock && (
+            <div>
+              <h2
+                className="text-lg font-bold mb-1"
+                style={{ color: brand.dark }}
+              >
+                Power Block hardware
+              </h2>
+              <p className="text-sm mb-6" style={{ color: brand.steel }}>
+                This configuration is fixed — geometry, bolts, and rivets are
+                confirmed for the Kempower C503 array. Nothing to enter here.
+              </p>
+
+              <div
+                className="border rounded-md p-4 mb-4"
+                style={{ borderColor: "#D9D9D6" }}
+              >
+                <div
+                  className="text-sm font-semibold mb-2"
+                  style={{ color: brand.dark }}
+                >
+                  Charger cabinet — {foundation.chargerSpec.manufacturer}{" "}
+                  {foundation.chargerSpec.model}
+                </div>
+                <div
+                  className="text-xs grid grid-cols-2 sm:grid-cols-4 gap-2"
+                  style={{ color: brand.steel }}
+                >
+                  <div>
+                    Width:{" "}
+                    <span style={{ color: brand.dark, fontWeight: 600 }}>
+                      {foundation.chargerSpec.widthIn.toFixed(1)}"
+                    </span>
+                  </div>
+                  <div>
+                    Depth:{" "}
+                    <span style={{ color: brand.dark, fontWeight: 600 }}>
+                      {foundation.chargerSpec.depthIn.toFixed(1)}"
+                    </span>
+                  </div>
+                  <div>
+                    Height:{" "}
+                    <span style={{ color: brand.dark, fontWeight: 600 }}>
+                      {foundation.chargerSpec.heightIn.toFixed(1)}"
+                    </span>
+                  </div>
+                  <div>
+                    Weight:{" "}
+                    <span style={{ color: brand.dark, fontWeight: 600 }}>
+                      {foundation.chargerSpec.weightLb.toFixed(0)} lb
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs mt-2" style={{ color: brand.steel }}>
+                  One welded cabinet spans all 3 foundations — not three
+                  separate charger units.
+                </div>
+              </div>
+
+              <div
+                className="border rounded-md p-4 mb-4"
+                style={{ borderColor: "#D9D9D6" }}
+              >
+                <div
+                  className="text-sm font-semibold mb-2"
+                  style={{ color: brand.dark }}
+                >
+                  Shared adapter plate
+                </div>
+                <div className="text-xs" style={{ color: brand.steel }}>
+                  {foundation.groupPlate.widthIn.toFixed(1)}" ×{" "}
+                  {foundation.groupPlate.heightIn.toFixed(1)}",{" "}
+                  {foundation.groupPlate.thicknessMm}mm thick
+                </div>
+                <div className="text-xs mt-1" style={{ color: brand.steel }}>
+                  {foundation.groupPlate.material}
+                </div>
+                <div
+                  className="text-xs mt-2 grid grid-cols-2 gap-2"
+                  style={{ color: brand.steel }}
+                >
+                  <div>
+                    Plate → foundations:{" "}
+                    <span style={{ color: brand.dark, fontWeight: 600 }}>
+                      {foundation.boltGroups.plateToFoundation.count}×M12
+                    </span>
+                  </div>
+                  <div>
+                    Cabinet → plate:{" "}
+                    <span style={{ color: brand.dark, fontWeight: 600 }}>
+                      {foundation.boltGroups.chargerToPlate.count}×M12
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="border rounded-md p-4 mb-4"
+                style={{ borderColor: "#D9D9D6" }}
+              >
+                <div
+                  className="text-sm font-semibold mb-2"
+                  style={{ color: brand.dark }}
+                >
+                  Hat-profile connection
+                </div>
+                <div className="text-xs" style={{ color: brand.steel }}>
+                  {foundation.hatProfile.totalRivets}×{" "}
+                  {foundation.hatProfile.rivetSpec} (
+                  {foundation.hatProfile.rivetsPerSide} per long side ×{" "}
+                  {foundation.hatProfile.sides} sides)
+                </div>
+              </div>
+
+              {foundation.structuralNote && (
+                <Banner>{foundation.structuralNote}</Banner>
               )}
             </div>
           )}
@@ -2613,7 +3058,20 @@ export default function NordBaseCalculator() {
                     className="text-[11px] p-2"
                     style={{ color: brand.steel, background: brand.bgSoft }}
                   >
-                    {foundation.wallThicknessMm ? (
+                    {foundation.isPowerBlock ? (
+                      <>
+                        Group overturning/sliding and bolt tension (
+                        {BOLT_M12_SPEC_LABEL}, φNₛₐ ={" "}
+                        {BOLT_M12_TENSION_CAPACITY_KN.toFixed(2)} kN, ACI
+                        318-19 §17.6.1) use confirmed geometry from Simon's
+                        assembly drawing and the validated single-foundation
+                        methodology, extended to the 3-unit array. Adapter-
+                        plate BENDING itself is NOT included — see the note on
+                        the Configuration step. Source:
+                        Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx,
+                        confirmed 2026-08-27.
+                      </>
+                    ) : foundation.wallThicknessMm ? (
                       <>
                         Wall plate bending uses confirmed material data:{" "}
                         {foundation.wallThicknessMm}mm ASTM A1011 SS Gr 33 +
@@ -2647,21 +3105,81 @@ export default function NordBaseCalculator() {
                 >
                   <Package size={14} /> BILL OF MATERIALS
                 </div>
-                <div
-                  className="flex justify-between text-sm py-1.5 border-b"
-                  style={{ borderColor: "#F0F0EE" }}
-                >
-                  <div>
-                    <div style={{ color: brand.dark }}>{foundation.name}</div>
+                {foundation.isPowerBlock ? (
+                  <div
+                    className="flex justify-between text-sm py-1.5 border-b"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
+                    <div>
+                      <div style={{ color: brand.dark }}>
+                        {foundation.unitCount}× NordBase Medium foundation
+                      </div>
+                      <div className="text-xs" style={{ color: brand.steel }}>
+                        {foundation.levelLabel} — joined array
+                      </div>
+                    </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
-                      {foundation.levelLabel}
+                      Price on request
                     </div>
                   </div>
-                  <div className="text-xs" style={{ color: brand.steel }}>
-                    Price on request
+                ) : (
+                  <div
+                    className="flex justify-between text-sm py-1.5 border-b"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
+                    <div>
+                      <div style={{ color: brand.dark }}>{foundation.name}</div>
+                      <div className="text-xs" style={{ color: brand.steel }}>
+                        {foundation.levelLabel}
+                      </div>
+                    </div>
+                    <div className="text-xs" style={{ color: brand.steel }}>
+                      Price on request
+                    </div>
                   </div>
-                </div>
-                {foundation.hasCharger && (
+                )}
+                {foundation.isPowerBlock && (
+                  <div
+                    className="flex justify-between text-sm py-1.5 border-b"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
+                    <div>
+                      <div style={{ color: brand.dark }}>
+                        Hat-profile connector, {foundation.hatProfile.sides}{" "}
+                        long sides
+                      </div>
+                      <div className="text-xs" style={{ color: brand.steel }}>
+                        {foundation.hatProfile.totalRivets}×{" "}
+                        {foundation.hatProfile.rivetSpec}
+                      </div>
+                    </div>
+                    <div className="text-xs" style={{ color: brand.steel }}>
+                      Price on request
+                    </div>
+                  </div>
+                )}
+                {foundation.isPowerBlock && (
+                  <div
+                    className="flex justify-between text-sm py-1.5 border-b"
+                    style={{ borderColor: "#F0F0EE" }}
+                  >
+                    <div>
+                      <div style={{ color: brand.dark }}>
+                        Shared adapter plate — {foundation.chargerSpec.manufacturer}{" "}
+                        {foundation.chargerSpec.model}
+                      </div>
+                      <div className="text-xs" style={{ color: brand.steel }}>
+                        {foundation.boltGroups.plateToFoundation.count}×M12 to
+                        foundations, {foundation.boltGroups.chargerToPlate.count}
+                        ×M12 to charger
+                      </div>
+                    </div>
+                    <div className="text-xs" style={{ color: brand.steel }}>
+                      Price on request
+                    </div>
+                  </div>
+                )}
+                {foundation.hasCharger && !foundation.isPowerBlock && (
                   <div
                     className="flex justify-between text-sm py-1.5 border-b"
                     style={{ borderColor: "#F0F0EE" }}
