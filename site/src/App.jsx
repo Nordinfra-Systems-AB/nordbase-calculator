@@ -264,12 +264,31 @@ export default function App() {
       {/* NAV */}
       <SiteHeader />
 
-      {/* HERO — real jobsite photo, not a render, and no motion inside it. */}
+      {/* HERO — full-bleed render of a multi-unit NordBase install (2026-08-27,
+          per Simon: background image behind the text/stat-card column,
+          replacing the old two-column layout). Dark scrim gradient keeps the
+          text legible over the render; scrim is heavier on mobile since
+          there's no room for it to fade into clear image on a narrow
+          viewport the way it can on desktop. Swap for a real jobsite photo
+          gallery per the design-review discussion once those exist. */}
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="mx-auto grid max-w-7xl grid-cols-1 md:grid-cols-2">
-          <div className="relative z-10 px-6 py-20 md:py-28">
+        <div className="absolute inset-0">
+          <img
+            src="/photos/hero-site-array.jpg"
+            alt="Row of NordBase DC Medium foundations with Kempower chargers and site lighting installed in a parking lot"
+            className="h-full w-full object-cover"
+          />
+          {/* Mobile gets a flat, stronger tint — the left-to-right fade only
+              makes sense once there's a wide viewport for it to resolve
+              into visible image on the right; on a narrow screen it just
+              leaves a bright patch behind the text. */}
+          <div className="absolute inset-0 bg-dark/75 md:bg-dark/55" />
+          <div className="absolute inset-0 hidden bg-gradient-to-r from-dark via-dark/75 to-dark/5 md:block" />
+        </div>
+        <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 md:py-28">
+          <div className="max-w-xl">
             <Badge>Practical. Proven. Progressive.</Badge>
-            <h1 className="mt-6 max-w-xl text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
+            <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
               Foundations installed in days,{" "}
               <span className="text-gold">not weeks.</span>
             </h1>
@@ -301,16 +320,6 @@ export default function App() {
               <StatCard icon={ShieldCheck} value="ASCE 7-22" label="Wind & seismic method" />
               <StatCard icon={Factory} value="4" label="Foundation sizes" />
             </div>
-          </div>
-          {/* Transparent-background product render, not a photo — object-contain
-              keeps the whole assembly visible and lets the dark section
-              background show through instead of a hard-edged photo crop. */}
-          <div className="relative flex min-h-[320px] items-center justify-center px-6 py-10 md:min-h-full">
-            <img
-              src="/photos/hero-installation.png"
-              alt="NordBase DC Medium foundation with charger and site lighting"
-              className="h-full max-h-[560px] w-auto max-w-full object-contain md:max-h-[640px]"
-            />
           </div>
         </div>
       </section>
