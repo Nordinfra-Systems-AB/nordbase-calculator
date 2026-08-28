@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   ChevronRight,
   ChevronLeft,
@@ -23,6 +23,8 @@ import {
   ChevronUp,
   Phone,
   Globe,
+  Link2,
+  X,
 } from "lucide-react";
 
 // =====================================================================================
@@ -43,6 +45,119 @@ const inToM = (inches) => inches * 0.0254;
 const lbToKN = (lb) => (lb * 0.45359237 * 9.81) / 1000; // lbmass -> kN (weight force)
 const mmToIn = (mm) => mm / 25.4;
 const kgToLb = (kg) => kg * 2.2046226;
+
+// ---------------------------------------------------------------------------
+// SITE DATA LOOKUP — SDS auto-fill from address
+// ---------------------------------------------------------------------------
+// Same provider + same interaction pattern as the Site Planner tool
+// (site/src/SitePlannerApp.jsx): Mapbox Geocoding v5 for the address
+// autocomplete dropdown, so the two tools feel consistent and share one
+// Mapbox account. Requires VITE_MAPBOX_TOKEN in THIS project's Vercel env
+// vars — Site Planner is a separate Vercel project, so the token has to be
+// added here too even though it already exists over there.
+//
+// Wind speed is deliberately NOT auto-filled yet (Simon: "inget annat tills
+// dess jag fixat vindlast api") — only SDS. Wind stays a manual field with
+// the ASCE Hazard Tool link, unchanged.
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
+
+// Site Class D + Risk Category II match the assumption already documented
+// on the "Approximate SDS reference values (Site Class D)" table below —
+// keeping the live lookup consistent with what the tool already implied.
+// If a customer's geotech report specifies a different site class, the
+// fetched value is only a starting point — the field stays editable.
+const SDS_LOOKUP_SITE_CLASS = "D";
+const SDS_LOOKUP_RISK_CATEGORY = "II";
+
+async function geocodeSuggest(query) {
+  if (!MAPBOX_TOKEN) return [];
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+    query
+  )}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&limit=5&types=address,poi,place`;
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.features || []).map((f) => ({
+    id: f.id,
+    placeName: f.place_name,
+    lon: f.center[0],
+    lat: f.center[1],
+  }));
+}
+
+// USGS's own ASCE 7-22 web service — free, no API key required. This is the
+// same underlying data source ASCE's paid Hazard Tool re-packages, so it's
+// authoritative, not an approximation, and it's live rather than a static
+// table so it stays correct as USGS updates its hazard model.
+async function fetchSdsFromUsgs(lat, lon) {
+  const url = `https://earthquake.usgs.gov/ws/designmaps/asce7-22.json?latitude=${lat}&longitude=${lon}&riskCategory=${SDS_LOOKUP_RISK_CATEGORY}&siteClass=${SDS_LOOKUP_SITE_CLASS}&title=NordBase`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("usgs_lookup_failed");
+  const data = await res.json();
+  const sdsValue = data?.response?.data?.sds;
+  if (typeof sdsValue !== "number") throw new Error("usgs_no_sds");
+  return sdsValue;
+}
+
+// ---------------------------------------------------------------------------
+// SAVE & RESUME — no backend, matches the rest of the site's "no server
+// needed" approach. Two mechanisms, both storing the same shape of data:
+//   1. Auto-save to localStorage as the customer progresses (silent —
+//      recovers an accidentally-closed tab on the SAME browser/device).
+//   2. An explicit "copy resume link" button that encodes the whole
+//      configuration into a `?cfg=` URL parameter — works across devices,
+//      can be emailed to a colleague or bookmarked, since the state lives
+//      in the link itself rather than on a server.
+// ---------------------------------------------------------------------------
+const DRAFT_STORAGE_KEY = "nordbase_draft_v1";
+
+function encodeConfig(obj) {
+  try {
+    const json = JSON.stringify(obj);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  } catch (e) {
+    return null;
+  }
+}
+
+function decodeConfig(str) {
+  try {
+    let b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const json = decodeURIComponent(escape(atob(b64)));
+    return JSON.parse(json);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Runs once at mount. A `?cfg=` link always wins (explicit intent — someone
+// clicked a resume link); otherwise fall back to a silently auto-saved
+// localStorage draft. Returns null if neither exists or both are corrupt.
+function loadInitialConfig() {
+  if (typeof window === "undefined") return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const cfgParam = params.get("cfg");
+    if (cfgParam) {
+      const decoded = decodeConfig(cfgParam);
+      if (decoded) return { data: decoded, source: "link" };
+    }
+  } catch (e) {
+    /* malformed link — fall through to the draft check below */
+  }
+  try {
+    const saved = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (saved) {
+      const decoded = JSON.parse(saved);
+      if (decoded) return { data: decoded, source: "draft" };
+    }
+  } catch (e) {
+    /* storage unavailable */
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // FOUNDATION CATALOGUE
@@ -104,6 +219,18 @@ const FOUNDATIONS = {
     },
     blurb:
       "For Level 2 pedestals. Adapter plate with a grid of standard hole positions (square or rectangular bolt patterns) or a custom dimension.",
+    // Reference charger size for the Foundation-step card (Simon Gullberg,
+    // 2026-08-28) — a MAXIMUM footprint, not a hard structural limit (the
+    // calc engine checks whatever charger W/D/H/weight is actually entered
+    // in Configuration; this is a "does my charger look about like this"
+    // sizing cue so a customer can self-select the right tier up front).
+    // No minimum — Simon: "strunta i min mått".
+    chargerFit: {
+      maxWIn: 16,
+      maxDIn: 16,
+      maxHIn: 72,
+      refPhotoUrl: "/charger-ref-small-pedestal.jpg",
+    },
   },
   MEDIUM: {
     key: "MEDIUM",
@@ -133,6 +260,13 @@ const FOUNDATIONS = {
     },
     blurb:
       "For Level 3 DC fast chargers. Rectangular base gives a larger stabilizing footprint for heavier equipment.",
+    // See SMALL's chargerFit comment — same sizing-cue purpose, no hard limit.
+    chargerFit: {
+      maxWIn: 27,
+      maxDIn: 32,
+      maxHIn: 82,
+      refPhotoUrl: "/charger-ref-medium-alpitronic.png",
+    },
   },
   LARGE: {
     key: "LARGE",
@@ -170,97 +304,156 @@ const FOUNDATIONS = {
       "Global stability, wall-plate bending, and bolt tension are calculated per ASCE 7-22 / IBC 2021, same methodology as NordBase Small/Medium. Local wall-panel buckling under backfill compaction load is a separate failure mode not covered by these checks and has not yet been independently verified for this larger panel size.",
     blurb:
       "For Level 4 / high-power DC charging. Widened base plate and reinforced shell for larger equipment — adapter-plate CC options are still in development.",
+    // See SMALL's chargerFit comment. Reference photo confirmed (Simon
+    // Gullberg, 2026-08-28) but he hasn't given a max W×D×H for Large yet
+    // (only Small 16×16×72 and Medium 27×32×82) — leave the numbers out
+    // rather than guess; the card falls back to showing the photo alone.
+    chargerFit: {
+      maxWIn: null,
+      maxDIn: null,
+      maxHIn: null,
+      refPhotoUrl: "/charger-ref-large-abb-terra.webp",
+    },
   },
   // ---------------------------------------------------------------------------
-  // POWER BLOCK — C503 (added 2026-08-27, Simon Gullberg build authorization:
-  // "du kan bygga med preliminär flagga"). Three NordBase Medium foundations
-  // tied together with a hat-profile (36x SS304 rivets) plus one shared
-  // adapter plate, sized specifically for the Kempower C503 cabinet (one
-  // welded unit spanning all 3 foundations — NOT three separate charger
-  // cabinets). Structural methodology validated against
-  // Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx, itself built on top of
-  // the confirmed single-foundation Nordinfra_Master_USA_ASCE7_v6 workbook —
-  // see runPowerBlockCheck() below for the calc engine.
-  //
-  // SCOPE NOTE: only C503 (3-unit) is implemented. C501 (single foundation)
-  // needs no new machinery — it belongs in DC_FAST_CHARGER_PRESETS.Kempower
-  // as a normal NordBase Medium charger preset once Simon supplies its own
-  // dims. C502 (2-unit) is not implemented — no confirmed geometry supplied
-  // yet; do not add it without real drawings (do not extrapolate from C503).
+  // POWER BLOCK (added 2026-08-27, Simon Gullberg build authorization: "du
+  // kan bygga med preliminär flagga"; restructured 2026-08-28 into a generic
+  // manufacturer/model family per Simon's request). Multiple NordBase Medium
+  // foundations tied together with a hat-profile plus one shared adapter
+  // plate, sized for a specific DC fast-charger cabinet. The actual
+  // unit count / geometry / hardware depends on which manufacturer + model
+  // the customer picks in Configuration — see POWER_BLOCK_MODELS below and
+  // runPowerBlockCheck() for the calc engine.
   // ---------------------------------------------------------------------------
-  POWER_BLOCK_C503: {
-    key: "POWER_BLOCK_C503",
-    name: "NordBase Power Block — C503",
+  POWER_BLOCK: {
+    key: "POWER_BLOCK",
+    name: "NordBase Power Block",
     subtitle: "DC foundation group",
     levelLabel: "Level 3 group",
-    levelDesc: "3× DC Medium + shared adapter plate",
-    // Informational footprint only (diagram + product card) — the structural
-    // check below is geometry-driven from the fields further down, not from
-    // top/bottom/depthIn. "Top" = the shared plate's own footprint; "bottom"
-    // is an approximate buried envelope for 3 Medium foundations in a row
-    // (2052mm overall width per Simon's assembly drawing; depth taken as one
-    // Medium foundation's own base-plate depth, 39.4", since the group is a
-    // single row, not stacked in that direction).
-    top: { w: Number(mmToIn(1810).toFixed(1)), d: Number(mmToIn(785).toFixed(1)) },
-    bottom: { w: Number(mmToIn(2052).toFixed(1)), d: 39.4 },
-    depthIn: 25.8, // burial depth — same as NordBase Medium (confirmed link, xlsx C27 ≈ 650mm)
-    weightLb: Number((3 * 61.26 + kgToLb(55.77)).toFixed(1)), // 3× Medium foundation + shared plate (charger weight is separate, see chargerSpec)
-    photoUrl: null, // no product photo yet — falls back to the schematic diagram
+    levelDesc: "Multiple DC Medium + shared adapter plate",
+    // Dimensions are model-dependent (see POWER_BLOCK_MODELS) — the product
+    // card intentionally doesn't show a single top/bottom/depth here; the
+    // Step-1 card rendering special-cases foundation.isPowerBlock to say so
+    // instead of printing a number that would only be true for one model.
+    top: null,
+    bottom: null,
+    depthIn: 25.8, // burial depth — same as NordBase Medium for every model (shared foundation geometry)
+    weightLb: null,
+    photoUrl: "/nordbase-powerblock.png",
     hasCharger: true,
     hasAccessories: false,
     isPowerBlock: true,
-    unitCount: 3,
     preliminary: true,
     structuralNote:
-      "Preliminary release. Group overturning/sliding resistance, hat-profile rivet connection, and adapter-plate bolt tension are calculated per ASCE 7-22 / IBC 2021 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the 3-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case — see code comments). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern (6 internal cross-walls + 2 long edges) that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Hat-profile rivet shear capacity uses a placeholder value pending a manufacturer spec sheet. Not PE-stamped.",
-    // Kempower C503 cabinet — ONE welded unit spanning all 3 foundations.
-    // Confirmed by Simon 2026-08-27 (previously modeled, incorrectly, as 3
-    // separate cabinets — corrected before this was ever shipped).
-    chargerSpec: {
-      manufacturer: "Kempower",
-      model: "C503",
-      widthIn: mmToIn(2000), // wind-face width, whole cabinet
-      depthIn: mmToIn(857),
-      heightIn: mmToIn(2150),
-      weightLb: kgToLb(1500),
-    },
-    // Shared adapter plate — fixed size for this configuration, not user-adjustable.
-    groupPlate: {
-      widthIn: mmToIn(1810), // bolt-pattern width — group tipping lever arm below
-      heightIn: mmToIn(785),
-      thicknessMm: 5,
-      weightLb: kgToLb(55.77), // area x thickness x 7850 kg/m3 estimate — see xlsx note, direction of error uncertain
-      material:
-        "Solid steel plate, bent edges 50mm down all around — grade to confirm (Simon: Gr50; assumed same as foundation shell, ASTM A1011 SS Gr33, for the (uncalculated) bending check only)",
-    },
-    hatProfile: {
-      rivetsPerSide: 18,
-      sides: 2,
-      totalRivets: 36,
-      rivetSpec: "4.8mm SS304 blind rivet",
-      rivetCapacityEachKn: 4, // ⚠ PLACEHOLDER — not yet a manufacturer-confirmed spec value
-      phi: 0.75,
-    },
-    boltGroups: {
-      // M12 class 8.8 — different spec from the M16 8.8 used on Small/Medium/
-      // Large's own charger-plate connection (BOLT_SPEC_LABEL/BOLT_TENSION_*).
-      plateToFoundation: { count: 14, pitchIn: mmToIn(612) },
-      chargerToPlate: { count: 12, pitchIn: mmToIn(608) },
-    },
-    adapterPlate: {
-      size: { w: Number(mmToIn(1810).toFixed(1)), d: Number(mmToIn(785).toFixed(1)) },
-      thicknessIn: Number(mmToIn(5).toFixed(2)),
-      material: "Solid steel plate, bent edges — grade to confirm",
-      ccOptionsX: [],
-      ccOptionsY: [],
-      note: "Fixed group plate sized specifically for the Kempower C503 array — not user-adjustable. Bolt tension for both bolt groups is already included in the structural check above.",
-    },
+      "Preliminary release. Group overturning/sliding resistance and adapter-plate bolt tension are calculated per ASCE 7-22 / IBC 2021 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the multi-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Not PE-stamped.",
     blurb:
-      "Three NordBase Medium foundations joined by a hat-profile (36× SS304 rivets) with one shared adapter plate, sized for the Kempower C503 cabinet. Preliminary — group methodology validated against Nordinfra's confirmed single-foundation calc; adapter-plate bending not yet independently checked.",
+      "Multiple NordBase Medium foundations joined by a hat-profile with one shared adapter plate, sized for a specific DC fast-charger cabinet. Pick a manufacturer and model in the next step.",
   },
 };
 
-const FOUNDATION_ORDER = ["BOLLARD", "SMALL", "MEDIUM", "LARGE", "POWER_BLOCK_C503"];
+const FOUNDATION_ORDER = ["BOLLARD", "SMALL", "MEDIUM", "LARGE", "POWER_BLOCK"];
+
+// ---------------------------------------------------------------------------
+// POWER BLOCK MODELS — manufacturer/model family for the Power Block
+// foundation group, selected via the same manufacturer→model dropdown
+// pattern used for chargers elsewhere in this file (see
+// chargerPresetsForFoundation). Each model carries its OWN geometry and
+// hardware — nothing here is shared/derived across models, so adding a new
+// model never silently reuses another model's confirmed numbers.
+//
+// Per model:
+//   unitCount        — how many NordBase Medium foundations in the array
+//   isStandardSingle — true only for C501: a 1-unit "array" is just the
+//                       plain NordBase Medium foundation, no group hardware
+//                       and no group calc. Selecting it in the UI redirects
+//                       to the normal NordBase Medium configuration flow.
+//   dataConfirmed    — false when foundation geometry is known but the
+//                       hardware (hat-profile rivets, bolt pattern, adapter
+//                       plate, charger cabinet dims/weight) is NOT yet
+//                       confirmed. The structural check is withheld (not
+//                       fabricated) until this is true.
+//   top/bottom        — group foundation-shell footprint (Simon's assembly
+//                       drawing, 2026-08-28), used for the product diagram.
+// ---------------------------------------------------------------------------
+const POWER_BLOCK_MODELS = {
+  Kempower: [
+    {
+      model: "C501",
+      unitCount: 1,
+      isStandardSingle: true,
+    },
+    {
+      model: "C502",
+      unitCount: 2,
+      dataConfirmed: false,
+      top: { w: mmToIn(1140), d: mmToIn(655) },
+      bottom: { w: mmToIn(1422), d: mmToIn(1000) },
+      // Cabinet dimensions/weight ARE confirmed (Kempower Power Unit C500
+      // datasheet, Power Cabinet V4/Power Module V2, rev.1.50 03-2026) —
+      // C502 = "double" cabinet, 5-8 Power Modules. Weight uses the 8-module
+      // (full) figure; width×height feed the wind check once this model's
+      // Nordinfra-side hardware (hat-profile rivets, bolt pattern, adapter
+      // plate) is confirmed and dataConfirmed flips to true.
+      chargerSpec: {
+        manufacturer: "Kempower",
+        model: "C502",
+        widthIn: mmToIn(1387),
+        depthIn: mmToIn(904),
+        heightIn: mmToIn(2215),
+        weightLb: kgToLb(1000), // 8 Power Modules (full), per datasheet weight table
+      },
+    },
+    {
+      model: "C503",
+      unitCount: 3,
+      dataConfirmed: true,
+      top: { w: mmToIn(1770), d: mmToIn(655) },
+      bottom: { w: mmToIn(2052), d: mmToIn(1000) },
+      conceptPhotoUrl: "/nordbase-powerblock-kempower-c503.png",
+      // ONE welded cabinet spans all 3 foundations — confirmed by Simon
+      // 2026-08-27 (previously modeled, incorrectly, as 3 separate
+      // cabinets — corrected before this was ever shipped).
+      // Dimensions/weight per Kempower Power Unit C500 datasheet (Power
+      // Cabinet V4/Power Module V2, rev.1.50 03-2026), 2026-08-28 — replaces
+      // the earlier rough estimate (2000×857×2150mm/1500kg). C503 = "triple"
+      // cabinet, 9-12 Power Modules; weight uses the 12-module (full, 600kW)
+      // figure. If Simon specs a lower module count for the standard
+      // offering, swap in the corresponding weight from the datasheet's
+      // table (9=1336kg/10=1376kg/11=1416kg) — margins are wide enough
+      // (governing check ~46% DCR) that this will not flip any result.
+      chargerSpec: {
+        manufacturer: "Kempower",
+        model: "C503",
+        widthIn: mmToIn(1987), // wind-face width, whole cabinet
+        depthIn: mmToIn(904),
+        heightIn: mmToIn(2215),
+        weightLb: kgToLb(1456), // 12 Power Modules (full, 600kW)
+      },
+      // Shared adapter plate — fixed size for this configuration, not user-adjustable.
+      groupPlate: {
+        widthIn: mmToIn(1810), // bolt-pattern width — group tipping lever arm below
+        heightIn: mmToIn(785),
+        thicknessMm: 5,
+        weightLb: kgToLb(55.77), // area x thickness x 7850 kg/m3 estimate — see xlsx note, direction of error uncertain
+        material: "Solid steel plate, Gr50, bent edges 50mm down all around",
+      },
+      hatProfile: {
+        rivetsPerSide: 18,
+        sides: 2,
+        totalRivets: 36,
+        rivetSpec: "4.8mm SS304 blind rivet",
+        rivetCapacityEachKn: 4, // ⚠ PLACEHOLDER — not yet a manufacturer-confirmed spec value
+        phi: 0.75,
+      },
+      boltGroups: {
+        // M12 class 8.8 — different spec from the M16 8.8 used on Small/Medium/
+        // Large's own charger-plate connection (BOLT_SPEC_LABEL/BOLT_TENSION_*).
+        plateToFoundation: { count: 14, pitchIn: mmToIn(612) },
+        chargerToPlate: { count: 12, pitchIn: mmToIn(608) },
+      },
+    },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // BACKFILL / SOIL — from Master ASCE7 sheet "2 - Basic Data"
@@ -543,33 +736,15 @@ const DC_FAST_CHARGER_PRESETS = {
 };
 
 // Power Block C503's charger is fixed (one confirmed Kempower C503 cabinet
-// spanning all 3 foundations) — this preset exists mainly so Step 2 can
-// display it through the same manufacturer/model UI pattern as the rest of
-// the product line, NOT so the customer can pick a different model. See
-// FOUNDATIONS.POWER_BLOCK_C503.chargerSpec, which is what the structural
-// check actually reads from (fixed, not tied to this preset/UI state).
-const POWER_BLOCK_CHARGER_PRESETS = {
-  Kempower: [
-    {
-      model: "C503",
-      w: Number(mmToIn(2000).toFixed(1)),
-      d: Number(mmToIn(857).toFixed(1)),
-      h: Number(mmToIn(2150).toFixed(1)),
-      weight: Number(kgToLb(1500).toFixed(0)),
-      ccW: null,
-      ccD: null,
-    },
-  ],
-};
-
 // Returns the manufacturer/model preset set for a given foundation key —
 // pedestal presets for Small, DC fast charger presets for Medium/Large,
-// nothing for foundations without a charger step (Bollard).
+// the Power Block model family for Power Block, nothing for foundations
+// without a charger step (Bollard).
 function chargerPresetsForFoundation(foundationKey) {
   if (foundationKey === "SMALL") return PEDESTAL_CHARGER_PRESETS;
   if (foundationKey === "MEDIUM" || foundationKey === "LARGE")
     return DC_FAST_CHARGER_PRESETS;
-  if (foundationKey === "POWER_BLOCK_C503") return POWER_BLOCK_CHARGER_PRESETS;
+  if (foundationKey === "POWER_BLOCK") return POWER_BLOCK_MODELS;
   return {};
 }
 
@@ -922,22 +1097,22 @@ function runCheck({
 
 // ---------------------------------------------------------------------------
 // POWER BLOCK CALC ENGINE — group-passive-resistance / group-wind-seismic
-// checks for a 3-foundation array (NordBase Power Block C503). Mirrors
-// runCheck()'s shape (same checks[]/governing/pass return contract, so the
-// Step-5 report UI works unmodified) but implements the group logic
-// validated in Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx. Geometry,
-// bolt counts, rivet counts and lever arms come from the foundation object
-// itself (FOUNDATIONS.POWER_BLOCK_C503) — this function is not parametrized
-// by foundation.key beyond that, so a future C502 would need its own
-// unitCount/groupPlate/hatProfile/boltGroups data, not new code here.
+// checks for a multi-foundation array. Mirrors runCheck()'s shape (same
+// checks[]/governing/pass return contract, so the Step-5 report UI works
+// unmodified) but implements the group logic validated in
+// Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx. Geometry, bolt counts,
+// rivet counts and lever arms come from the SELECTED MODEL (one entry of
+// POWER_BLOCK_MODELS, e.g. Kempower C503) — this function is model-driven,
+// not foundation-driven, so each model supplies its own confirmed numbers.
+// Only call this for a model with dataConfirmed === true.
 // ---------------------------------------------------------------------------
-function runPowerBlockCheck({ foundation, windSpeedMph, sds, backfill }) {
-  if (!foundation || !foundation.isPowerBlock) return null;
+function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
+  if (!model || !model.dataConfirmed) return null;
   const V = Number(windSpeedMph) || 0;
   const SDS = Number(sds) || 0;
-  const unitCount = foundation.unitCount;
-  const charger = foundation.chargerSpec;
-  const plate = foundation.groupPlate;
+  const unitCount = model.unitCount;
+  const charger = model.chargerSpec;
+  const plate = model.groupPlate;
 
   // Single-unit passive soil resistance, from the underlying NordBase Medium
   // geometry — matches "3 - Input & Calcs" of the confirmed per-unit
@@ -1038,12 +1213,12 @@ function runPowerBlockCheck({ foundation, windSpeedMph, sds, backfill }) {
   const governingMomentKnm = Math.max(wind.MdWindKnm, seismic.MdSeisKnm);
 
   // Hat-profile rivet connection (one long side) — PLACEHOLDER capacity
-  // (foundation.hatProfile.rivetCapacityEachKn), not yet a manufacturer-
-  // confirmed spec value. Conservative simplifying assumption carried from
-  // the xlsx: one long side's rivets must carry the full lateral demand of
-  // one end unit (group demand / unitCount), direct shear only — moment/
+  // (model.hatProfile.rivetCapacityEachKn), not yet a manufacturer-confirmed
+  // spec value. Conservative simplifying assumption carried from the xlsx:
+  // one long side's rivets must carry the full lateral demand of one end
+  // unit (group demand / unitCount), direct shear only — moment/
   // eccentricity in the joint is not modeled.
-  const hat = foundation.hatProfile;
+  const hat = model.hatProfile;
   const rivetSideCapacityKn = hat.rivetsPerSide * hat.rivetCapacityEachKn * hat.phi;
   const rivetDemandKn = Math.max(wind.FwKn, seismic.FpDesign) / unitCount;
   checks.push({
@@ -1057,8 +1232,8 @@ function runPowerBlockCheck({ foundation, windSpeedMph, sds, backfill }) {
   // Plate-to-foundation and charger-to-plate bolt tension — M12 class 8.8,
   // same φNsa formula as the confirmed M16 spec used elsewhere in this file,
   // scaled to this connection's own bolt spec and each group's measured
-  // pitch/lever arm (foundation.boltGroups).
-  const bolts = foundation.boltGroups;
+  // pitch/lever arm (model.boltGroups).
+  const bolts = model.boltGroups;
   const demandPlateToFoundationKn =
     governingMomentKnm / (2 * inToM(bolts.plateToFoundation.pitchIn));
   checks.push({
@@ -1129,6 +1304,20 @@ function FoundationDiagram({ foundation }) {
         className="w-full h-36 object-contain"
         onError={() => setPhotoFailed(true)}
       />
+    );
+  }
+  if (!foundation.top || !foundation.bottom) {
+    // Power Block: geometry is model-dependent, not a fixed shape on the
+    // foundation object itself — show a neutral placeholder rather than
+    // crash on a null top/bottom (only reachable if photoUrl is unset or
+    // fails to load).
+    return (
+      <div
+        className="w-full h-28 flex items-center justify-center text-[11px]"
+        style={{ color: brand.steel }}
+      >
+        Photo pending
+      </div>
     );
   }
   const pxPerIn = 1.1;
@@ -1434,17 +1623,26 @@ const STEP_LABELS = [
 ];
 
 export default function NordBaseCalculator() {
-  const [step, setStep] = useState(0);
+  // Resolved once at mount: a `?cfg=` resume link, else a silently
+  // auto-saved localStorage draft, else nothing. Every field below falls
+  // back to its normal default when neither is present, so this is a
+  // no-op for a first-time visitor.
+  const [initialConfig] = useState(() => loadInitialConfig());
+  const savedData = initialConfig?.data || {};
+
+  const [step, setStep] = useState(
+    Math.min(5, Math.max(0, Number(savedData.step) || 0))
+  );
 
   // step 0 — project info
-  const [projectName, setProjectName] = useState("");
-  const [address, setAddress] = useState("");
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [quantity, setQuantity] = useState("1");
+  const [projectName, setProjectName] = useState(savedData.projectName ?? "");
+  const [address, setAddress] = useState(savedData.address ?? "");
+  const [contactName, setContactName] = useState(savedData.contactName ?? "");
+  const [contactEmail, setContactEmail] = useState(savedData.contactEmail ?? "");
+  const [quantity, setQuantity] = useState(savedData.quantity ?? "1");
 
   // step 1 — foundation
-  const [foundationKey, setFoundationKey] = useState(null);
+  const [foundationKey, setFoundationKey] = useState(savedData.foundationKey ?? null);
   const foundation = foundationKey ? FOUNDATIONS[foundationKey] : null;
   // Manufacturer/model preset set for the SELECTED foundation only (2026-08-26
   // fix — Postlane and other pedestal brands were previously showing up as
@@ -1459,35 +1657,61 @@ export default function NordBaseCalculator() {
   // manual button-picking from the grid. `useCustomCc` lets the customer
   // override that auto-fill (or is the only path when no model is selected,
   // or when the model's pattern isn't on the grid yet).
-  const [useCustomCc, setUseCustomCc] = useState(false);
-  const [customCcW, setCustomCcW] = useState("");
-  const [customCcD, setCustomCcD] = useState("");
-  const [presetMfr, setPresetMfr] = useState("");
-  const [presetModel, setPresetModel] = useState("");
-  const [chargerW, setChargerW] = useState("");
-  const [chargerD, setChargerD] = useState("");
-  const [chargerH, setChargerH] = useState("");
-  const [chargerWeight, setChargerWeight] = useState("");
+  const [useCustomCc, setUseCustomCc] = useState(savedData.useCustomCc ?? false);
+  const [customCcW, setCustomCcW] = useState(savedData.customCcW ?? "");
+  const [customCcD, setCustomCcD] = useState(savedData.customCcD ?? "");
+  const [presetMfr, setPresetMfr] = useState(savedData.presetMfr ?? "");
+  const [presetModel, setPresetModel] = useState(savedData.presetModel ?? "");
+  const [chargerW, setChargerW] = useState(savedData.chargerW ?? "");
+  const [chargerD, setChargerD] = useState(savedData.chargerD ?? "");
+  const [chargerH, setChargerH] = useState(savedData.chargerH ?? "");
+  const [chargerWeight, setChargerWeight] = useState(savedData.chargerWeight ?? "");
 
   // step 3 — site
-  const [windSpeed, setWindSpeed] = useState("110");
-  const [sds, setSds] = useState("0.5");
-  const [backfillKey, setBackfillKey] = useState("B");
-  const [nevi, setNevi] = useState(false);
+  const [windSpeed, setWindSpeed] = useState(savedData.windSpeed ?? "110");
+  const [sds, setSds] = useState(savedData.sds ?? "0.5");
+  const [backfillKey, setBackfillKey] = useState(savedData.backfillKey ?? "B");
+  const [nevi, setNevi] = useState(savedData.nevi ?? false);
   const [showSdsRef, setShowSdsRef] = useState(false);
 
+  // step 3 — address-driven SDS auto-fill (Mapbox suggestions, same pattern
+  // as Site Planner, + a live USGS ASCE 7-22 lookup). Wind stays manual.
+  // Defaults from the project address (step 0) when set and nothing more
+  // specific was saved — if the customer already typed their site address
+  // on the first screen, don't make them retype it here too.
+  const [addressInput, setAddressInput] = useState(
+    savedData.addressInput ?? address ?? ""
+  );
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [addressSuggestOpen, setAddressSuggestOpen] = useState(false);
+  const [addressHighlightIndex, setAddressHighlightIndex] = useState(-1);
+  const addressDebounceRef = useRef(null);
+  const [sdsLookupStatus, setSdsLookupStatus] = useState("idle"); // idle | loading | done | error
+  const [sdsLookupError, setSdsLookupError] = useState("");
+  const [sdsLookupAddress, setSdsLookupAddress] = useState("");
+  const [sdsSource, setSdsSource] = useState(savedData.sdsSource ?? "manual"); // manual | usgs
+
   // step 4 — accessories + package
-  const [addBollard, setAddBollard] = useState(false);
-  const [bollardTier, setBollardTier] = useState("sch10");
-  const [addCover, setAddCover] = useState(false);
-  const [addSensorPole, setAddSensorPole] = useState(false);
-  const [packageType, setPackageType] = useState("submittal");
+  const [addBollard, setAddBollard] = useState(savedData.addBollard ?? false);
+  const [bollardTier, setBollardTier] = useState(savedData.bollardTier ?? "sch10");
+  const [addCover, setAddCover] = useState(savedData.addCover ?? false);
+  const [addSensorPole, setAddSensorPole] = useState(savedData.addSensorPole ?? false);
+  const [packageType, setPackageType] = useState(savedData.packageType ?? "submittal");
   const [customAssets, setCustomAssets] = useState({
     datasheet: true,
     drawingPdf: true,
     drawingDwg: true,
     csi: false,
+    ...(savedData.customAssets || {}),
   });
+
+  // Resume banner — only for a silent localStorage draft. A `?cfg=` link
+  // was an explicit click, so it hydrates without asking. Dismissed by
+  // either button below.
+  const [showResumeBanner, setShowResumeBanner] = useState(
+    initialConfig?.source === "draft"
+  );
+  const [linkCopyStatus, setLinkCopyStatus] = useState("idle"); // idle | copied | error
 
   // step 5 — report
   const [showDetails, setShowDetails] = useState(false);
@@ -1517,6 +1741,177 @@ export default function NordBaseCalculator() {
     }
   }
 
+  // Save & resume — snapshot of every field worth restoring (deliberately
+  // excludes transient UI state like dropdown-open flags and lookup status,
+  // which re-derive on their own).
+  function buildConfigSnapshot() {
+    return {
+      step,
+      projectName,
+      address,
+      contactName,
+      contactEmail,
+      quantity,
+      foundationKey,
+      useCustomCc,
+      customCcW,
+      customCcD,
+      presetMfr,
+      presetModel,
+      chargerW,
+      chargerD,
+      chargerH,
+      chargerWeight,
+      windSpeed,
+      sds,
+      addressInput,
+      sdsSource,
+      backfillKey,
+      nevi,
+      addBollard,
+      bollardTier,
+      addCover,
+      addSensorPole,
+      packageType,
+      customAssets,
+    };
+  }
+
+  // Auto-save to localStorage as the customer progresses — silent, recovers
+  // an accidentally-closed tab on the same browser. Debounced so typing
+  // doesn't hit localStorage on every keystroke. Doesn't start until step 1
+  // (foundation chosen) so a visitor who never really started doesn't leave
+  // a draft behind.
+  useEffect(() => {
+    if (step === 0) return;
+    const t = setTimeout(() => {
+      try {
+        window.localStorage.setItem(
+          DRAFT_STORAGE_KEY,
+          JSON.stringify(buildConfigSnapshot())
+        );
+      } catch (e) {
+        /* storage unavailable — autosave silently skipped */
+      }
+    }, 500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    step,
+    projectName,
+    address,
+    contactName,
+    contactEmail,
+    quantity,
+    foundationKey,
+    useCustomCc,
+    customCcW,
+    customCcD,
+    presetMfr,
+    presetModel,
+    chargerW,
+    chargerD,
+    chargerH,
+    chargerWeight,
+    windSpeed,
+    sds,
+    addressInput,
+    sdsSource,
+    backfillKey,
+    nevi,
+    addBollard,
+    bollardTier,
+    addCover,
+    addSensorPole,
+    packageType,
+    customAssets,
+  ]);
+
+  // Explicit "copy resume link" — encodes the same snapshot into a `?cfg=`
+  // URL param instead. Works across devices/browsers and can be emailed to
+  // a colleague, since the state lives in the link, not on a server.
+  function copyResumeLink() {
+    const encoded = encodeConfig(buildConfigSnapshot());
+    if (!encoded) {
+      setLinkCopyStatus("error");
+      return;
+    }
+    const url = `${window.location.origin}${window.location.pathname}?cfg=${encoded}`;
+    try {
+      navigator.clipboard.writeText(url).then(
+        () => {
+          setLinkCopyStatus("copied");
+          setTimeout(() => setLinkCopyStatus("idle"), 2500);
+        },
+        () => setLinkCopyStatus("error")
+      );
+    } catch (e) {
+      setLinkCopyStatus("error");
+    }
+  }
+
+  // Site step — address → SDS auto-fill. Debounced suggestions dropdown,
+  // same 300ms pattern as Site Planner.
+  useEffect(() => {
+    return () => {
+      if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+    };
+  }, []);
+
+  function onAddressChange(value) {
+    setAddressInput(value);
+    setAddressHighlightIndex(-1);
+    if (addressDebounceRef.current) clearTimeout(addressDebounceRef.current);
+    if (!value.trim()) {
+      setAddressSuggestions([]);
+      setAddressSuggestOpen(false);
+      return;
+    }
+    addressDebounceRef.current = setTimeout(async () => {
+      const results = await geocodeSuggest(value);
+      setAddressSuggestions(results);
+      setAddressSuggestOpen(results.length > 0);
+    }, 300);
+  }
+
+  function onAddressKeyDown(e) {
+    if (!addressSuggestOpen || addressSuggestions.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setAddressHighlightIndex((i) =>
+        Math.min(i + 1, addressSuggestions.length - 1)
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setAddressHighlightIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter" && addressHighlightIndex >= 0) {
+      e.preventDefault();
+      selectAddressSuggestion(addressSuggestions[addressHighlightIndex]);
+    } else if (e.key === "Escape") {
+      setAddressSuggestOpen(false);
+    }
+  }
+
+  async function selectAddressSuggestion(s) {
+    setAddressInput(s.placeName);
+    setAddressSuggestions([]);
+    setAddressSuggestOpen(false);
+    setSdsLookupStatus("loading");
+    setSdsLookupError("");
+    try {
+      const sdsValue = await fetchSdsFromUsgs(s.lat, s.lon);
+      setSds(String(Math.round(sdsValue * 100) / 100));
+      setSdsSource("usgs");
+      setSdsLookupAddress(s.placeName);
+      setSdsLookupStatus("done");
+    } catch (err) {
+      setSdsLookupStatus("error");
+      setSdsLookupError(
+        "Couldn't fetch SDS for that address automatically — enter it manually below, or use the USGS link."
+      );
+    }
+  }
+
   const backfill = BACKFILL_OPTIONS.find((b) => b.key === backfillKey);
 
   // The selected manufacturer/model's full preset record (dimensions, weight,
@@ -1526,6 +1921,13 @@ export default function NordBaseCalculator() {
       ? chargerPresets[presetMfr]?.[Number(presetModel)]
       : null;
   const selectedChargerModelName = presetModelData?.model || "";
+  // For the Power Block foundation, chargerPresets IS POWER_BLOCK_MODELS
+  // (see chargerPresetsForFoundation), so presetModelData already holds the
+  // selected model record — aliased here for readable Power Block-specific
+  // code below.
+  const selectedPowerBlockModel = foundation?.isPowerBlock
+    ? presetModelData
+    : null;
 
   // Does the selected model's OWN bolt pattern land exactly on a hole
   // Nordinfra has actually drilled on this foundation's adapter plate (the
@@ -1568,8 +1970,15 @@ export default function NordBaseCalculator() {
 
   const result = useMemo(() => {
     if (foundation?.isPowerBlock) {
+      // C501 ("isStandardSingle") never reaches here — selecting it switches
+      // foundationKey to MEDIUM directly (see the Configuration step below).
+      // No model picked yet, or a model whose hardware isn't confirmed yet
+      // (e.g. C502) — nothing to calculate, not fabricated.
+      if (!selectedPowerBlockModel || !selectedPowerBlockModel.dataConfirmed) {
+        return null;
+      }
       return runPowerBlockCheck({
-        foundation,
+        model: selectedPowerBlockModel,
         windSpeedMph: windSpeed,
         sds,
         backfill,
@@ -1614,6 +2023,7 @@ export default function NordBaseCalculator() {
     sds,
     backfill,
     effectiveCc,
+    selectedPowerBlockModel,
   ]);
 
   // ---- step visibility / skip logic -----------------------------------
@@ -1641,7 +2051,7 @@ export default function NordBaseCalculator() {
     true, // project info optional
     !!foundation,
     foundation?.isPowerBlock
-      ? true // fixed cabinet/plate geometry — nothing to configure
+      ? !!selectedPowerBlockModel && selectedPowerBlockModel.dataConfirmed // C501 redirects away; C502 (unconfirmed) blocks here until Nordinfra supplies hardware data
       : skipConfig
       ? true
       : !!chargerW &&
@@ -1654,13 +2064,10 @@ export default function NordBaseCalculator() {
     false,
   ];
 
-  function reset() {
-    setStep(0);
-    setProjectName("");
-    setAddress("");
-    setContactName("");
-    setContactEmail("");
-    setQuantity("1");
+  // Fields specific to ONE piece of equipment — foundation choice, its
+  // manufacturer/model/adapter-plate config, and its accessories/package.
+  // Shared by both a full reset and "make another configuration" below.
+  function clearFoundationSpecificFields() {
     setFoundationKey(null);
     setUseCustomCc(false);
     setCustomCcW("");
@@ -1671,14 +2078,48 @@ export default function NordBaseCalculator() {
     setChargerD("");
     setChargerH("");
     setChargerWeight("");
-    setWindSpeed("110");
-    setSds("0.5");
-    setBackfillKey("B");
-    setNevi(false);
     setAddBollard(false);
+    setBollardTier("sch10");
     setAddCover(false);
     setAddSensorPole(false);
     setPackageType("submittal");
+  }
+
+  function reset() {
+    setStep(0);
+    setProjectName("");
+    setAddress("");
+    setContactName("");
+    setContactEmail("");
+    setQuantity("1");
+    clearFoundationSpecificFields();
+    setWindSpeed("110");
+    setSds("0.5");
+    setAddressInput("");
+    setAddressSuggestions([]);
+    setAddressSuggestOpen(false);
+    setSdsLookupStatus("idle");
+    setSdsLookupError("");
+    setSdsSource("manual");
+    setBackfillKey("B");
+    setNevi(false);
+    try {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (e) {
+      /* storage unavailable — nothing to clear */
+    }
+  }
+
+  // "Make another configuration" — same project, same site. A project often
+  // has more than one foundation (bollards + a DC fast charger, say), so
+  // wind/SDS/address/backfill describe the SITE and carry over; only the
+  // equipment-specific fields reset, and we jump straight to Foundation.
+  function startNewConfiguration() {
+    clearFoundationSpecificFields();
+    setShowDetails(false);
+    setConsentGiven(false);
+    setShowConsentWarning(false);
+    setStep(1);
   }
 
   function applyPreset(mfr, modelIdx) {
@@ -1737,8 +2178,8 @@ export default function NordBaseCalculator() {
       `Foundation: ${foundation?.name || "-"} (${
         foundation?.levelLabel || "-"
       })`,
-      foundation?.isPowerBlock
-        ? `Charger: ${foundation.chargerSpec.manufacturer} ${foundation.chargerSpec.model} (fixed, ${foundation.unitCount}-foundation array)`
+      foundation?.isPowerBlock && selectedPowerBlockModel
+        ? `Charger: ${selectedPowerBlockModel.chargerSpec.manufacturer} ${selectedPowerBlockModel.chargerSpec.model} (fixed, ${selectedPowerBlockModel.unitCount}-foundation array)`
         : foundation?.hasCharger
         ? `Charger: ${chargerW}"×${chargerD}"×${chargerH}", ${chargerWeight} lb`
         : "",
@@ -1805,8 +2246,59 @@ export default function NordBaseCalculator() {
         </div>
 
         <div className="bg-white rounded-lg shadow-sm p-6 sm:p-8 print:shadow-none print:p-0">
-          <div className="print:hidden">
+          {showResumeBanner && (
+            <div
+              className="print:hidden flex items-start gap-3 mb-4 p-3 rounded-md text-sm"
+              style={{ background: brand.bgSoft }}
+            >
+              <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: brand.gold }} />
+              <div className="flex-1">
+                Resumed your saved configuration from earlier (step{" "}
+                {STEP_LABELS[step]}).
+              </div>
+              <button
+                onClick={() => {
+                  setShowResumeBanner(false);
+                  reset();
+                }}
+                className="text-xs underline shrink-0"
+                style={{ color: brand.steel }}
+              >
+                Start over instead
+              </button>
+              <button
+                onClick={() => setShowResumeBanner(false)}
+                aria-label="Dismiss"
+                className="shrink-0"
+                style={{ color: brand.steel }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          <div className="print:hidden flex items-center justify-between gap-3 mb-2 flex-wrap">
             <Stepper step={step} steps={STEP_LABELS} />
+            {step >= 1 && (
+              <button
+                onClick={copyResumeLink}
+                className="text-xs flex items-center gap-1 px-3 py-1.5 rounded-md border shrink-0 mb-8"
+                style={{ borderColor: "#D9D9D6", color: brand.dark }}
+              >
+                {linkCopyStatus === "copied" ? (
+                  <>
+                    <CheckCircle2 size={12} style={{ color: brand.gold }} />
+                    Link copied
+                  </>
+                ) : linkCopyStatus === "error" ? (
+                  "Couldn't copy — try again"
+                ) : (
+                  <>
+                    <Link2 size={12} /> Save & copy resume link
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {/* STEP 0 — PROJECT INFO */}
@@ -1933,18 +2425,54 @@ export default function NordBaseCalculator() {
                       >
                         {f.blurb}
                       </p>
-                      <div
-                        className="text-[11px] mt-2 grid grid-cols-3 gap-1"
-                        style={{ color: brand.steel }}
-                      >
-                        <div>
-                          Top: {f.top.w}"×{f.top.d}"
+                      {f.isPowerBlock ? (
+                        <div
+                          className="text-[11px] mt-2"
+                          style={{ color: brand.steel }}
+                        >
+                          Dimensions depend on model — pick one in the next
+                          step
                         </div>
-                        <div>
-                          Base: {f.bottom.w}"×{f.bottom.d}"
+                      ) : (
+                        <div
+                          className="text-[11px] mt-2 grid grid-cols-3 gap-1"
+                          style={{ color: brand.steel }}
+                        >
+                          <div>
+                            Top: {f.top.w}"×{f.top.d}"
+                          </div>
+                          <div>
+                            Base: {f.bottom.w}"×{f.bottom.d}"
+                          </div>
+                          <div>Depth: {f.depthIn}"</div>
                         </div>
-                        <div>Depth: {f.depthIn}"</div>
-                      </div>
+                      )}
+                      {f.chargerFit && (
+                        <div
+                          className="flex items-center gap-2 mt-2 pt-2 border-t"
+                          style={{ borderColor: "#F0F0EE" }}
+                        >
+                          {f.chargerFit.refPhotoUrl && (
+                            <img
+                              src={f.chargerFit.refPhotoUrl}
+                              alt={`Reference charger sized for ${f.name}`}
+                              className="w-10 h-10 object-contain shrink-0 rounded"
+                              style={{ background: brand.bgSoft }}
+                            />
+                          )}
+                          <div className="text-[11px] leading-snug" style={{ color: brand.steel }}>
+                            {f.chargerFit.maxWIn ? (
+                              <>
+                                Fits chargers up to ~{f.chargerFit.maxWIn}"×
+                                {f.chargerFit.maxDIn}"×{f.chargerFit.maxHIn}"
+                                (W×D×H)
+                              </>
+                            ) : (
+                              "Reference size — max charger footprint TBD"
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -2255,123 +2783,242 @@ export default function NordBaseCalculator() {
             </div>
           )}
 
-          {/* STEP 2 (Power Block variant) — fixed cabinet + shared-plate
-              hardware summary, read-only. Nothing to configure: geometry,
-              bolt counts and rivet counts are all confirmed and fixed for
-              this configuration (see FOUNDATIONS.POWER_BLOCK_C503). */}
+          {/* STEP 2 (Power Block variant) — manufacturer/model dropdown,
+              same pattern as the charger picker used elsewhere (see
+              chargerPresetsForFoundation → POWER_BLOCK_MODELS). Each model
+              branches to its own state: C501 redirects to the plain
+              NordBase Medium flow, C502 shows geometry only pending
+              hardware data, C503 shows the full confirmed configuration. */}
           {step === 2 && foundation && foundation.isPowerBlock && (
             <div>
               <h2
                 className="text-lg font-bold mb-1"
                 style={{ color: brand.dark }}
               >
-                Power Block hardware
+                Power Block — manufacturer &amp; model
               </h2>
-              <p className="text-sm mb-6" style={{ color: brand.steel }}>
-                This configuration is fixed — geometry, bolts, and rivets are
-                confirmed for the Kempower C503 array. Nothing to enter here.
+              <p className="text-sm mb-4" style={{ color: brand.steel }}>
+                Nordinfra's concept solution for bigger units, such as
+                satellite/power units for EV DC fast charging and MCS.
               </p>
 
-              <div
-                className="border rounded-md p-4 mb-4"
-                style={{ borderColor: "#D9D9D6" }}
-              >
-                <div
-                  className="text-sm font-semibold mb-2"
-                  style={{ color: brand.dark }}
+              <div className="flex gap-2 mb-4">
+                <select
+                  value={presetMfr}
+                  onChange={(e) => {
+                    setPresetMfr(e.target.value);
+                    setPresetModel("");
+                  }}
+                  className="border rounded-md px-3 py-2 text-sm flex-1"
+                  style={{ borderColor: "#D9D9D6" }}
                 >
-                  Charger cabinet — {foundation.chargerSpec.manufacturer}{" "}
-                  {foundation.chargerSpec.model}
-                </div>
-                <div
-                  className="text-xs grid grid-cols-2 sm:grid-cols-4 gap-2"
-                  style={{ color: brand.steel }}
-                >
-                  <div>
-                    Width:{" "}
-                    <span style={{ color: brand.dark, fontWeight: 600 }}>
-                      {foundation.chargerSpec.widthIn.toFixed(1)}"
-                    </span>
-                  </div>
-                  <div>
-                    Depth:{" "}
-                    <span style={{ color: brand.dark, fontWeight: 600 }}>
-                      {foundation.chargerSpec.depthIn.toFixed(1)}"
-                    </span>
-                  </div>
-                  <div>
-                    Height:{" "}
-                    <span style={{ color: brand.dark, fontWeight: 600 }}>
-                      {foundation.chargerSpec.heightIn.toFixed(1)}"
-                    </span>
-                  </div>
-                  <div>
-                    Weight:{" "}
-                    <span style={{ color: brand.dark, fontWeight: 600 }}>
-                      {foundation.chargerSpec.weightLb.toFixed(0)} lb
-                    </span>
-                  </div>
-                </div>
-                <div className="text-xs mt-2" style={{ color: brand.steel }}>
-                  One welded cabinet spans all 3 foundations — not three
-                  separate charger units.
-                </div>
+                  <option value="">Manufacturer…</option>
+                  {Object.keys(chargerPresets).map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                {presetMfr && chargerPresets[presetMfr]?.length > 0 && (
+                  <select
+                    value={presetModel}
+                    onChange={(e) => setPresetModel(e.target.value)}
+                    className="border rounded-md px-3 py-2 text-sm flex-1"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <option value="">Model…</option>
+                    {chargerPresets[presetMfr].map((m, i) => (
+                      <option key={m.model} value={i}>
+                        {m.model}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
-              <div
-                className="border rounded-md p-4 mb-4"
-                style={{ borderColor: "#D9D9D6" }}
-              >
-                <div
-                  className="text-sm font-semibold mb-2"
-                  style={{ color: brand.dark }}
-                >
-                  Shared adapter plate
-                </div>
+              {!selectedPowerBlockModel && (
                 <div className="text-xs" style={{ color: brand.steel }}>
-                  {foundation.groupPlate.widthIn.toFixed(1)}" ×{" "}
-                  {foundation.groupPlate.heightIn.toFixed(1)}",{" "}
-                  {foundation.groupPlate.thicknessMm}mm thick
+                  Pick a manufacturer and model to continue.
                 </div>
-                <div className="text-xs mt-1" style={{ color: brand.steel }}>
-                  {foundation.groupPlate.material}
-                </div>
-                <div
-                  className="text-xs mt-2 grid grid-cols-2 gap-2"
-                  style={{ color: brand.steel }}
-                >
-                  <div>
-                    Plate → foundations:{" "}
-                    <span style={{ color: brand.dark, fontWeight: 600 }}>
-                      {foundation.boltGroups.plateToFoundation.count}×M12
-                    </span>
-                  </div>
-                  <div>
-                    Cabinet → plate:{" "}
-                    <span style={{ color: brand.dark, fontWeight: 600 }}>
-                      {foundation.boltGroups.chargerToPlate.count}×M12
-                    </span>
-                  </div>
-                </div>
-              </div>
+              )}
 
-              <div
-                className="border rounded-md p-4 mb-4"
-                style={{ borderColor: "#D9D9D6" }}
-              >
+              {selectedPowerBlockModel?.isStandardSingle && (
                 <div
-                  className="text-sm font-semibold mb-2"
-                  style={{ color: brand.dark }}
+                  className="mb-4 rounded-md border px-3 py-2.5"
+                  style={{ borderColor: brand.gold, background: "#FBF6E8" }}
                 >
-                  Hat-profile connection
+                  <div className="text-xs" style={{ color: brand.dark }}>
+                    <span className="font-semibold">
+                      {presetMfr} {selectedPowerBlockModel.model} is a single
+                      NordBase Medium foundation
+                    </span>
+                    <br />
+                    No group hardware — this is the standard single-unit
+                    product. Continue there for charger dimensions and
+                    adapter-plate CC spacing.
+                  </div>
+                  <button
+                    onClick={() => setFoundationKey("MEDIUM")}
+                    className="text-xs font-semibold mt-2 px-3 py-1.5 rounded-md"
+                    style={{ background: brand.gold, color: brand.dark }}
+                  >
+                    Use NordBase Medium foundation
+                  </button>
                 </div>
-                <div className="text-xs" style={{ color: brand.steel }}>
-                  {foundation.hatProfile.totalRivets}×{" "}
-                  {foundation.hatProfile.rivetSpec} (
-                  {foundation.hatProfile.rivetsPerSide} per long side ×{" "}
-                  {foundation.hatProfile.sides} sides)
-                </div>
-              </div>
+              )}
+
+              {selectedPowerBlockModel &&
+                !selectedPowerBlockModel.isStandardSingle && (
+                <>
+                  <div
+                    className="border rounded-md p-4 mb-4"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <div
+                      className="text-sm font-semibold mb-2"
+                      style={{ color: brand.dark }}
+                    >
+                      {presetMfr} {selectedPowerBlockModel.model} —{" "}
+                      {selectedPowerBlockModel.unitCount}-foundation array
+                    </div>
+                    <div
+                      className="text-xs grid grid-cols-3 gap-2"
+                      style={{ color: brand.steel }}
+                    >
+                      <div>
+                        Top:{" "}
+                        <span style={{ color: brand.dark, fontWeight: 600 }}>
+                          {selectedPowerBlockModel.top.w.toFixed(1)}"×
+                          {selectedPowerBlockModel.top.d.toFixed(1)}"
+                        </span>
+                      </div>
+                      <div>
+                        Base:{" "}
+                        <span style={{ color: brand.dark, fontWeight: 600 }}>
+                          {selectedPowerBlockModel.bottom.w.toFixed(1)}"×
+                          {selectedPowerBlockModel.bottom.d.toFixed(1)}"
+                        </span>
+                      </div>
+                      <div>
+                        Depth:{" "}
+                        <span style={{ color: brand.dark, fontWeight: 600 }}>
+                          {foundation.depthIn}"
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {selectedPowerBlockModel.conceptPhotoUrl && (
+                    <img
+                      src={selectedPowerBlockModel.conceptPhotoUrl}
+                      alt={`${presetMfr} ${selectedPowerBlockModel.model} on NordBase Power Block`}
+                      className="w-full max-w-xs rounded-md border mb-4"
+                      style={{ borderColor: "#D9D9D6" }}
+                    />
+                  )}
+
+                  {selectedPowerBlockModel.chargerSpec && (
+                    <div
+                      className="border rounded-md p-4 mb-4"
+                      style={{ borderColor: "#D9D9D6" }}
+                    >
+                      <div
+                        className="text-sm font-semibold mb-2"
+                        style={{ color: brand.dark }}
+                      >
+                        Charger cabinet
+                      </div>
+                      <div
+                        className="text-xs grid grid-cols-2 sm:grid-cols-4 gap-2"
+                        style={{ color: brand.steel }}
+                      >
+                        <div>
+                          Width:{" "}
+                          <span style={{ color: brand.dark, fontWeight: 600 }}>
+                            {selectedPowerBlockModel.chargerSpec.widthIn.toFixed(1)}"
+                          </span>
+                        </div>
+                        <div>
+                          Depth:{" "}
+                          <span style={{ color: brand.dark, fontWeight: 600 }}>
+                            {selectedPowerBlockModel.chargerSpec.depthIn.toFixed(1)}"
+                          </span>
+                        </div>
+                        <div>
+                          Height:{" "}
+                          <span style={{ color: brand.dark, fontWeight: 600 }}>
+                            {selectedPowerBlockModel.chargerSpec.heightIn.toFixed(1)}"
+                          </span>
+                        </div>
+                        <div>
+                          Weight:{" "}
+                          <span style={{ color: brand.dark, fontWeight: 600 }}>
+                            {selectedPowerBlockModel.chargerSpec.weightLb.toFixed(0)} lb
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs mt-2" style={{ color: brand.steel }}>
+                        Per Kempower Power Unit C500 datasheet. One welded
+                        cabinet spans all {selectedPowerBlockModel.unitCount}{" "}
+                        foundations — not {selectedPowerBlockModel.unitCount}{" "}
+                        separate charger units.
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedPowerBlockModel.dataConfirmed && (
+                    <Banner>
+                      <span className="font-semibold">
+                        Structural data for {presetMfr}{" "}
+                        {selectedPowerBlockModel.model} is not yet confirmed.
+                      </span>{" "}
+                      Hat-profile rivet count, bolt pattern, and adapter-plate
+                      size are still pending (cabinet dimensions above are
+                      already confirmed). Contact Nordinfra for a manual
+                      assessment in the meantime.
+                    </Banner>
+                  )}
+
+                  {selectedPowerBlockModel.dataConfirmed && (
+                    <div
+                      className="border rounded-md p-4 mb-4"
+                      style={{ borderColor: "#D9D9D6" }}
+                    >
+                      <div
+                        className="text-sm font-semibold mb-2"
+                        style={{ color: brand.dark }}
+                      >
+                        Shared adapter plate
+                      </div>
+                      <div className="text-xs" style={{ color: brand.steel }}>
+                        {selectedPowerBlockModel.groupPlate.widthIn.toFixed(1)}" ×{" "}
+                        {selectedPowerBlockModel.groupPlate.heightIn.toFixed(1)}",{" "}
+                        {selectedPowerBlockModel.groupPlate.thicknessMm}mm thick
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: brand.steel }}>
+                        {selectedPowerBlockModel.groupPlate.material}
+                      </div>
+                      <div
+                        className="text-xs mt-2 grid grid-cols-2 gap-2"
+                        style={{ color: brand.steel }}
+                      >
+                        <div>
+                          Plate → foundations:{" "}
+                          <span style={{ color: brand.dark, fontWeight: 600 }}>
+                            {selectedPowerBlockModel.boltGroups.plateToFoundation.count}×M12
+                          </span>
+                        </div>
+                        <div>
+                          Cabinet → plate:{" "}
+                          <span style={{ color: brand.dark, fontWeight: 600 }}>
+                            {selectedPowerBlockModel.boltGroups.chargerToPlate.count}×M12
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               {foundation.structuralNote && (
                 <Banner>{foundation.structuralNote}</Banner>
@@ -2388,12 +3035,96 @@ export default function NordBaseCalculator() {
               >
                 Site conditions
               </h2>
-              <p className="text-sm mb-6" style={{ color: brand.steel }}>
+              <p className="text-sm mb-4" style={{ color: brand.steel }}>
                 Look up wind and seismic values for your address using the
                 official tools below, then enter them here.
               </p>
 
-              <div className="grid sm:grid-cols-2 gap-4">
+              <Field
+                label="Project address"
+                hint="Auto-fills SDS below from USGS (ASCE 7-22, Site Class D, Risk Category II). Wind speed is not auto-filled yet — enter it manually."
+              >
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <div className="relative w-full">
+                      <MapPin
+                        size={14}
+                        className="absolute left-3 top-1/2 -translate-y-1/2"
+                        style={{ color: brand.steel }}
+                      />
+                      <input
+                        type="text"
+                        value={addressInput}
+                        onChange={(e) => onAddressChange(e.target.value)}
+                        onKeyDown={onAddressKeyDown}
+                        onFocus={() =>
+                          addressSuggestions.length > 0 &&
+                          setAddressSuggestOpen(true)
+                        }
+                        onBlur={() =>
+                          setTimeout(() => setAddressSuggestOpen(false), 150)
+                        }
+                        placeholder="e.g. 400 S Congress Ave, Austin, TX"
+                        autoComplete="off"
+                        disabled={!MAPBOX_TOKEN}
+                        className="w-full border rounded-md pl-9 pr-3 py-2 text-sm disabled:opacity-50"
+                        style={{ borderColor: "#D9D9D6" }}
+                      />
+                    </div>
+                  </div>
+                  {addressSuggestOpen && addressSuggestions.length > 0 && (
+                    <div
+                      className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-white shadow-lg"
+                      style={{ borderColor: "#D9D9D6" }}
+                    >
+                      {addressSuggestions.map((s, i) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            selectAddressSuggestion(s);
+                          }}
+                          className="block w-full px-4 py-2 text-left text-sm"
+                          style={{
+                            background:
+                              i === addressHighlightIndex
+                                ? brand.bgSoft
+                                : "white",
+                            color: brand.dark,
+                          }}
+                        >
+                          {s.placeName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {!MAPBOX_TOKEN && (
+                  <div className="text-[11px] mt-1" style={{ color: brand.steel }}>
+                    Address lookup isn't configured yet — enter SDS manually
+                    below, or via the USGS link.
+                  </div>
+                )}
+                {sdsLookupStatus === "loading" && (
+                  <div className="text-[11px] mt-1" style={{ color: brand.steel }}>
+                    Looking up SDS from USGS…
+                  </div>
+                )}
+                {sdsLookupStatus === "done" && sdsSource === "usgs" && (
+                  <div className="text-[11px] mt-1 flex items-center gap-1" style={{ color: brand.dark }}>
+                    <CheckCircle2 size={12} style={{ color: brand.gold }} />
+                    SDS fetched from USGS for {sdsLookupAddress}
+                  </div>
+                )}
+                {sdsLookupStatus === "error" && (
+                  <div className="text-[11px] mt-1" style={{ color: "#B54708" }}>
+                    {sdsLookupError}
+                  </div>
+                )}
+              </Field>
+
+              <div className="grid sm:grid-cols-2 gap-4 mt-4">
                 <Field
                   label="Basic wind speed (mph)"
                   hint="Look up via ASCE Hazard Tool"
@@ -2426,7 +3157,10 @@ export default function NordBaseCalculator() {
                       type="number"
                       step="0.05"
                       value={sds}
-                      onChange={(e) => setSds(e.target.value)}
+                      onChange={(e) => {
+                        setSds(e.target.value);
+                        setSdsSource("manual");
+                      }}
                       className="w-full border rounded-md px-3 py-2 text-sm"
                       style={{ borderColor: "#D9D9D6" }}
                     />
@@ -2991,7 +3725,11 @@ export default function NordBaseCalculator() {
                   style={{ color: "#D9D9D6" }}
                 >
                   <div>DCR: {(result.governing.dcr * 100).toFixed(1)}%</div>
-                  <div>Foundation: {foundation.name}</div>
+                  <div>
+                    Foundation: {foundation.name}
+                    {selectedPowerBlockModel &&
+                      ` — ${presetMfr} ${selectedPowerBlockModel.model}`}
+                  </div>
                   <div>Wind: {windSpeed} mph</div>
                   <div>SDS: {sds}g</div>
                 </div>
@@ -3065,9 +3803,10 @@ export default function NordBaseCalculator() {
                         {BOLT_M12_TENSION_CAPACITY_KN.toFixed(2)} kN, ACI
                         318-19 §17.6.1) use confirmed geometry from Simon's
                         assembly drawing and the validated single-foundation
-                        methodology, extended to the 3-unit array. Adapter-
-                        plate BENDING itself is NOT included — see the note on
-                        the Configuration step. Source:
+                        methodology, extended to the{" "}
+                        {selectedPowerBlockModel?.unitCount}-unit array.
+                        Adapter-plate BENDING itself is NOT included — see the
+                        note on the Configuration step. Source:
                         Nordinfra_PowerBlock_C503_DRAFT_20260827_v3.xlsx,
                         confirmed 2026-08-27.
                       </>
@@ -3105,14 +3844,15 @@ export default function NordBaseCalculator() {
                 >
                   <Package size={14} /> BILL OF MATERIALS
                 </div>
-                {foundation.isPowerBlock ? (
+                {foundation.isPowerBlock && selectedPowerBlockModel ? (
                   <div
                     className="flex justify-between text-sm py-1.5 border-b"
                     style={{ borderColor: "#F0F0EE" }}
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        {foundation.unitCount}× NordBase Medium foundation
+                        {selectedPowerBlockModel.unitCount}× NordBase Medium
+                        foundation
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
                         {foundation.levelLabel} — joined array
@@ -3122,7 +3862,7 @@ export default function NordBaseCalculator() {
                       Price on request
                     </div>
                   </div>
-                ) : (
+                ) : !foundation.isPowerBlock ? (
                   <div
                     className="flex justify-between text-sm py-1.5 border-b"
                     style={{ borderColor: "#F0F0EE" }}
@@ -3137,20 +3877,16 @@ export default function NordBaseCalculator() {
                       Price on request
                     </div>
                   </div>
-                )}
-                {foundation.isPowerBlock && (
+                ) : null}
+                {foundation.isPowerBlock && selectedPowerBlockModel && (
                   <div
                     className="flex justify-between text-sm py-1.5 border-b"
                     style={{ borderColor: "#F0F0EE" }}
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Hat-profile connector, {foundation.hatProfile.sides}{" "}
-                        long sides
-                      </div>
-                      <div className="text-xs" style={{ color: brand.steel }}>
-                        {foundation.hatProfile.totalRivets}×{" "}
-                        {foundation.hatProfile.rivetSpec}
+                        Hat-profile connector,{" "}
+                        {selectedPowerBlockModel.hatProfile.sides} long sides
                       </div>
                     </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
@@ -3158,19 +3894,20 @@ export default function NordBaseCalculator() {
                     </div>
                   </div>
                 )}
-                {foundation.isPowerBlock && (
+                {foundation.isPowerBlock && selectedPowerBlockModel && (
                   <div
                     className="flex justify-between text-sm py-1.5 border-b"
                     style={{ borderColor: "#F0F0EE" }}
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Shared adapter plate — {foundation.chargerSpec.manufacturer}{" "}
-                        {foundation.chargerSpec.model}
+                        Shared adapter plate — {presetMfr}{" "}
+                        {selectedPowerBlockModel.model}
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
-                        {foundation.boltGroups.plateToFoundation.count}×M12 to
-                        foundations, {foundation.boltGroups.chargerToPlate.count}
+                        {selectedPowerBlockModel.boltGroups.plateToFoundation.count}
+                        ×M12 to foundations,{" "}
+                        {selectedPowerBlockModel.boltGroups.chargerToPlate.count}
                         ×M12 to charger
                       </div>
                     </div>
@@ -3701,6 +4438,24 @@ export default function NordBaseCalculator() {
               >
                 Next <ChevronRight size={14} />
               </button>
+            )}
+            {step === 5 && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={startNewConfiguration}
+                  className="flex items-center gap-1 text-sm px-4 py-2 rounded-md border font-semibold"
+                  style={{ borderColor: brand.gold, color: brand.dark }}
+                >
+                  <Layers size={14} /> Make another configuration
+                </button>
+                <button
+                  onClick={reset}
+                  className="flex items-center gap-1 text-sm px-5 py-2 rounded-md font-bold"
+                  style={{ background: brand.gold, color: brand.dark }}
+                >
+                  <CheckCircle2 size={14} /> Done
+                </button>
+              </div>
             )}
           </div>
         </div>
