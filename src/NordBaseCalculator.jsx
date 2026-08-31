@@ -187,6 +187,12 @@ const FOUNDATIONS = {
     adapterPlateWeightLb: 0, // no adapter plate on Bollard
     blurb:
       "Standalone protective foundation for a bollard/post. No charger mounts on this foundation — the smallest and lightest model in the lineup.",
+    // Reference photo for the Foundation-step card (added 2026-08-31) — an
+    // installed bollard/post (not the bare foundation shell, which is
+    // already shown via photoUrl above). No chargerFit here (hasCharger is
+    // false for Bollard), so this is a plain top-level refPhotoUrl rather
+    // than nested under chargerFit — see the Foundation-step card render.
+    refPhotoUrl: "/bollard-sch10.png",
   },
   SMALL: {
     key: "SMALL",
@@ -230,6 +236,13 @@ const FOUNDATIONS = {
       maxDIn: 16,
       maxHIn: 72,
       refPhotoUrl: "/charger-ref-small-pedestal.jpg",
+      // Second reference photo (Simon, 2026-08-31) — an Ekoenergetyka Axon
+      // Sat 400 pedestal, also within the Small tier's size envelope. The
+      // chargerFit shape only had room for one photo, so this is a minimal
+      // `refPhotoUrl2` addition rather than reworking refPhotoUrl into an
+      // array — see the Foundation-step card render below for how both are
+      // shown.
+      refPhotoUrl2: "/charger-ref-sat400.webp",
     },
   },
   MEDIUM: {
@@ -308,11 +321,13 @@ const FOUNDATIONS = {
     // Gullberg, 2026-08-28) but he hasn't given a max W×D×H for Large yet
     // (only Small 16×16×72 and Medium 27×32×82) — leave the numbers out
     // rather than guess; the card falls back to showing the photo alone.
+    // Photo swapped 2026-08-31 (Simon): replaced the ABB Terra stock photo
+    // with a real Nordinfra site photo of an Ekoenergetyka Axon Easy charger.
     chargerFit: {
       maxWIn: null,
       maxDIn: null,
       maxHIn: null,
-      refPhotoUrl: "/charger-ref-large-abb-terra.webp",
+      refPhotoUrl: "/charger-ref-axon-easy.webp",
     },
   },
   // ---------------------------------------------------------------------------
@@ -348,6 +363,12 @@ const FOUNDATIONS = {
       "Preliminary release. Group overturning/sliding resistance and adapter-plate bolt tension are calculated per ASCE 7-22 / IBC 2021 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the multi-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Not PE-stamped.",
     blurb:
       "Multiple NordBase Medium foundations joined by a hat-profile with one shared adapter plate, sized for a specific DC fast-charger cabinet. Pick a manufacturer and model in the next step.",
+    // Reference photo for the Foundation-step card (added 2026-08-31) — a
+    // real photo of a Kempower cabinet mounted on a Power Block foundation
+    // (top/bottom are null above since Power Block geometry is model-
+    // dependent, so this is a plain top-level refPhotoUrl, same pattern as
+    // Bollard's — see the Foundation-step card render).
+    refPhotoUrl: "/nordbase-powerblock-kempower-mounted-front.png",
   },
 };
 
@@ -576,6 +597,20 @@ const PEDESTAL_CHARGER_PRESETS = {
       ccW: null, // no confirmed bolt pattern on file yet for this unit
       ccD: null,
     },
+    // Added from calculator_charger_dataset.json (2026-08-31, 60-model verified dataset)
+    {
+      model: "Satellite (V2)",
+      w: 11.81,
+      d: 11.81,
+      h: 59.76,
+      weight: 242.51,
+      ccW: 9.45,
+      ccD: 9.45,
+      basePlateW: 11.81,
+      basePlateD: 11.81,
+      partNumber: "NI-ADP-DCS-Kempower-Satellite-US",
+      partName: "NordBase Small Adapter plate – Kempower Satellite",
+    },
   ],
   ABB: [
     {
@@ -704,6 +739,69 @@ const PEDESTAL_CHARGER_PRESETS = {
       basePlateD: 11,
     },
   ],
+  // ---- New manufacturers below added from calculator_charger_dataset.json
+  // (2026-08-31, 60-model verified dataset) — none of these collided with
+  // an existing key above, so each is added fresh. ----
+  Alpitronic: [
+    {
+      model: "HYC50",
+      w: 20.47,
+      d: 9.84,
+      h: 51.18,
+      weight: 319.67,
+      ccW: null, // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: 15.75,
+      basePlateD: 7.87,
+      partNumber: "NI-ADP-DCS-Alpitronic-HYC50-US",
+      partName: "NordBase Small Adapter plate – Alpitronic HYC50",
+    },
+  ],
+  "Autel Energy": [
+    {
+      model: "MaxiCharger AC Ultra",
+      w: 14.17,
+      d: 7.87,
+      h: 56.69,
+      weight: 165.35,
+      ccW: null, // bolt pattern excluded from source data (Fundamentplatta smaller than CC — data error, needs Simon to resupply)
+      ccD: null,
+      basePlateW: 7.76,
+      basePlateD: 14.17,
+      partNumber: "NI-ADP-DCS-Autel-Maxicharger-AC-Ultra-US",
+      partName: "NordBase Small Adapter plate – Autel Energy MaxiCharger AC Ultra",
+    },
+  ],
+  "Blink Charging": [
+    {
+      model: "Pedestal 22kW",
+      w: 11.81,
+      d: 10.24,
+      h: 96.85,
+      weight: 110.23,
+      ccW: 4.45,
+      ccD: 4.92,
+      basePlateW: 11.81,
+      basePlateD: 11.81,
+      partNumber: "NI-ADP-DCS-Blink-Charging-Pedestal-22kw-US",
+      partName: "NordBase Small Adapter plate – Blink Charging Pedestal 22kW",
+    },
+  ],
+  Siemens: [
+    {
+      model: "SICHARGE FLEX - Dispenser Small",
+      w: 14.37,
+      d: 11.81,
+      h: 86.61,
+      weight: 275.58,
+      ccW: 11.22,
+      ccD: 8.66,
+      basePlateW: 14.37,
+      basePlateD: 11.81,
+      partNumber: "NI-ADP-DCS-Siemens-Sicharge-Flex-Dispenser-Small-US",
+      partName: "NordBase Small Adapter plate – Siemens SICHARGE FLEX - Dispenser Small",
+    },
+  ],
 };
 
 // ---------------------------------------------------------------------------
@@ -720,19 +818,584 @@ const PEDESTAL_CHARGER_PRESETS = {
 // bolt pattern is on file.
 // ---------------------------------------------------------------------------
 const DC_FAST_CHARGER_PRESETS = {
-  ABB: [],
-  Alpitronic: [],
-  Autel: [],
+  ABB: [
+    {
+      model: "C50",
+      w: 25.7,
+      d: 9.3,
+      h: 77.4,
+      weight: 385,
+      ccW: 18.54,
+      ccD: 7.56,
+      basePlateW: 21.65,
+      basePlateD: 9.45,
+      partNumber: "NI-ADP-DCM-ABB-C50-US",
+      partName: "NordBase Medium Adapter plate – ABB C50",
+    },
+    {
+      model: "A200/300/400",
+      w: 31.1,
+      d: 31.9,
+      h: 88.8,
+      weight: null,
+      ccW: 27.01,
+      ccD: 22.05,
+      basePlateW: 27.56,
+      basePlateD: 23.62,
+      partNumber: "NI-ADP-DCM-ABB-A200-300-400-US",
+      partName: "NordBase Medium Adapter plate– ABB A200/300/400",
+    },
+    {
+      model: "OM Solo/Duo",
+      w: 21.26,
+      d: 9.84,
+      h: 85.24,
+      weight: 330.69,
+      ccW: 13.39,
+      ccD: 7.09,
+      basePlateW: 21.26,
+      basePlateD: 9.84,
+      partNumber: "NI-ADP-DCM-ABB-OM-Solo-Duo-US",
+      partName: "NordBase Medium Adapter plate – ABB OM Solo/Duo",
+    },
+  ],
+  Alpitronic: [
+    {
+      model: "HYC300/400",
+      w: 28.82,
+      d: 26.1,
+      h: 87.99,
+      weight: 1697.56,
+      ccW: 18.5,
+      ccD: 15.75,
+      basePlateW: 21.65,
+      basePlateD: 19.69,
+      partNumber: "NI-ADP-DCM-Alpitronic-HYC400-US",
+      partName: "NordBase Medium Adapter plate – Alpitronic HYC300/400",
+    },
+    {
+      model: "HYC1000 - MCS",
+      w: 30.71,
+      d: 10.24,
+      h: 91.34,
+      weight: 771.62,
+      ccW: 24.41,
+      ccD: 5.31,
+      basePlateW: 27.56,
+      basePlateD: 7.09,
+      partNumber: "NI-ADP-DCM-Alpitronic-HYC1000-MCS-US",
+      partName: "NordBase Medium Adapter plate – Alpitronic HYC1000 - MCS",
+    },
+    {
+      model: "HYC1000 - MCS-Dispenser",
+      w: 24.41,
+      d: 10.24,
+      h: 91.34,
+      weight: 606.27,
+      ccW: 18.39,
+      ccD: 5.31,
+      basePlateW: 21.65,
+      basePlateD: 7.09,
+      partNumber: "NI-ADP-DCM-Alpitronic-HYC1000-MCS-Dispenser-US",
+      partName: "NordBase Medium Adapter plate – Alpitronic HYC1000 - MCS-Dispenser",
+    },
+  ],
+  Autel: [
+    {
+      model: "MaxiCharger DC Fast DF120 (60-120 kW)",
+      w: 32.28,
+      d: 23.62,
+      h: 76.77,
+      weight: 1036.17,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCM-Autel-Maxicharger-DF120-US",
+      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC Fast DF120 (60-120 kW)",
+    },
+    {
+      model: "MaxiCharger DC Fast DF240 (140-240 kW)",
+      w: 32.28,
+      d: 27.56,
+      h: 76.77,
+      weight: 1141.99,
+      ccW: 24.8,
+      ccD: 17.72,
+      basePlateW: 28.35,
+      basePlateD: 21.65,
+      partNumber: "NI-ADP-DCM-Autel-Maxicharger-DF240-US",
+      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC Fast DF240 (140-240 kW)",
+    },
+    {
+      model: "DH480",
+      w: 30.79,
+      d: 30.79,
+      h: 76.77,
+      weight: 1675.51,
+      ccW: 24.8,
+      ccD: 19.69,
+      basePlateW: 27.56,
+      basePlateD: 22.44,
+      partNumber: "NI-ADP-DCM-Autel-DH480-US",
+      partName: "NordBase Medium Adapter plate – Autel Energy DH480",
+    },
+    {
+      model: "MaxiCharger DC HiPower - dispenser",
+      w: 22.83,
+      d: 12.6,
+      h: 81.69,
+      weight: 418.88,
+      ccW: 20.43,
+      ccD: 5.12,
+      basePlateW: 25.59,
+      basePlateD: 9.06,
+      partNumber: "NI-ADP-DCM-Autel-DCHhipower-Dispenser-US",
+      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC HiPower - Dispenser",
+    },
+    {
+      model: "MaxiCharger DC Compact Pedestal (40 kW)",
+      w: 21.65,
+      d: 10.24,
+      h: 39.37,
+      weight: 264.55,
+      ccW: 13.39,
+      ccD: 9.06,
+      basePlateW: 17.72,
+      basePlateD: 13.78,
+      partNumber: "NI-ADP-DCM-Autel-DC-Compact-US",
+      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC Compact (40 kW)",
+    },
+  ],
+  "Blink Charging": [
+    {
+      model: "DCFC 60/120/160/200/240/300kW (6 effektnivåer)",
+      w: 41.97,
+      d: 40.9,
+      h: 90.12,
+      weight: 1102.31,
+      ccW: 17.32,
+      ccD: 25.98,
+      basePlateW: 19.69,
+      basePlateD: 27.56,
+      partNumber: "NI-ADP-DCM-Blink-Charging-DCFC-60-300kw-US",
+      partName: "NordBase Medium Adapter plate – Blink Charging DCFC 60-300",
+    },
+    {
+      model: "Sinexcel All-In-One DCFC 120/160/240kW",
+      w: 29.53,
+      d: 33.46,
+      h: 78.74,
+      weight: 1058.22,
+      ccW: 29.53,
+      ccD: 16.93,
+      basePlateW: 33.46,
+      basePlateD: 21.65,
+      partNumber: "NI-ADP-DCM-Blink-Charging-DCFC-120-240kw-US",
+      partName: "NordBase Medium Adapter plate – Blink Charging Sinexcel DCFC 120-240kw",
+    },
+  ],
   "BTC Power": [],
-  ChargePoint: [],
-  "Delta Electronics": [],
-  Ekoenergetyka: [],
+  ChargePoint: [
+    {
+      model: "Express 250/280",
+      w: 28.74,
+      d: 17.32,
+      h: 88.19,
+      weight: 661.39,
+      ccW: 17.87,
+      ccD: 10.67,
+      basePlateW: 29.53,
+      basePlateD: 19.69,
+      partNumber: "NI-ADP-DCM-Chargepoint-Express-250-280-US",
+      partName: "NordBase Medium Adapterplåt – ChargePoint Express 250/280",
+    },
+    {
+      model: "Express Plus - Power Block (EXPP-PB1000)",
+      w: 38.9,
+      d: 40.91,
+      h: 86.26,
+      weight: 1003.1,
+      ccW: 31.18,
+      ccD: 26.06,
+      basePlateW: 41.34,
+      basePlateD: 39.37,
+      partNumber: "NI-ADP-DCL-Chargepoint-Express-Power-Block-US",
+      partName: "NordBase Large Adapter plate – ChargePoint Express Plus - Power Block",
+    },
+    {
+      model: "Express Plus - Power Link 2000 ",
+      w: 28.35,
+      d: 17.32,
+      h: 94.49,
+      weight: 460.77,
+      ccW: 17.86,
+      ccD: 5.12,
+      basePlateW: 29.53,
+      basePlateD: 19.69,
+      partNumber: "NI-ADP-DCM-Chargepoint-Express-Power-Link-2000-US",
+      partName: "NordBase Medium Adapter plate – ChargePoint Express Plus - Power Link 2000",
+    },
+  ],
+  "Delta Electronics": [
+    {
+      model: "Ultra Fast Charger UFC200/UFC500",
+      w: 39.37,
+      d: 33.82,
+      h: 81.89,
+      weight: 1543.23,
+      ccW: 22.64,
+      ccD: 21.65,
+      basePlateW: 27.56,
+      basePlateD: 27.56,
+      partNumber: "NI-ADP-DCL-Delta-Electronics-UFC200/500-US",
+      partName: "NordBase Large Adapter plate – Delta Electronics Ultra Fast Charger UFC200/UFC500",
+    },
+  ],
+  Ekoenergetyka: [
+    {
+      model: "Axon Easy (120-400 kW, flera SKU:er)",
+      w: 29.53,
+      d: 38.78,
+      h: 83.46,
+      weight: 1543.23,
+      ccW: 25.51,
+      ccD: 14.88,
+      basePlateW: 27.56,
+      basePlateD: 27.56,
+      partNumber: "NI-ADP-DCM-Ekoenergetyka-Axon-Easy-US",
+      partName: "NordBase Medium Adapter plate – Ekoenergetyka Axon Easy",
+    },
+    {
+      model: "Axon Sat 400",
+      w: 15.75,
+      d: 9.84,
+      h: 78.74,
+      weight: 727.52,
+      ccW: 12.01,
+      ccD: 3.54,
+      basePlateW: 15.75,
+      basePlateD: 7.87,
+      partNumber: "NI-ADP-DCM-Ekoenergetyka-Axon-Sat-400-US",
+      partName: "NordBase Medium Adapter plate – Ekoenergetyka Axon Sat 400",
+    },
+    {
+      model: "Axon Sat 600",
+      w: 15.75,
+      d: 9.84,
+      h: 78.74,
+      weight: 727.52,
+      ccW: 20.28,
+      ccD: 9.45,
+      basePlateW: 23.62,
+      basePlateD: 15.75,
+      partNumber: "NI-ADP-DCM-Ekoenergetyka-Axon-Sat-600-US",
+      partName: "NordBase Medium Adapter plate – Ekoenergetyka Axon Sat 600",
+    },
+    {
+      model: "Axon Side DLBS",
+      w: 39.37,
+      d: 41.34,
+      h: 90.55,
+      weight: 2866.01,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCL-Ekoenergetyka-Axon-Side-DLBS-US",
+      partName: "NordBase Large Adapter plate – Ekoenergetyka Axon Side DLBS",
+    },
+  ],
   FreeWire: [],
-  Kempower: [],
-  "Power Electronics": [],
-  Siemens: [],
-  Tesla: [],
-  Tritium: [],
+  "InCharge Energy": [
+    {
+      model: "ICE-60/120/180",
+      w: 27.56,
+      d: 68.9,
+      h: 29.53,
+      weight: 881.85,
+      ccW: 20.55,
+      ccD: 16.54,
+      basePlateW: 29.53,
+      basePlateD: 27.56,
+      partNumber: "NI-ADP-DCM-Incharge-Energy-ICE-60-180-US",
+      partName: "NordBase Medium Adapter plate – InCharge Energy ICE-60-180",
+    },
+    {
+      model: "ICE-480/ICE-600 Split System",
+      w: 41.34,
+      d: 45.28,
+      h: 86.61,
+      weight: 3306.93,
+      ccW: 35.83,
+      ccD: 39.37,
+      basePlateW: 41.34,
+      basePlateD: 45.28,
+      partNumber: "NI-ADP-DCL-Incharge-Energy-ICE-480-600-Split-US",
+      partName: "NordBase Power Block Adapter plate – InCharge Energy ICE-480/ICE-600 Split System",
+    },
+    {
+      model: "ICE SlimLine Dispenser ",
+      w: 23.62,
+      d: 10.24,
+      h: 70.87,
+      weight: 429.9,
+      ccW: 13.58,
+      ccD: 7.24,
+      basePlateW: 23.62,
+      basePlateD: 10.24,
+      partNumber: "NI-ADP-DCM-Incharge-Energy-ICE-Slimline-Dispenser-US",
+      partName: "NordBase Medium Adapter plate – InCharge Energy ICE SlimLine Dispenser",
+    },
+  ],
+  Kempower: [
+    {
+      model: "Station Charger C801 (All-In-One, enkel)",
+      w: 25.59,
+      d: 33.11,
+      h: 94.29,
+      weight: 1157.43,
+      ccW: null,  // bolt pattern excluded from source data (Fundamentplatta smaller than CC — data error, needs Simon to resupply)
+      ccD: null,
+      basePlateW: 2.95,
+      basePlateD: 3.35,
+      partNumber: "NI-ADP-DCM-Kempower-Station-Charger-C801-US",
+      partName: "NordBase Medium Adapter plate – Kempower Station Charger C801",
+    },
+    {
+      model: "Power Unit C801 (singel kraftkabinett)",
+      w: 25.59,
+      d: 33.11,
+      h: 86.42,
+      weight: 749.57,
+      ccW: null,  // bolt pattern excluded from source data (Fundamentplatta smaller than CC — data error, needs Simon to resupply)
+      ccD: null,
+      basePlateW: 2.95,
+      basePlateD: 3.35,
+      partNumber: "NI-ADP-DCM-Kempower-Power-Unit-C801-US",
+      partName: "NordBase Power Block Adapter plate – Kempower Power Unit C801",
+    },
+  ],
+  "Power Electronics": [
+    {
+      model: "NB 160",
+      w: 26.38,
+      d: 29.53,
+      h: 70.87,
+      weight: 921.53,
+      ccW: 29.92,
+      ccD: 14.57,
+      basePlateW: 31.5,
+      basePlateD: 17.72,
+      partNumber: "NI-ADP-DCM-Power-Electronics-NB-160-US",
+      partName: "NordBase Medium Adapter plate – Power Electronics NB 160",
+    },
+    {
+      model: "NB 240",
+      w: 26.38,
+      d: 37.4,
+      h: 78.74,
+      weight: 1278.68,
+      ccW: 29.92,
+      ccD: 14.57,
+      basePlateW: 31.5,
+      basePlateD: 17.72,
+      partNumber: "NI-ADP-DCM-Power-Electronics-NB-240-US",
+      partName: "NordBase Medium Adapter plate – Power Electronics NB 240",
+    },
+    {
+      model: "NB 400",
+      w: 27.95,
+      d: 37.4,
+      h: 88.58,
+      weight: 1719.6,
+      ccW: 29.92,
+      ccD: 14.57,
+      basePlateW: 31.5,
+      basePlateD: 17.72,
+      partNumber: "NI-ADP-DCM-Power-Electronics-NB-400-US",
+      partName: "NordBase Medium Adapter plate – Power Electronics NB 400",
+    },
+    {
+      model: "MCS Solution - Cooled",
+      w: 29.53,
+      d: 26.38,
+      h: 70.87,
+      weight: 771.62,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: 31.5,
+      basePlateD: 27.56,
+      partNumber: "NI-ADP-DCL-Power-Electronics-MC-Solution-Cooled-US",
+      partName: "NordBase Large Adapter plate – Power Electronics MCS Solution - Cooled",
+    },
+    {
+      model: "MCS Solution - Slim",
+      w: 29.92,
+      d: 11.81,
+      h: 70.87,
+      weight: 573.2,
+      ccW: 22.05,
+      ccD: 5.12,
+      basePlateW: 25.59,
+      basePlateD: 9.84,
+      partNumber: "NI-ADP-DCM-Power-Electronics-MCS-Solution-Slim-US",
+      partName: "NordBase Medium Adapter plate – Power Electronics MCS Solution - Slim",
+    },
+  ],
+  Siemens: [
+    {
+      model: "SICHARGE D",
+      w: 33.27,
+      d: 32.28,
+      h: 90.55,
+      weight: 1499.14,
+      ccW: 25.75,
+      ccD: 17.78,
+      basePlateW: 29.53,
+      basePlateD: 21.65,
+      partNumber: "NI-ADP-DCM-Siemens-Sicharge-D-US",
+      partName: "NordBase Medium Adapter plate – Siemens SICHARGE D",
+    },
+    {
+      model: "SICHARGE D Dispenser",
+      w: 23.62,
+      d: 19.29,
+      h: 90.55,
+      weight: 440.92,
+      ccW: 19.06,
+      ccD: 7.87,
+      basePlateW: 21.65,
+      basePlateD: 11.81,
+      partNumber: "NI-ADP-DCM-Siemens-Sicharge-D-Dispenser-US",
+      partName: "NordBase Medium Adapter plate – Siemens SICHARGE D Dispenser",
+    },
+    {
+      model: "SICHARGE FLEX - Dispenser Big",
+      w: 25.83,
+      d: 11.81,
+      h: 86.61,
+      weight: 440.92,
+      ccW: 22.68,
+      ccD: 8.66,
+      basePlateW: 25.83,
+      basePlateD: 11.81,
+      partNumber: "NI-ADP-DCM-Siemens-Sicharge-Flex-Dispenser-Big-US",
+      partName: "NordBase Medium Adapter plate – Siemens SICHARGE FLEX - Dispenser Big",
+    },
+  ],
+  Tesla: [
+    {
+      model: "Supercharger V4 Dispenser (Post)",
+      w: 13.15,
+      d: 35.08,
+      h: 76.61,
+      weight: 198.42,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCM-Tesla-v4-Dispenser-US",
+      partName: "NordBase Medium Adapter plate – Tesla V4 Dispenser",
+    },
+  ],
+  Tritium: [
+    {
+      model: "PKM75",
+      w: 30.83,
+      d: 12.17,
+      h: 78.66,
+      weight: null,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCM-Tritium-PKM75-US",
+      partName: "NordBase Medium Adapter plate – Tritium PKM75",
+    },
+    {
+      model: "PKM150",
+      w: 30.71,
+      d: 11.81,
+      h: 78.74,
+      weight: null,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCM-Tritium-PKM150-US",
+      partName: "NordBase Medium Adapter plate – Tritium PKM150",
+    },
+    {
+      model: "TRI-FLEX Dispenser",
+      w: 26.89,
+      d: 13.15,
+      h: 86.06,
+      weight: 716.5,
+      ccW: null,  // bolt pattern excluded from source data (Fundamentplatta smaller than CC — data error, needs Simon to resupply)
+      ccD: null,
+      basePlateW: 23.62,
+      basePlateD: 7.09,
+      partNumber: "NI-ADP-DCM-Tritium-Tri-Flex-Dispenser-US",
+      partName: "NordBase Medium Adapter plate – Tritium TRI-FLEX Dispenser",
+    },
+    {
+      model: "DC-FLEX",
+      w: 26.69,
+      d: 12.44,
+      h: 78.74,
+      weight: 440.92,
+      ccW: 13.78,
+      ccD: 4.92,
+      basePlateW: 15.75,
+      basePlateD: 5.91,
+      partNumber: "NI-ADP-DCM-Tritium-DC-Flex-US",
+      partName: "NordBase Medium Adapter plate – Tritium DC-FLEX",
+    },
+  ],
+  Wallbox: [
+    {
+      model: "Supernova 180 (US)",
+      w: 28.11,
+      d: 17.83,
+      h: 78.74,
+      weight: 881.85,
+      ccW: 25.79,
+      ccD: 11.02,
+      basePlateW: 28.35,
+      basePlateD: 15.75,
+      partNumber: "NI-ADP-DCM-Wallbox-Supernova-180-US",
+      partName: "NordBase Medium Adapter plate – Wallbox Supernova 180 (US)",
+    },
+  ],
+  "Zerova (Phihong)": [
+    {
+      model: "DT series 240kW",
+      w: 35.12,
+      d: 25.98,
+      h: 86.61,
+      weight: 1686.53,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCM-Zerova-DT-Series-240kw-US",
+      partName: "NordBase Medium Adapterplåt – Zerova (Phihong) DT series 240kW",
+    },
+    {
+      model: "DQ Series 480kW",
+      w: 41.34,
+      d: 31.5,
+      h: 82.68,
+      weight: 2557.36,
+      ccW: null,  // bolt pattern not confirmed / not on file yet
+      ccD: null,
+      basePlateW: null,
+      basePlateD: null,
+      partNumber: "NI-ADP-DCL-Zerova-DQ-Series-480kw-US",
+      partName: "NordBase Large Adapterplåt – Zerova (Phihong) DQ Series 480kW",
+    },
+  ],
 };
 
 // Power Block C503's charger is fixed (one confirmed Kempower C503 cabinet
@@ -2447,12 +3110,17 @@ export default function NordBaseCalculator() {
                           <div>Depth: {f.depthIn}"</div>
                         </div>
                       )}
-                      {f.chargerFit && (
+                      {/* Reference-photo row — chargerFit (Small/Medium/Large,
+                          with a max-footprint caption) or a plain top-level
+                          refPhotoUrl (Bollard/Power Block, no charger-fit
+                          sizing since Bollard has no charger and Power
+                          Block's size depends on the model chosen next). */}
+                      {(f.chargerFit?.refPhotoUrl || f.refPhotoUrl) && (
                         <div
                           className="flex items-center gap-2 mt-2 pt-2 border-t"
                           style={{ borderColor: "#F0F0EE" }}
                         >
-                          {f.chargerFit.refPhotoUrl && (
+                          {f.chargerFit?.refPhotoUrl && (
                             <img
                               src={f.chargerFit.refPhotoUrl}
                               alt={`Reference charger sized for ${f.name}`}
@@ -2460,15 +3128,35 @@ export default function NordBaseCalculator() {
                               style={{ background: brand.bgSoft }}
                             />
                           )}
+                          {f.chargerFit?.refPhotoUrl2 && (
+                            <img
+                              src={f.chargerFit.refPhotoUrl2}
+                              alt={`Additional reference charger sized for ${f.name}`}
+                              className="w-10 h-10 object-contain shrink-0 rounded"
+                              style={{ background: brand.bgSoft }}
+                            />
+                          )}
+                          {!f.chargerFit && f.refPhotoUrl && (
+                            <img
+                              src={f.refPhotoUrl}
+                              alt={`Reference photo for ${f.name}`}
+                              className="w-10 h-10 object-contain shrink-0 rounded"
+                              style={{ background: brand.bgSoft }}
+                            />
+                          )}
                           <div className="text-[11px] leading-snug" style={{ color: brand.steel }}>
-                            {f.chargerFit.maxWIn ? (
-                              <>
-                                Fits chargers up to ~{f.chargerFit.maxWIn}"×
-                                {f.chargerFit.maxDIn}"×{f.chargerFit.maxHIn}"
-                                (W×D×H)
-                              </>
+                            {f.chargerFit ? (
+                              f.chargerFit.maxWIn ? (
+                                <>
+                                  Fits chargers up to ~{f.chargerFit.maxWIn}"×
+                                  {f.chargerFit.maxDIn}"×{f.chargerFit.maxHIn}"
+                                  (W×D×H)
+                                </>
+                              ) : (
+                                "Reference size — max charger footprint TBD"
+                              )
                             ) : (
-                              "Reference size — max charger footprint TBD"
+                              "Reference photo"
                             )}
                           </div>
                         </div>
