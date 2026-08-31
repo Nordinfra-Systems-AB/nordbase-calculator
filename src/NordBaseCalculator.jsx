@@ -517,27 +517,27 @@ const POWER_BLOCK_MODELS = {
     // dims/weight/ccW/ccD are confirmed manufacturer datasheet data; the
     // single-vs-group foundation configuration is NOT. ----
     {
-      model: "Station Charger C802 (All-In-One, dubbel)",
+      model: "Station Charger C802",
       configPending: true,
       chargerSpec: {
         manufacturer: "Kempower",
-        model: "Station Charger C802 (All-In-One, dubbel)",
+        model: "Station Charger C802",
         widthIn: 49.21,
         depthIn: 33.11,
         heightIn: 94.29,
         weightLb: 2039.27,
-        ccWIn: null,
-        ccDIn: null,
+        ccWIn: 23.94, // Fundamentplatta confirmed by Simon 2026-08-31 (1350x800mm, now larger than CC)
+        ccDIn: 37.01,
       },
       partNumber: "NI-ADP-PB-Kempower-Station-Charger-C802-US",
-      partName: "NordBase Medium Adapter plate – Kempower Station Charger C802",
+      partName: "NordBase Power Block Adapter plate – Kempower Station Charger C802",
     },
     {
-      model: "Power Unit C802 (dubbel kraftkabinett)",
+      model: "Power Unit C802",
       configPending: true,
       chargerSpec: {
         manufacturer: "Kempower",
-        model: "Power Unit C802 (dubbel kraftkabinett)",
+        model: "Power Unit C802",
         widthIn: 49.21,
         depthIn: 33.11,
         heightIn: 86.42,
@@ -549,11 +549,11 @@ const POWER_BLOCK_MODELS = {
       partName: "NordBase Power Block Adapter plate – Kempower Power Unit C802",
     },
     {
-      model: "Power Unit C803 (trippel kraftkabinett)",
+      model: "Power Unit C803",
       configPending: true,
       chargerSpec: {
         manufacturer: "Kempower",
-        model: "Power Unit C803 (trippel kraftkabinett)",
+        model: "Power Unit C803",
         widthIn: 72.83,
         depthIn: 33.11,
         heightIn: 86.42,
@@ -565,11 +565,11 @@ const POWER_BLOCK_MODELS = {
       partName: "NordBase Power Block Adapter plate – Kempower Power Unit C803",
     },
     {
-      model: "Mega Satellite (MCS/High-Power CCS)",
+      model: "Mega Satellite",
       configPending: true,
       chargerSpec: {
         manufacturer: "Kempower",
-        model: "Mega Satellite (MCS/High-Power CCS)",
+        model: "Mega Satellite",
         widthIn: 47.24,
         depthIn: 31.5,
         heightIn: 92.52,
@@ -603,7 +603,7 @@ const POWER_BLOCK_MODELS = {
         ccDIn: 27.01,
       },
       partNumber: "NI-ADP-PB-ABB-OM-M-series-US",
-      partName: "NordBase Power Block Adapter plate – ABB E-mobility OM M-Series",
+      partName: "NordBase Power Block Adapter plate – ABB OM M-Series",
     },
     {
       // "unstyled-but-requested" in powerblock_dataset.json — Nordinfra's
@@ -622,16 +622,16 @@ const POWER_BLOCK_MODELS = {
         ccDIn: 36.06,
       },
       partNumber: "NI-ADP-PB-ABB-OM-X-series-US",
-      partName: "NordBase Power Block Adapter plate – ABB E-mobility OM X-Series",
+      partName: "NordBase Power Block Adapter plate – ABB OM X-Series",
     },
   ],
   "Power Electronics": [
     {
-      model: "NBi 180 (kraftkabinett)",
+      model: "NBi 180",
       configPending: true,
       chargerSpec: {
         manufacturer: "Power Electronics",
-        model: "NBi 180 (kraftkabinett)",
+        model: "NBi 180",
         widthIn: 39.37,
         depthIn: 31.5,
         heightIn: 78.74,
@@ -643,11 +643,11 @@ const POWER_BLOCK_MODELS = {
       partName: "NordBase Power Block Adapter plate – Power Electronics NBi 180",
     },
     {
-      model: "NBi 360 (kraftkabinett)",
+      model: "NBi 360",
       configPending: true,
       chargerSpec: {
         manufacturer: "Power Electronics",
-        model: "NBi 360 (kraftkabinett)",
+        model: "NBi 360",
         widthIn: 61.02,
         depthIn: 39.76,
         heightIn: 90.55,
@@ -661,11 +661,11 @@ const POWER_BLOCK_MODELS = {
   ],
   Siemens: [
     {
-      model: "SICHARGE FLEX - Singel",
+      model: "SICHARGE FLEX - Single",
       configPending: true,
       chargerSpec: {
         manufacturer: "Siemens",
-        model: "SICHARGE FLEX - Singel",
+        model: "SICHARGE FLEX - Single",
         widthIn: 31.5,
         depthIn: 55.12,
         heightIn: 94.88,
@@ -674,14 +674,14 @@ const POWER_BLOCK_MODELS = {
         ccDIn: 26.57,
       },
       partNumber: "NI-ADP-PB-Siemens-Sicharge-Flex-Singel-US",
-      partName: "NordBase Power Block Adapter plate – Siemens SICHARGE FLEX - Singel",
+      partName: "NordBase Power Block Adapter plate – Siemens SICHARGE FLEX - Single",
     },
     {
-      model: "SICHARGE FLEX - Dubbel",
+      model: "SICHARGE FLEX - Double",
       configPending: true,
       chargerSpec: {
         manufacturer: "Siemens",
-        model: "SICHARGE FLEX - Dubbel",
+        model: "SICHARGE FLEX - Double",
         widthIn: 31.5,
         depthIn: 86.61,
         heightIn: 94.88,
@@ -696,11 +696,11 @@ const POWER_BLOCK_MODELS = {
       // Name suggests "triple" but that does NOT tell us whether this is 3
       // separate foundations bolted together (like Kempower C503) or one
       // wider single cabinet on one foundation — see POWER_BLOCK_MODELS note.
-      model: "SICHARGE FLEX - Trippel",
+      model: "SICHARGE FLEX - Triple",
       configPending: true,
       chargerSpec: {
         manufacturer: "Siemens",
-        model: "SICHARGE FLEX - Trippel",
+        model: "SICHARGE FLEX - Triple",
         widthIn: 31.5,
         depthIn: 125.98,
         heightIn: 94.88,
@@ -717,11 +717,11 @@ const POWER_BLOCK_MODELS = {
       // "unstyled-but-requested" in powerblock_dataset.json — Nordinfra's
       // internal tracker hasn't marked this one's dimension data reviewed
       // yet, but Simon explicitly asked for it by name, so it's included.
-      model: "Supercharger V3 Cabinet (kraftkabinett)",
+      model: "Supercharger V3 Cabinet",
       configPending: true,
       chargerSpec: {
         manufacturer: "Tesla",
-        model: "Supercharger V3 Cabinet (kraftkabinett)",
+        model: "Supercharger V3 Cabinet",
         widthIn: 49.21,
         depthIn: 39.37,
         heightIn: 86.61,
@@ -788,11 +788,11 @@ const POWER_BLOCK_MODELS = {
       // "unstyled-but-requested" in powerblock_dataset.json — Nordinfra's
       // internal tracker hasn't marked this one's dimension data reviewed
       // yet, but Simon explicitly asked for it by name, so it's included.
-      model: "MaxiCharger DC HiPower - CPU (480/640 kW)",
+      model: "MaxiCharger DC HiPower - 480/640 kW",
       configPending: true,
       chargerSpec: {
         manufacturer: "Autel",
-        model: "MaxiCharger DC HiPower - CPU (480/640 kW)",
+        model: "MaxiCharger DC HiPower - 480/640 kW",
         widthIn: 66.93,
         depthIn: 35.43,
         heightIn: 78.74,
@@ -801,7 +801,7 @@ const POWER_BLOCK_MODELS = {
         ccDIn: null,
       },
       partNumber: "NI-ADP-PB-Autel-DC-Hipower-CPU-US",
-      partName: "NordBase Power Block Adapter plate – Autel Energy MaxiCharger DC HiPower - CPU (480/640 kW)",
+      partName: "NordBase Power Block Adapter plate – Autel MaxiCharger DC HiPower - 480/640 kW",
     },
   ],
 };
@@ -929,7 +929,7 @@ const PEDESTAL_CHARGER_PRESETS = {
     },
     // Added from calculator_charger_dataset.json (2026-08-31, 60-model verified dataset)
     {
-      model: "Satellite (V2)",
+      model: "Satellite",
       w: 11.81,
       d: 11.81,
       h: 59.76,
@@ -1087,9 +1087,9 @@ const PEDESTAL_CHARGER_PRESETS = {
       partName: "NordBase Small Adapter plate – Alpitronic HYC50",
     },
   ],
-  "Autel Energy": [
+  Autel: [
     {
-      model: "MaxiCharger AC Ultra",
+      model: "AC Ultra",
       w: 14.17,
       d: 7.87,
       h: 56.69,
@@ -1099,7 +1099,7 @@ const PEDESTAL_CHARGER_PRESETS = {
       basePlateW: 7.76,
       basePlateD: 14.17,
       partNumber: "NI-ADP-DCS-Autel-Maxicharger-AC-Ultra-US",
-      partName: "NordBase Small Adapter plate – Autel Energy MaxiCharger AC Ultra",
+      partName: "NordBase Small Adapter plate – Autel AC Ultra",
     },
   ],
   "Blink Charging": [
@@ -1167,7 +1167,7 @@ const DC_FAST_CHARGER_PRESETS = {
       w: 31.1,
       d: 31.9,
       h: 88.8,
-      weight: null,
+      weight: 1322,
       ccW: 27.01,
       ccD: 22.05,
       basePlateW: 27.56,
@@ -1232,7 +1232,7 @@ const DC_FAST_CHARGER_PRESETS = {
   ],
   Autel: [
     {
-      model: "MaxiCharger DC Fast DF120 (60-120 kW)",
+      model: "MaxiCharger DC Fast DF120",
       w: 32.28,
       d: 23.62,
       h: 76.77,
@@ -1242,10 +1242,10 @@ const DC_FAST_CHARGER_PRESETS = {
       basePlateW: null,
       basePlateD: null,
       partNumber: "NI-ADP-DCM-Autel-Maxicharger-DF120-US",
-      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC Fast DF120 (60-120 kW)",
+      partName: "NordBase Medium Adapter plate – Autel MaxiCharger DC Fast DF120",
     },
     {
-      model: "MaxiCharger DC Fast DF240 (140-240 kW)",
+      model: "MaxiCharger DC Fast DF240",
       w: 32.28,
       d: 27.56,
       h: 76.77,
@@ -1255,7 +1255,7 @@ const DC_FAST_CHARGER_PRESETS = {
       basePlateW: 28.35,
       basePlateD: 21.65,
       partNumber: "NI-ADP-DCM-Autel-Maxicharger-DF240-US",
-      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC Fast DF240 (140-240 kW)",
+      partName: "NordBase Medium Adapter plate – Autel MaxiCharger DC Fast DF240",
     },
     {
       model: "DH480",
@@ -1268,10 +1268,10 @@ const DC_FAST_CHARGER_PRESETS = {
       basePlateW: 27.56,
       basePlateD: 22.44,
       partNumber: "NI-ADP-DCM-Autel-DH480-US",
-      partName: "NordBase Medium Adapter plate – Autel Energy DH480",
+      partName: "NordBase Medium Adapter plate – Autel DH480",
     },
     {
-      model: "MaxiCharger DC HiPower - dispenser",
+      model: "MaxiCharger DC HiPower - Dispenser",
       w: 22.83,
       d: 12.6,
       h: 81.69,
@@ -1281,10 +1281,10 @@ const DC_FAST_CHARGER_PRESETS = {
       basePlateW: 25.59,
       basePlateD: 9.06,
       partNumber: "NI-ADP-DCM-Autel-DCHhipower-Dispenser-US",
-      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC HiPower - Dispenser",
+      partName: "NordBase Medium Adapter plate – Autel MaxiCharger DC HiPower - Dispenser",
     },
     {
-      model: "MaxiCharger DC Compact Pedestal (40 kW)",
+      model: "MaxiCharger DC Compact",
       w: 21.65,
       d: 10.24,
       h: 39.37,
@@ -1294,12 +1294,12 @@ const DC_FAST_CHARGER_PRESETS = {
       basePlateW: 17.72,
       basePlateD: 13.78,
       partNumber: "NI-ADP-DCM-Autel-DC-Compact-US",
-      partName: "NordBase Medium Adapter plate – Autel Energy MaxiCharger DC Compact (40 kW)",
+      partName: "NordBase Medium Adapter plate – Autel MaxiCharger DC Compact",
     },
   ],
   "Blink Charging": [
     {
-      model: "DCFC 60/120/160/200/240/300kW (6 effektnivåer)",
+      model: "DCFC 60-300kW",
       w: 41.97,
       d: 40.9,
       h: 90.12,
@@ -1312,7 +1312,7 @@ const DC_FAST_CHARGER_PRESETS = {
       partName: "NordBase Medium Adapter plate – Blink Charging DCFC 60-300",
     },
     {
-      model: "Sinexcel All-In-One DCFC 120/160/240kW",
+      model: "Sinexcel DCFC 120-240kW",
       w: 29.53,
       d: 33.46,
       h: 78.74,
@@ -1341,7 +1341,7 @@ const DC_FAST_CHARGER_PRESETS = {
       partName: "NordBase Medium Adapterplåt – ChargePoint Express 250/280",
     },
     {
-      model: "Express Plus - Power Block (EXPP-PB1000)",
+      model: "Express Plus - Power Block",
       w: 38.9,
       d: 40.91,
       h: 86.26,
@@ -1369,7 +1369,7 @@ const DC_FAST_CHARGER_PRESETS = {
   ],
   "Delta Electronics": [
     {
-      model: "Ultra Fast Charger UFC200/UFC500",
+      model: "UFC200/UFC500",
       w: 39.37,
       d: 33.82,
       h: 81.89,
@@ -1384,7 +1384,7 @@ const DC_FAST_CHARGER_PRESETS = {
   ],
   Ekoenergetyka: [
     {
-      model: "Axon Easy (120-400 kW, flera SKU:er)",
+      model: "Axon Easy",
       w: 29.53,
       d: 38.78,
       h: 83.46,
@@ -1439,7 +1439,7 @@ const DC_FAST_CHARGER_PRESETS = {
   FreeWire: [],
   "InCharge Energy": [
     {
-      model: "ICE-60/120/180",
+      model: "ICE-60-180",
       w: 27.56,
       d: 68.9,
       h: 29.53,
@@ -1462,7 +1462,7 @@ const DC_FAST_CHARGER_PRESETS = {
       basePlateW: 41.34,
       basePlateD: 45.28,
       partNumber: "NI-ADP-DCL-Incharge-Energy-ICE-480-600-Split-US",
-      partName: "NordBase Power Block Adapter plate – InCharge Energy ICE-480/ICE-600 Split System",
+      partName: "NordBase Large Adapter plate – InCharge Energy ICE-480/ICE-600 Split System",
     },
     {
       model: "ICE SlimLine Dispenser ",
@@ -1480,30 +1480,30 @@ const DC_FAST_CHARGER_PRESETS = {
   ],
   Kempower: [
     {
-      model: "Station Charger C801 (All-In-One, enkel)",
+      model: "Station Charger C801",
       w: 25.59,
       d: 33.11,
       h: 94.29,
       weight: 1157.43,
-      ccW: null,  // bolt pattern excluded from source data (Fundamentplatta smaller than CC — data error, needs Simon to resupply)
-      ccD: null,
-      basePlateW: 2.95,
-      basePlateD: 3.35,
+      ccW: 23.94, // Fundamentplatta confirmed by Simon 2026-08-31 (750x800mm, now larger than CC — previous data-error flag resolved)
+      ccD: 13.39,
+      basePlateW: 29.53,
+      basePlateD: 31.5,
       partNumber: "NI-ADP-DCM-Kempower-Station-Charger-C801-US",
       partName: "NordBase Medium Adapter plate – Kempower Station Charger C801",
     },
     {
-      model: "Power Unit C801 (singel kraftkabinett)",
+      model: "Power Unit C801",
       w: 25.59,
       d: 33.11,
       h: 86.42,
       weight: 749.57,
-      ccW: null,  // bolt pattern excluded from source data (Fundamentplatta smaller than CC — data error, needs Simon to resupply)
-      ccD: null,
-      basePlateW: 2.95,
-      basePlateD: 3.35,
+      ccW: 23.94, // Fundamentplatta confirmed by Simon 2026-08-31 (750x800mm, now larger than CC — previous data-error flag resolved)
+      ccD: 13.39,
+      basePlateW: 29.53,
+      basePlateD: 31.5,
       partNumber: "NI-ADP-DCM-Kempower-Power-Unit-C801-US",
-      partName: "NordBase Power Block Adapter plate – Kempower Power Unit C801",
+      partName: "NordBase Medium Adapter plate – Kempower Power Unit C801",
     },
   ],
   "Power Electronics": [
@@ -1616,7 +1616,7 @@ const DC_FAST_CHARGER_PRESETS = {
   ],
   Tesla: [
     {
-      model: "Supercharger V4 Dispenser (Post)",
+      model: "Supercharger V4 Dispenser",
       w: 13.15,
       d: 35.08,
       h: 76.61,
@@ -1666,7 +1666,7 @@ const DC_FAST_CHARGER_PRESETS = {
       ccD: null,
       basePlateW: 23.62,
       basePlateD: 7.09,
-      partNumber: "NI-ADP-DCM-Tritium-Tri-Flex-Dispenser-US",
+      partNumber: "NI-ADP-DCM-Tritium-Tri-Flex-Dispenser-US", // CC now on file in Excel (680x210mm) but STILL exceeds Fundamentplatta (600x180mm) on both axes — physically impossible, left null on purpose, flagged to Simon 2026-08-31
       partName: "NordBase Medium Adapter plate – Tritium TRI-FLEX Dispenser",
     },
     {
@@ -1685,7 +1685,7 @@ const DC_FAST_CHARGER_PRESETS = {
   ],
   Wallbox: [
     {
-      model: "Supernova 180 (US)",
+      model: "Supernova 180",
       w: 28.11,
       d: 17.83,
       h: 78.74,
@@ -4986,10 +4986,17 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Shared adapter plate — {presetMfr}{" "}
-                        {selectedPowerBlockModel.model}
+                        {selectedPowerBlockModel.partNumber
+                          ? `Adapter Plate: ${selectedPowerBlockModel.partNumber}`
+                          : `Shared adapter plate — ${presetMfr} ${selectedPowerBlockModel.model}`}
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
+                        {selectedPowerBlockModel.partName && (
+                          <>
+                            {selectedPowerBlockModel.partName}
+                            <br />
+                          </>
+                        )}
                         {selectedPowerBlockModel.boltGroups.plateToFoundation.count}
                         ×M12 to foundations,{" "}
                         {selectedPowerBlockModel.boltGroups.chargerToPlate.count}
@@ -5008,11 +5015,24 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Adapter plate, CC {effectiveCcW}"×{effectiveCcD}"
+                        {presetModelData?.partNumber
+                          ? `Adapter Plate: ${presetModelData.partNumber}`
+                          : `Adapter plate, CC ${effectiveCcW}"×${effectiveCcD}"`}
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
-                        {foundation.adapterPlate.material || "Material TBD"}
+                        {presetModelData?.partName
+                          ? presetModelData.partName
+                          : foundation.adapterPlate.material || "Material TBD"}
                       </div>
+                      {presetModelData?.partNumber && (
+                        <div
+                          className="text-xs"
+                          style={{ color: brand.steel }}
+                        >
+                          CC {effectiveCcW}"×{effectiveCcD}" ·{" "}
+                          {foundation.adapterPlate.material || "Material TBD"}
+                        </div>
+                      )}
                       {officialDrawingUrl && (
                         <a
                           href={officialDrawingUrl}
