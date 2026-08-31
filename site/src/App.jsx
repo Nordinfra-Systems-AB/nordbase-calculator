@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
+  ArrowLeft,
   Zap,
   Leaf,
   ShieldCheck,
@@ -76,6 +77,13 @@ const PRODUCTS = [
     level: "Level 4",
     desc: "For Level 4 / high-power DC charging. Widened plate, reinforced shell.",
     image: "/photos/product-large.png",
+  },
+  {
+    slug: "powerblock",
+    name: "NordBase Power Block",
+    level: "Power Block",
+    desc: "For grouped Power Units — multiple DC fast charging power cabinets sharing one modular steel base.",
+    image: "/photos/powerblock-bare-foundation.png",
   },
 ];
 
@@ -259,6 +267,15 @@ function PartnerMarquee() {
 }
 
 export default function App() {
+  const productsScrollRef = useRef(null);
+  const scrollProducts = (direction) => {
+    const el = productsScrollRef.current;
+    if (!el) return;
+    const card = el.querySelector(":scope > div");
+    const step = card ? card.offsetWidth + 20 : el.clientWidth * 0.8;
+    el.scrollBy({ left: direction * step, behavior: "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-dark text-white">
       {/* NAV */}
@@ -407,61 +424,119 @@ export default function App() {
       {/* DISTRIBUTION PARTNERS */}
       <PartnerMarquee />
 
-      {/* PRODUCTS */}
+      {/* PRODUCTS — horizontally scrollable carousel (arrow buttons +
+          drag/touch scroll via native overflow-x) so a 5th card (Power
+          Block) doesn't force the grid to an awkward 5-up/wrap layout.
+          Card markup/content for the original 4 products is unchanged. */}
       <section id="products" className="border-t border-white/10 bg-bgSoft py-24 text-dark">
         <div className="mx-auto max-w-7xl px-6">
           <Reveal>
-            <h2 className="text-3xl font-extrabold tracking-tight">
-              Our Product Line
-            </h2>
-            <p className="mt-2 max-w-xl text-steel">
-              One modular steel system, sized for every charger level — from
-              protective bollards to high-power DC fast chargers.
-            </p>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h2 className="text-3xl font-extrabold tracking-tight">
+                  Our Product Line
+                </h2>
+                <p className="mt-2 max-w-xl text-steel">
+                  One modular steel system, sized for every charger level —
+                  from protective bollards to grouped DC power blocks.
+                </p>
+              </div>
+              <div className="hidden shrink-0 items-center gap-2 sm:flex">
+                <button
+                  type="button"
+                  onClick={() => scrollProducts(-1)}
+                  aria-label="Scroll product line left"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-dark shadow-sm hover:bg-gold/10"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollProducts(1)}
+                  aria-label="Scroll product line right"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-dark shadow-sm hover:bg-gold/10"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </Reveal>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {PRODUCTS.map((p, i) => (
-              <Reveal key={p.name} delay={i * 70}>
-                <div className="flex h-full flex-col rounded-xl border border-black/10 bg-white shadow-sm overflow-hidden">
-                  <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-white p-3">
-                    {p.image ? (
-                      <img
-                        src={p.image}
-                        alt={p.name}
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <span className="text-center text-xs font-semibold uppercase tracking-wide text-steel/50">
-                        Render coming soon
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-1 flex-col p-5 pt-0">
-                    <span className="w-fit rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-dark">
-                      {p.level}
-                    </span>
-                    <h3 className="mt-3 text-lg font-bold text-dark">{p.name}</h3>
-                    <p className="mt-2 flex-1 text-sm text-steel">{p.desc}</p>
-                    <div className="mt-4 flex items-center gap-4">
-                      <a
-                        href={`/product.html?f=${p.slug}`}
-                        className="inline-flex items-center gap-1 text-sm font-bold text-dark hover:text-gold"
-                      >
-                        View product <ArrowRight className="h-3.5 w-3.5" />
-                      </a>
-                      <a
-                        href={CALCULATOR_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-sm font-medium text-steel hover:text-dark"
-                      >
-                        Configure
-                      </a>
+
+          <div className="relative mt-10">
+            <div
+              ref={productsScrollRef}
+              className="flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {PRODUCTS.map((p, i) => (
+                <div
+                  key={p.name}
+                  className="w-[78%] shrink-0 snap-start sm:w-[calc(50%-10px)] lg:w-[calc(25%-15px)]"
+                >
+                  <Reveal delay={i * 70} className="h-full">
+                    <div className="flex h-full flex-col rounded-xl border border-black/10 bg-white shadow-sm overflow-hidden">
+                      <div className="flex aspect-[4/5] items-center justify-center overflow-hidden bg-white p-3">
+                        {p.image ? (
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-center text-xs font-semibold uppercase tracking-wide text-steel/50">
+                            Render coming soon
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-1 flex-col p-5 pt-0">
+                        <span className="w-fit rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-dark">
+                          {p.level}
+                        </span>
+                        <h3 className="mt-3 text-lg font-bold text-dark">{p.name}</h3>
+                        <p className="mt-2 flex-1 text-sm text-steel">{p.desc}</p>
+                        <div className="mt-4 flex items-center gap-4">
+                          <a
+                            href={`/product.html?f=${p.slug}`}
+                            className="inline-flex items-center gap-1 text-sm font-bold text-dark hover:text-gold"
+                          >
+                            View product <ArrowRight className="h-3.5 w-3.5" />
+                          </a>
+                          <a
+                            href={CALCULATOR_URL}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-sm font-medium text-steel hover:text-dark"
+                          >
+                            Configure
+                          </a>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </Reveal>
                 </div>
-              </Reveal>
-            ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile arrow controls — the desktop pair lives next to the
+              heading above; small screens get them below the carousel
+              instead so they don't crowd the title. */}
+          <div className="mt-4 flex items-center justify-center gap-3 sm:hidden">
+            <button
+              type="button"
+              onClick={() => scrollProducts(-1)}
+              aria-label="Scroll product line left"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-dark shadow-sm"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollProducts(1)}
+              aria-label="Scroll product line right"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-dark shadow-sm"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </section>

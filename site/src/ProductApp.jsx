@@ -62,6 +62,46 @@ function DimRow({ label, value }) {
   );
 }
 
+// Shared gallery for every product detail page: click a thumbnail to swap it
+// into the large hero position. The active image is excluded from the
+// thumbnail row (rather than always rendering images.slice(1)) so the row
+// always shows every OTHER available shot and the swap reads as a swap.
+function ProductGallery({ images, name }) {
+  const [active, setActive] = useState(images[0]);
+  const thumbs = images.filter((src) => src !== active);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex aspect-square items-center justify-center rounded-xl border border-black/10 bg-white p-6">
+        <img
+          src={active}
+          alt={name}
+          className="h-full w-full object-contain"
+        />
+      </div>
+      {thumbs.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {thumbs.map((src) => (
+            <button
+              key={src}
+              type="button"
+              onClick={() => setActive(src)}
+              aria-label={`Show this ${name} image large`}
+              className="flex aspect-square items-center justify-center rounded-lg border border-black/10 bg-white p-3 transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <img
+                src={src}
+                alt={`${name} — additional view`}
+                className="h-full w-full object-contain"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NotFound() {
   return (
     <div className="min-h-screen bg-bgSoft text-dark">
@@ -113,31 +153,7 @@ export default function ProductApp() {
       {/* HERO */}
       <section className="border-b border-black/10 bg-white">
         <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 md:grid-cols-2 md:items-center">
-          <div className="flex flex-col gap-3">
-            <div className="flex aspect-square items-center justify-center rounded-xl border border-black/10 bg-white p-6">
-              <img
-                src={product.images[0]}
-                alt={product.name}
-                className="h-full w-full object-contain"
-              />
-            </div>
-            {product.images.length > 1 && (
-              <div className="grid grid-cols-3 gap-3">
-                {product.images.slice(1).map((src) => (
-                  <div
-                    key={src}
-                    className="flex aspect-square items-center justify-center rounded-lg border border-black/10 bg-white p-3"
-                  >
-                    <img
-                      src={src}
-                      alt={`${product.name} — installed assembly`}
-                      className="h-full w-full object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <ProductGallery images={product.images} name={product.name} />
           <div>
             <span className="inline-flex w-fit items-center rounded-full bg-gold/15 px-2.5 py-1 text-xs font-bold text-dark">
               {product.level} — {product.levelDesc}
@@ -179,32 +195,43 @@ export default function ProductApp() {
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gold">
               <Ruler className="h-4 w-4" /> Dimensions & weight
             </div>
-            <div className="mt-4 rounded-xl border border-black/10 bg-white p-5">
-              <DimRow
-                label="Top opening"
-                value={`${product.dims.top.w}" × ${product.dims.top.d}"`}
-              />
-              <DimRow
-                label="Base footprint"
-                value={`${product.dims.bottom.w}" × ${product.dims.bottom.d}" (${product.dims.basePlateType})`}
-              />
-              <DimRow label="Depth" value={`${product.dims.depthIn}"`} />
-              <DimRow
-                label="Foundation weight"
-                value={`${product.dims.weightLb} lb`}
-              />
-              {product.adapterPlate?.weightLb ? (
-                <DimRow
-                  label="Adapter plate weight"
-                  value={`${product.adapterPlate.weightLb} lb`}
-                />
-              ) : null}
-            </div>
-            <p className="mt-3 text-xs text-steel">
-              Preliminary dimensions for planning purposes — see the
-              calculator for a project-specific, exportable submittal
-              package.
-            </p>
+            {product.dims ? (
+              <>
+                <div className="mt-4 rounded-xl border border-black/10 bg-white p-5">
+                  <DimRow
+                    label="Top opening"
+                    value={`${product.dims.top.w}" × ${product.dims.top.d}"`}
+                  />
+                  <DimRow
+                    label="Base footprint"
+                    value={`${product.dims.bottom.w}" × ${product.dims.bottom.d}" (${product.dims.basePlateType})`}
+                  />
+                  <DimRow label="Depth" value={`${product.dims.depthIn}"`} />
+                  <DimRow
+                    label="Foundation weight"
+                    value={`${product.dims.weightLb} lb`}
+                  />
+                  {product.adapterPlate?.weightLb ? (
+                    <DimRow
+                      label="Adapter plate weight"
+                      value={`${product.adapterPlate.weightLb} lb`}
+                    />
+                  ) : null}
+                </div>
+                <p className="mt-3 text-xs text-steel">
+                  Preliminary dimensions for planning purposes — see the
+                  calculator for a project-specific, exportable submittal
+                  package.
+                </p>
+              </>
+            ) : (
+              <div className="mt-4 rounded-xl border border-black/10 bg-white p-5 text-sm text-steel">
+                Dimensions and weight vary by configuration (cabinet count and
+                footprint) and haven't been reduced to a single spec sheet
+                yet — contact Nordinfra with your project's layout for
+                engineering support.
+              </div>
+            )}
           </div>
 
           <div>
@@ -374,7 +401,7 @@ export default function ProductApp() {
                 key={a.key}
                 className="flex h-full flex-col overflow-hidden rounded-xl border border-black/10 bg-bgSoft"
               >
-                <div className="flex aspect-[4/3] items-center justify-center bg-white p-4">
+                <div className="flex aspect-square items-center justify-center bg-white p-6">
                   <img
                     src={a.image}
                     alt={a.name}

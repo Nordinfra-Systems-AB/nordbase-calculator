@@ -208,9 +208,46 @@ export const PRODUCTS = {
     manual: null,
     baba: false,
   },
+  powerblock: {
+    slug: "powerblock",
+    key: "POWERBLOCK",
+    name: "NordBase Power Block",
+    subtitle: "DC foundation",
+    level: "Power Block",
+    levelDesc: "Grouped DC power cabinets",
+    tagline:
+      "For grouped Power Units — multiple DC fast charging power cabinets sharing one modular steel base.",
+    blurb:
+      "NordBase Power Block extends the same modular steel platform to grouped Power Units — the multi-cabinet DC fast charging power blocks (like Kempower's multi-CPU units) that sit alongside dispenser pedestals on a DC fast charging site. It's built with adapter plates the same way as the rest of the NordBase line, sized to the cabinet count and footprint of the specific power block being installed, and shares the same laser-cut, hot-dip galvanized steel construction and dig-drop-backfill install method as every other NordBase tier.",
+    images: [
+      "/photos/powerblock-bare-foundation.png",
+      "/photos/powerblock-kempower-mounted-front.png",
+      "/photos/powerblock-kempower-mounted-bollards.png",
+    ],
+    hasCharger: true,
+    // Dimensions vary by cabinet count/footprint and haven't been reduced to
+    // a single spec sheet yet — omit `dims` rather than invent numbers; the
+    // Dimensions section below renders a "contact Nordinfra" note instead
+    // whenever a product has no `dims` object.
+    dims: null,
+    material:
+      "Same laser-cut, hot-dip galvanized steel construction as the rest of the NordBase line. Because a Power Block spans multiple power cabinets, gauge and plate thickness are sized to the specific configuration rather than fixed per tier.",
+    adapterPlate: {
+      size: null,
+      thicknessIn: null,
+      material: null,
+      weightLb: null,
+      ccOptionsX: [],
+      ccOptionsY: [],
+      note: "Adapter-plate dimensions for grouped Power Block configurations are still in development — contact Nordinfra with your cabinet count and footprint for engineering support.",
+    },
+    chargerManufacturers: DC_FAST_CHARGER_MANUFACTURERS,
+    manual: null,
+    baba: false,
+  },
 };
 
-export const PRODUCT_ORDER = ["bollard", "small", "medium", "large"];
+export const PRODUCT_ORDER = ["bollard", "small", "medium", "large", "powerblock"];
 
 // ---------------------------------------------------------------------------
 // ACCESSORIES — same three add-ons the calculator offers on every foundation
