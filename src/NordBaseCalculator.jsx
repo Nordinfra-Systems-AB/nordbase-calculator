@@ -395,6 +395,37 @@ const FOUNDATION_ORDER = ["BOLLARD", "SMALL", "MEDIUM", "LARGE", "POWER_BLOCK"];
 //                       fabricated) until this is true.
 //   top/bottom        — group foundation-shell footprint (Simon's assembly
 //                       drawing, 2026-08-28), used for the product diagram.
+//   configPending     — true for models added 2026-08-31 from
+//                       powerblock_dataset.json (Simon Gullberg — ABB OM-M,
+//                       ABB OM-X, Tesla Supercharger V3, Autel DC HiPower
+//                       CPU, Siemens Singel/Dubbel/Trippel, Tritium TRI-FLEX
+//                       HUB all sizes, plus new Kempower cabinets). Cabinet
+//                       dimensions/weight ARE known (manufacturer datasheet,
+//                       see chargerSpec) but — unlike C502 above, where the
+//                       foundation COUNT is already fixed and only the
+//                       hardware is pending — for these models we do not yet
+//                       know whether the physical unit needs a single
+//                       NordBase foundation (like C501) or a multi-foundation
+//                       hat-profile GROUP (like C503). That is a structural
+//                       engineering decision (foundation count, rivet/bolt
+//                       group design, wind/seismic group-efficiency factor)
+//                       only Nordinfra's PE can make — some model names hint
+//                       at grouping ("trippel kraftkabinett", "SICHARGE FLEX
+//                       - Trippel") but a name suggesting "triple" does NOT
+//                       tell us whether that's 3 separate foundations bolted
+//                       together (like C503) or one wider single cabinet on
+//                       one foundation, so unitCount/top/bottom are
+//                       deliberately left unset rather than guessed. No
+//                       structural check runs for these (dataConfirmed is
+//                       also left unset) — the Configuration step shows the
+//                       known cabinet dimensions plus a "contact Nordinfra"
+//                       banner instead. 3 of these 16
+//                       (Tesla Supercharger V3, ABB OM X-Series, Autel DC
+//                       HiPower CPU) are additionally flagged
+//                       "unstyled-but-requested" in the source dataset —
+//                       Nordinfra's internal tracker hasn't marked their
+//                       dimension data reviewed yet, but they're included
+//                       because Simon explicitly asked for them by name.
 // ---------------------------------------------------------------------------
 const POWER_BLOCK_MODELS = {
   Kempower: [
@@ -472,6 +503,298 @@ const POWER_BLOCK_MODELS = {
         plateToFoundation: { count: 14, pitchIn: mmToIn(612) },
         chargerToPlate: { count: 12, pitchIn: mmToIn(608) },
       },
+    },
+    // ---- New Kempower Power Block models below (2026-08-31, Simon Gullberg
+    // request + powerblock_dataset.json, engineering-reviewed GREEN/BLUE) —
+    // configPending: true, see the note on POWER_BLOCK_MODELS above. Cabinet
+    // dims/weight/ccW/ccD are confirmed manufacturer datasheet data; the
+    // single-vs-group foundation configuration is NOT. ----
+    {
+      model: "Station Charger C802 (All-In-One, dubbel)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Kempower",
+        model: "Station Charger C802 (All-In-One, dubbel)",
+        widthIn: 49.21,
+        depthIn: 33.11,
+        heightIn: 94.29,
+        weightLb: 2039.27,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Kempower-Station-Charger-C802-US",
+      partName: "NordBase Medium Adapter plate – Kempower Station Charger C802",
+    },
+    {
+      model: "Power Unit C802 (dubbel kraftkabinett)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Kempower",
+        model: "Power Unit C802 (dubbel kraftkabinett)",
+        widthIn: 49.21,
+        depthIn: 33.11,
+        heightIn: 86.42,
+        weightLb: 1631.42,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Kempower-Power-Unit-C802-US",
+      partName: "NordBase Power Block Adapter plate – Kempower Power Unit C802",
+    },
+    {
+      model: "Power Unit C803 (trippel kraftkabinett)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Kempower",
+        model: "Power Unit C803 (trippel kraftkabinett)",
+        widthIn: 72.83,
+        depthIn: 33.11,
+        heightIn: 86.42,
+        weightLb: 2513.27,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Kempower-Power-Unit-C803-US",
+      partName: "NordBase Power Block Adapter plate – Kempower Power Unit C803",
+    },
+    {
+      model: "Mega Satellite (MCS/High-Power CCS)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Kempower",
+        model: "Mega Satellite (MCS/High-Power CCS)",
+        widthIn: 47.24,
+        depthIn: 31.5,
+        heightIn: 92.52,
+        weightLb: 970.03,
+        ccWIn: 16.54,
+        ccDIn: 24.84,
+      },
+      partNumber: "NI-ADP-PB-Kempower-Mega-Satellite-US",
+      partName: "NordBase Power Block - Adapter plate – Kempower Mega Satellite",
+    },
+  ],
+  // ---- New Power Block manufacturers below (2026-08-31, Simon Gullberg
+  // request + powerblock_dataset.json) — every model here is configPending:
+  // true (see the note on POWER_BLOCK_MODELS above). Cabinet dims/weight are
+  // confirmed manufacturer datasheet data; whether the unit needs a single
+  // NordBase foundation or a multi-foundation hat-profile group is NOT yet
+  // confirmed by Nordinfra's PE — do not add unitCount/top/bottom/
+  // dataConfirmed/groupPlate/hatProfile/boltGroups until that's decided. ----
+  ABB: [
+    {
+      model: "OM M-Series",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "ABB",
+        model: "OM M-Series",
+        widthIn: 31.89,
+        depthIn: 31.14,
+        heightIn: 85.08,
+        weightLb: 1609.37,
+        ccWIn: 22.05,
+        ccDIn: 27.01,
+      },
+      partNumber: "NI-ADP-PB-ABB-OM-M-series-US",
+      partName: "NordBase Power Block Adapter plate – ABB E-mobility OM M-Series",
+    },
+    {
+      // "unstyled-but-requested" in powerblock_dataset.json — Nordinfra's
+      // internal tracker hasn't marked this one's dimension data reviewed
+      // yet, but Simon explicitly asked for it by name, so it's included.
+      model: "OM X-Series",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "ABB",
+        model: "OM X-Series",
+        widthIn: 72.05,
+        depthIn: 40.16,
+        heightIn: 84.65,
+        weightLb: 5511.55,
+        ccWIn: 64.17,
+        ccDIn: 36.06,
+      },
+      partNumber: "NI-ADP-PB-ABB-OM-X-series-US",
+      partName: "NordBase Power Block Adapter plate – ABB E-mobility OM X-Series",
+    },
+  ],
+  "Power Electronics": [
+    {
+      model: "NBi 180 (kraftkabinett)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Power Electronics",
+        model: "NBi 180 (kraftkabinett)",
+        widthIn: 39.37,
+        depthIn: 31.5,
+        heightIn: 78.74,
+        weightLb: 1102.31,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Power-Electronics-NBI-180-US",
+      partName: "NordBase Power Block Adapter plate – Power Electronics NBi 180",
+    },
+    {
+      model: "NBi 360 (kraftkabinett)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Power Electronics",
+        model: "NBi 360 (kraftkabinett)",
+        widthIn: 61.02,
+        depthIn: 39.76,
+        heightIn: 90.55,
+        weightLb: 2645.54,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Power-Electronics-NBI-360-US",
+      partName: "NordBase Power Block Adapter plate – Power Electronics NBi 360",
+    },
+  ],
+  Siemens: [
+    {
+      model: "SICHARGE FLEX - Singel",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Siemens",
+        model: "SICHARGE FLEX - Singel",
+        widthIn: 31.5,
+        depthIn: 55.12,
+        heightIn: 94.88,
+        weightLb: 2976.24,
+        ccWIn: 50.16,
+        ccDIn: 26.57,
+      },
+      partNumber: "NI-ADP-PB-Siemens-Sicharge-Flex-Singel-US",
+      partName: "NordBase Power Block Adapter plate – Siemens SICHARGE FLEX - Singel",
+    },
+    {
+      model: "SICHARGE FLEX - Dubbel",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Siemens",
+        model: "SICHARGE FLEX - Dubbel",
+        widthIn: 31.5,
+        depthIn: 86.61,
+        heightIn: 94.88,
+        weightLb: 5187.47,
+        ccWIn: 81.61,
+        ccDIn: 26.57,
+      },
+      partNumber: "NI-ADP-PB-Siemens-Sicharge-Flex-Double-US",
+      partName: "NordBase Power Block Adapter plate – Siemens SICHARGE FLEX - Double",
+    },
+    {
+      // Name suggests "triple" but that does NOT tell us whether this is 3
+      // separate foundations bolted together (like Kempower C503) or one
+      // wider single cabinet on one foundation — see POWER_BLOCK_MODELS note.
+      model: "SICHARGE FLEX - Trippel",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Siemens",
+        model: "SICHARGE FLEX - Trippel",
+        widthIn: 31.5,
+        depthIn: 125.98,
+        heightIn: 94.88,
+        weightLb: 7716.17,
+        ccWIn: 113.07,
+        ccDIn: 26.57,
+      },
+      partNumber: "NI-ADP-PB-Siemens-Sicharge-Flex-Trippel-US",
+      partName: "NordBase Power Block Adapter plate – Siemens SICHARGE FLEX - Triple",
+    },
+  ],
+  Tesla: [
+    {
+      // "unstyled-but-requested" in powerblock_dataset.json — Nordinfra's
+      // internal tracker hasn't marked this one's dimension data reviewed
+      // yet, but Simon explicitly asked for it by name, so it's included.
+      model: "Supercharger V3 Cabinet (kraftkabinett)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Tesla",
+        model: "Supercharger V3 Cabinet (kraftkabinett)",
+        widthIn: 49.21,
+        depthIn: 39.37,
+        heightIn: 86.61,
+        weightLb: 2447.13,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Tesla-v3-Cabinet-US",
+      partName: "NordBase Power Block Adapter plate – Tesla Supercharger V3 Cabinet",
+    },
+  ],
+  Tritium: [
+    {
+      model: "TRI-FLEX HUB - 400/800kW",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Tritium",
+        model: "TRI-FLEX HUB - 400/800kW",
+        widthIn: 52.2,
+        depthIn: 48.23,
+        heightIn: 88.58,
+        weightLb: null, // not given in source (weight_kg null)
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Tritium-tri-Flex-Hub-400-800kw-US",
+      partName: "NordBase Power Block Adapter plate – Tritium TRI-FLEX HUB - 400/800kW",
+    },
+    {
+      model: "TRI-FLEX HUB - 1000kW",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Tritium",
+        model: "TRI-FLEX HUB - 1000kW",
+        widthIn: 104.41,
+        depthIn: 48.23,
+        heightIn: 88.58,
+        weightLb: null, // not given in source (weight_kg null)
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Tritium-Tri-Flex-Hub-1000kw-US",
+      partName: "NordBase Power Block Adapter plate – Tritium TRI-FLEX HUB - 1000kW",
+    },
+    {
+      model: "TRI-FLEX HUB - 1600kW",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Tritium",
+        model: "TRI-FLEX HUB - 1600kW",
+        widthIn: 156.61,
+        depthIn: 48.23,
+        heightIn: 88.58,
+        weightLb: null, // not given in source (weight_kg null)
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Tritium-Tri-Flex-Hub-1600kw-US",
+      partName: "NordBase Power Block Adapter plate – Tritium TRI-FLEX HUB - 1600kW",
+    },
+  ],
+  Autel: [
+    {
+      // "unstyled-but-requested" in powerblock_dataset.json — Nordinfra's
+      // internal tracker hasn't marked this one's dimension data reviewed
+      // yet, but Simon explicitly asked for it by name, so it's included.
+      model: "MaxiCharger DC HiPower - CPU (480/640 kW)",
+      configPending: true,
+      chargerSpec: {
+        manufacturer: "Autel",
+        model: "MaxiCharger DC HiPower - CPU (480/640 kW)",
+        widthIn: 66.93,
+        depthIn: 35.43,
+        heightIn: 78.74,
+        weightLb: 3196.7,
+        ccWIn: null,
+        ccDIn: null,
+      },
+      partNumber: "NI-ADP-PB-Autel-DC-Hipower-CPU-US",
+      partName: "NordBase Power Block Adapter plate – Autel Energy MaxiCharger DC HiPower - CPU (480/640 kW)",
     },
   ],
 };
@@ -3558,6 +3881,7 @@ export default function NordBaseCalculator() {
               {selectedPowerBlockModel &&
                 !selectedPowerBlockModel.isStandardSingle && (
                 <>
+                  {!selectedPowerBlockModel.configPending && (
                   <div
                     className="border rounded-md p-4 mb-4"
                     style={{ borderColor: "#D9D9D6" }}
@@ -3595,6 +3919,25 @@ export default function NordBaseCalculator() {
                       </div>
                     </div>
                   </div>
+                  )}
+
+                  {selectedPowerBlockModel.configPending && (
+                    <div
+                      className="border rounded-md p-4 mb-4"
+                      style={{ borderColor: "#D9D9D6" }}
+                    >
+                      <div
+                        className="text-sm font-semibold"
+                        style={{ color: brand.dark }}
+                      >
+                        {presetMfr} {selectedPowerBlockModel.model}
+                      </div>
+                      <div className="text-xs mt-1" style={{ color: brand.steel }}>
+                        Foundation count and array layout not yet
+                        determined — see note below.
+                      </div>
+                    </div>
+                  )}
 
                   {selectedPowerBlockModel.conceptPhotoUrl && (
                     <img
@@ -3641,20 +3984,50 @@ export default function NordBaseCalculator() {
                         <div>
                           Weight:{" "}
                           <span style={{ color: brand.dark, fontWeight: 600 }}>
-                            {selectedPowerBlockModel.chargerSpec.weightLb.toFixed(0)} lb
+                            {selectedPowerBlockModel.chargerSpec.weightLb != null
+                              ? `${selectedPowerBlockModel.chargerSpec.weightLb.toFixed(0)} lb`
+                              : "Not specified"}
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs mt-2" style={{ color: brand.steel }}>
-                        Per Kempower Power Unit C500 datasheet. One welded
-                        cabinet spans all {selectedPowerBlockModel.unitCount}{" "}
-                        foundations — not {selectedPowerBlockModel.unitCount}{" "}
-                        separate charger units.
-                      </div>
+                      {!selectedPowerBlockModel.configPending && (
+                        <div className="text-xs mt-2" style={{ color: brand.steel }}>
+                          Per Kempower Power Unit C500 datasheet. One welded
+                          cabinet spans all {selectedPowerBlockModel.unitCount}{" "}
+                          foundations — not {selectedPowerBlockModel.unitCount}{" "}
+                          separate charger units.
+                        </div>
+                      )}
+                      {selectedPowerBlockModel.configPending && (
+                        <div className="text-xs mt-2" style={{ color: brand.steel }}>
+                          Per manufacturer datasheet. Foundation count (single
+                          vs. multi-unit array) not yet determined — see note
+                          below.
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  {!selectedPowerBlockModel.dataConfirmed && (
+                  {selectedPowerBlockModel.configPending && (
+                    <Banner>
+                      <span className="font-semibold">
+                        Foundation configuration for {presetMfr}{" "}
+                        {selectedPowerBlockModel.model} is not yet confirmed
+                        by Nordinfra.
+                      </span>{" "}
+                      Cabinet dimensions above are from the manufacturer's
+                      datasheet, but whether this unit mounts on a single
+                      NordBase foundation (like C501) or requires a
+                      multi-foundation hat-profile group (like C503) is a
+                      structural engineering decision pending Nordinfra PE
+                      review — added 2026-08-31, preliminary. Contact
+                      Nordinfra for a manual assessment before specifying this
+                      model.
+                    </Banner>
+                  )}
+
+                  {!selectedPowerBlockModel.dataConfirmed &&
+                    !selectedPowerBlockModel.configPending && (
                     <Banner>
                       <span className="font-semibold">
                         Structural data for {presetMfr}{" "}
