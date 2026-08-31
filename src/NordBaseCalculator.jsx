@@ -269,7 +269,11 @@ const FOUNDATIONS = {
       material: '1/4" A36, hot-dip galvanized',
       ccOptionsX: [],
       ccOptionsY: [],
-      note: "Standard CC options are still in development — enter a custom dimension for now.",
+      // Updated 2026-08-31 (Simon Gullberg) — CC is now confirmed model-by-
+      // model above (see modelCcOnGrid); this general note now only needs to
+      // cover the two remaining gaps: chargers without confirmed CC yet, and
+      // downloadable drawings still being finalized even for confirmed models.
+      note: "Bolt spacing (CC) is now confirmed for most listed chargers above. Downloadable adapter-plate drawings are still being finalized — contact Nordinfra if you need one sooner, or if your charger isn't listed yet.",
     },
     blurb:
       "For Level 3 DC fast chargers. Rectangular base gives a larger stabilizing footprint for heavier equipment.",
@@ -305,7 +309,10 @@ const FOUNDATIONS = {
       material: null,
       ccOptionsX: [],
       ccOptionsY: [],
-      note: "Adapter-plate dimensions and standard CC options are still in development — enter a custom dimension for now.",
+      // Updated 2026-08-31 (Simon Gullberg) — same change as MEDIUM's note.
+      // Plate size/thickness/material (above) are still genuinely
+      // unconfirmed for Large, so that part of the note stays.
+      note: "Bolt spacing (CC) is now confirmed for most listed chargers above. Plate dimensions/material and downloadable drawings are still being finalized — contact Nordinfra if you need these sooner, or if your charger isn't listed yet.",
     },
     // Stability (overturning/sliding), wall-plate bending, and bolt-tension are now
     // calculated the same way as Small/Medium, from the confirmed DC Large workbook.
@@ -2915,16 +2922,33 @@ export default function NordBaseCalculator() {
     ? presetModelData
     : null;
 
-  // Does the selected model's OWN bolt pattern land exactly on a hole
-  // Nordinfra has actually drilled on this foundation's adapter plate (the
-  // Plate-2 grid, ccOptionsX/Y)? Only then can the CC be auto-filled —
-  // otherwise we don't have a confirmed hole to point to.
+  // Is the selected model's CC "confirmed" for auto-fill purposes? Two
+  // different mechanisms, depending on the foundation:
+  //  - SMALL shares ONE pre-drilled "universal" adapter plate with a small
+  //    fixed menu of actual hole positions (ccOptionsX/Y) — a model only
+  //    counts as confirmed there if its CC lands exactly on one of those
+  //    already-drilled holes.
+  //  - MEDIUM/LARGE instead get a CUSTOM per-model adapter plate (see
+  //    ADAPTER_PLATE_DRAWINGS) — there's no shared hole menu to match
+  //    against, so once a model has its own ccW/ccD on file (sourced from
+  //    Nordinfra's charger spec sheet / verified CAD drawing), that IS the
+  //    confirmation. (Power Block doesn't use this at all — it's gated
+  //    separately via selectedPowerBlockModel.dataConfirmed, since several
+  //    Power Block models still have an open question about single- vs.
+  //    multi-foundation configuration, not just CC.)
+  // Simon Gullberg, 2026-08-31: "Vi har CC-mått nu, behöver vi endast ta
+  // fram sista detaljen - ritningar" — CC on file is the confirmation for
+  // Medium/Large now; the downloadable drawing PDF is a separate, tracked
+  // gap (ADAPTER_PLATE_DRAWINGS / the "Download official drawing" UI), not
+  // a reason to block the customer from proceeding.
+  const usesSharedPlateGrid = foundation?.key === "SMALL";
   const modelCcOnGrid =
     !!presetModelData &&
     presetModelData.ccW != null &&
     presetModelData.ccD != null &&
-    !!foundation?.adapterPlate?.ccOptionsX?.includes(presetModelData.ccW) &&
-    !!foundation?.adapterPlate?.ccOptionsY?.includes(presetModelData.ccD);
+    (!usesSharedPlateGrid ||
+      (!!foundation?.adapterPlate?.ccOptionsX?.includes(presetModelData.ccW) &&
+        !!foundation?.adapterPlate?.ccOptionsY?.includes(presetModelData.ccD)));
   const ccAutoFilled = modelCcOnGrid && !useCustomCc;
 
   const effectiveCcW = ccAutoFilled
