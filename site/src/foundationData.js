@@ -31,24 +31,52 @@
 // DC fast charger manufacturers for Medium/Large (freestanding Level 3/4
 // units, not pedestals) — list + alphabetical order per Simon Gullberg,
 // 2026-08-26. Mirrors DC_FAST_CHARGER_PRESETS in NordBaseCalculator.jsx.
-// `models: 0` on every entry until Simon supplies model-level dimensions —
-// see the `chargerManufacturers` rendering below for how a manufacturer with
-// zero models on file is shown differently from one with confirmed models.
+// UPDATED 2026-08-31 to match the calculator's real model counts (42 models
+// total across Medium+Large, from the 2026-08-31 60-model verified dataset)
+// — most manufacturers now have real models on file, so most entries no
+// longer show `models: 0`. A manufacturer still at 0 (BTC Power, FreeWire)
+// genuinely has no dimensions/bolt patterns on file yet in the calculator.
+// Also added "Blink Charging", "InCharge Energy", Wallbox, "Zerova (Phihong)"
+// — present in the calculator's DC_FAST_CHARGER_PRESETS but missing from
+// this list before. See the `chargerManufacturers` rendering below for how a
+// manufacturer with zero models on file is shown differently from one with
+// confirmed models.
 const DC_FAST_CHARGER_MANUFACTURERS = [
-  "ABB",
-  "Alpitronic",
-  "Autel",
-  "BTC Power",
-  "ChargePoint",
-  "Delta Electronics",
-  "Ekoenergetyka",
-  "FreeWire",
-  "Kempower",
-  "Power Electronics",
-  "Siemens",
-  "Tesla",
-  "Tritium",
-].map((name) => ({ name, models: 0 }));
+  { name: "ABB", models: 3 },
+  { name: "Alpitronic", models: 3 },
+  { name: "Autel", models: 5 },
+  { name: "Blink Charging", models: 2 },
+  { name: "BTC Power", models: 0 },
+  { name: "ChargePoint", models: 3 },
+  { name: "Delta Electronics", models: 1 },
+  { name: "Ekoenergetyka", models: 4 },
+  { name: "FreeWire", models: 0 },
+  { name: "InCharge Energy", models: 3 },
+  { name: "Kempower", models: 2 },
+  { name: "Power Electronics", models: 5 },
+  { name: "Siemens", models: 3 },
+  { name: "Tesla", models: 1 },
+  { name: "Tritium", models: 4 },
+  { name: "Wallbox", models: 1 },
+  { name: "Zerova (Phihong)", models: 2 },
+];
+
+// Power Block manufacturers — its own separate list (NOT the Medium/Large
+// list above). Added 2026-08-31 to match POWER_BLOCK_MODELS in
+// NordBaseCalculator.jsx (16 models total, all `configPending: true` —
+// cabinet dimensions are confirmed manufacturer datasheet data, but
+// single-vs-group foundation configuration is still pending Nordinfra PE
+// review; see the note on POWER_BLOCK_MODELS in the calculator). Previously
+// this product wrongly reused DC_FAST_CHARGER_MANUFACTURERS.
+const POWER_BLOCK_MANUFACTURERS = [
+  { name: "ABB", models: 2 },
+  { name: "Autel", models: 1 },
+  { name: "Kempower", models: 4 },
+  { name: "Power Electronics", models: 2 },
+  { name: "Siemens", models: 3 },
+  { name: "Tesla", models: 1 },
+  { name: "Tritium", models: 3 },
+];
 
 export const PRODUCTS = {
   bollard: {
@@ -241,7 +269,7 @@ export const PRODUCTS = {
       ccOptionsY: [],
       note: "Adapter-plate dimensions for grouped Power Block configurations are still in development — contact Nordinfra with your cabinet count and footprint for engineering support.",
     },
-    chargerManufacturers: DC_FAST_CHARGER_MANUFACTURERS,
+    chargerManufacturers: POWER_BLOCK_MANUFACTURERS,
     manual: null,
     baba: false,
   },
