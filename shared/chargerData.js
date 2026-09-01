@@ -150,13 +150,22 @@ export const POWER_BLOCK_MODELS = {
         sides: 2,
         totalRivets: 36,
         rivetSpec: "4.8mm SS304 blind rivet",
-        rivetCapacityEachKn: 4, // ⚠ PLACEHOLDER — not yet a manufacturer-confirmed spec value
+        rivetCapacityEachKn: 4, // confirmed by Simon Gullberg 2026-09-01
         phi: 0.75,
       },
       boltGroups: {
-        // M12 class 8.8 — different spec from the M16 8.8 used on Small/Medium/
-        // Large's own charger-plate connection (BOLT_SPEC_LABEL/BOLT_TENSION_*).
-        plateToFoundation: { count: 14, pitchIn: mmToIn(612) },
+        // plateToFoundation: M12 A2-70 stainless (Simon Gullberg, 2026-09-01)
+        // — same connection/hole pattern as a standalone NordBase Medium's
+        // own adapter-plate-to-foundation mounting (6 bolts each, see
+        // FOUNDATIONS.MEDIUM.mountingBolts in NordBaseCalculator.jsx), just
+        // reused per foundation across the group: count = unitCount × 6
+        // ("C502 har 2 st medium fundament = 12 bultar, C503 har 3 medium =
+        // 18st bultar" — Simon Gullberg, 2026-09-01). Previously 14, which
+        // predated this per-foundation-count logic; corrected to 3×6=18.
+        // chargerToPlate: M12 class 8.8 — the charger OEM's own hardware,
+        // different spec from the M16 8.8 used on Small/Medium/Large's own
+        // charger-plate connection (BOLT_SPEC_LABEL/BOLT_TENSION_*).
+        plateToFoundation: { count: 18, pitchIn: mmToIn(612) },
         chargerToPlate: { count: 12, pitchIn: mmToIn(608) },
       },
     },
@@ -1010,7 +1019,11 @@ export const DC_FAST_CHARGER_PRESETS = {
       partName: "NordBase Large Adapter plate – Ekoenergetyka Axon Side DLBS",
     },
   ],
-  FreeWire: [],
+  // FreeWire removed 2026-09-01 (Simon Gullberg) — manufacturer is defunct
+  // (bankruptcy 2024, per Nordinfra's own research); was previously listed
+  // here as an empty array, which still made it selectable in the
+  // manufacturer dropdown with zero models. Single source of truth for both
+  // the calculator and the site, so removing it here fixes both.
   "InCharge Energy": [
     {
       model: "ICE-60-180",
