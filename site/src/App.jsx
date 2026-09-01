@@ -335,7 +335,7 @@ export default function App() {
               <StatCard icon={Clock} value="Same-day" label="Typical install time" />
               <StatCard icon={Leaf} value="Up to 60%" label="Lower CO2e vs. concrete" />
               <StatCard icon={ShieldCheck} value="ASCE 7-22" label="Wind & seismic method" />
-              <StatCard icon={Factory} value="4" label="Foundation sizes" />
+              <StatCard icon={Factory} value="5" label="Foundation sizes" />
             </div>
           </div>
         </div>
