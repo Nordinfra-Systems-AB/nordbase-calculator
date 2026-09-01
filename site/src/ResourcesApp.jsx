@@ -1,5 +1,6 @@
 import React from "react";
 import { Download, FileText, ArrowLeft } from "lucide-react";
+import { CALCULATOR_URL } from "./constants.js";
 
 // ---------------------------------------------------------------------------
 // RESOURCE LIBRARY — every non-unique document (i.e. everything except a
@@ -150,7 +151,7 @@ export default function ResourcesApp() {
           Everything except your project's own calculation — that's
           generated per-project in the{" "}
           <a
-            href="https://nordbase-calculator.vercel.app/"
+            href={CALCULATOR_URL}
             target="_blank"
             rel="noreferrer"
             className="font-semibold text-dark underline"

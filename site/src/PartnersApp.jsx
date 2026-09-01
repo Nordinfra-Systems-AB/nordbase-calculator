@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowLeft, Globe2, Phone, Mail, MapPin, ChevronRight } from "lucide-react";
 import UsPartnersMap from "./components/UsPartnersMap.jsx";
+import { CALCULATOR_URL } from "./constants.js";
 
 // ---------------------------------------------------------------------------
 // DISTRIBUTION PARTNERS — public directory, organized Country → State → list.
@@ -142,7 +143,7 @@ export default function PartnersApp() {
           distribution partners, not direct. Find your nearest partner below,
           or use the{" "}
           <a
-            href="https://nordbase-calculator.vercel.app/"
+            href={CALCULATOR_URL}
             target="_blank"
             rel="noreferrer"
             className="font-semibold text-dark underline"
