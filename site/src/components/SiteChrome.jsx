@@ -16,13 +16,18 @@ import { CALCULATOR_URL } from "../constants.js";
 //
 // "Markets" nav item + homepage section removed 2026-08-26 (Simon Gullberg)
 // — Nordinfra is focusing on the US market only for now.
+//
+// "Site Planner" nav item removed 2026-09-01 (Simon Gullberg) — the tool
+// itself is paused (quality issues, flagged 2026-08-26) and is being
+// revisited later; hidden from navigation in the meantime rather than
+// deleted, so the page at /site-planner.html still exists for direct/
+// internal access if needed before it's re-launched.
 // ---------------------------------------------------------------------------
 
 const NAV_LINKS = [
   { label: "Products", href: "/#products" },
   { label: "Sustainability", href: "/#sustainability" },
   { label: "Installation", href: "/installation.html" },
-  { label: "Site Planner", href: "/site-planner.html" },
   { label: "Partners", href: "/partners.html" },
   { label: "Resources", href: "/resources.html" },
   { label: "Contact", href: "/#contact" },
