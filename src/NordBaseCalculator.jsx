@@ -418,7 +418,15 @@ const KZ = 0.85,
   KZT = 1.0,
   KD = 0.85,
   GCF = 1.3;
-const WIND_DESTAB_FACTOR = 1.6; // LRFD 0.9D + 1.6W
+// LRFD 0.9D + 1.0W (ASCE 7-16/7-22 §2.3.1, combination 6) — NOT the pre-2010
+// service-level 0.9D+1.6W combo. qz above (0.00256·Kz·Kzt·Kd·V²) is built to
+// take V straight from the ASCE Hazard Tool's ultimate/strength-level wind
+// speed map (the same tool this step links to), which already produces a
+// strength-level pressure — applying 1.6 on top of that double-counts the
+// factor and overstates wind demand by 60%. Fixed 2026-09 after an Opus
+// review flagged the mismatch between this comment (labeled "7-22") and the
+// actual pre-2010 factor it was using.
+const WIND_DESTAB_FACTOR = 1.0;
 const GRAVITY_STAB_FACTOR = 0.9;
 const SEIS_AP = 1.0,
   SEIS_RP = 1.5,
@@ -441,8 +449,16 @@ const BOLT_SPEC_LABEL = "M16 class 8.8 (ISO 898-1)";
 const BOLT_FUB_MPA = 800; // M16 8.8 tensile strength
 const BOLT_AS_MM2 = 157; // M16 tensile stress area per ISO 898-1
 const BOLT_TENSION_PHI = 0.75; // ACI 318-19 §17.6.1
+// = 94.2 kN — this is ONE M16 8.8 bolt's φNsa, not two. It's compared
+// (runCheck's "bolt-tension" check, below) against the TOTAL tension-side
+// demand from the governing moment, i.e. treated as if only one bolt resists
+// it — conservative, since the real pattern has bolts on both sides of the
+// tipping axis. Do NOT "fix" this by halving the demand to represent 2
+// bolts — the capacity side, not the demand side, is what's simplified here.
+// Comment corrected 2026-09 (previously said "2 bolts in tension" here,
+// which described the demand-side assumption backwards).
 const BOLT_TENSION_CAPACITY_KN =
-  BOLT_TENSION_PHI * BOLT_AS_MM2 * (BOLT_FUB_MPA / 1000); // = 94.2 kN (2 bolts in tension, per adapter-plate bolt pattern)
+  BOLT_TENSION_PHI * BOLT_AS_MM2 * (BOLT_FUB_MPA / 1000);
 
 // M12 class 8.8 — Power Block plate bolts (plate-to-foundation, charger-to-
 // plate). Different spec from the M16 8.8 above used on Small/Medium/Large.
@@ -618,8 +634,14 @@ const SELF_TEST_FOUNDATION_KEYS = FOUNDATION_ORDER.filter(
 function runSelfTest() {
   const results = SELF_TEST_FOUNDATION_KEYS.map((key) => {
     const f = FOUNDATIONS[key];
-    const basePlateShortIn = Math.min(f.bottom.w, f.bottom.d);
-    const aM = inToM(basePlateShortIn) / 2;
+    // Calls the REAL calcStability() — a prior version of this test
+    // re-derived aM with its own copy of the base-plate-short-side/2 formula
+    // instead of calling the actual function, so a regression inside
+    // calcStability() (e.g. someone "fixing" the tipping-arm lever back to
+    // top-width/2, the mismatch the comment above warns about) would still
+    // print "PASSED". Kpd/sds/WpKn don't affect aM, so any valid values work
+    // here — 0 keeps this a pure geometry check.
+    const { aM } = calcStability({ foundation: f, Kpd: 0, sds: 0, WpKn: 0 });
     const expected = EXPECTED_TIPPING_ARM_M[key];
     const diff = Math.abs(aM - expected);
     return {
@@ -658,6 +680,33 @@ function calcWind({ chargerWidthIn, chargerHeightIn, windSpeedMph }) {
   return { qzPsf, ArefFt2, FwKn, zcM, MwKnm, MdWindKnm };
 }
 
+// calcWind() takes ONE horizontal dimension as the wind-facing width — for a
+// charger/cabinet that isn't square in plan, wind normal to the DEEPER face
+// can produce a larger projected area (and thus a larger destabilizing
+// moment) than wind normal to the wider face. Using only chargerWidthIn
+// silently skipped that case (Opus engineering review, 2026-09-01, finding
+// #9). This runs calcWind() against both horizontal dimensions and returns
+// whichever face governs (larger MdWindKnm) — same return shape as
+// calcWind() itself, so every downstream consumer (checks[], reports) is
+// unaffected. The tipping-arm lever (aM in calcStability()) is unchanged by
+// this — that lever is already the conservative base-plate short side
+// regardless of which face wind acts on.
+function calcGoverningWind({
+  chargerWidthIn,
+  chargerDepthIn,
+  chargerHeightIn,
+  windSpeedMph,
+}) {
+  const onWidth = calcWind({ chargerWidthIn, chargerHeightIn, windSpeedMph });
+  if (!chargerDepthIn || chargerDepthIn === chargerWidthIn) return onWidth;
+  const onDepth = calcWind({
+    chargerWidthIn: chargerDepthIn,
+    chargerHeightIn,
+    windSpeedMph,
+  });
+  return onDepth.MdWindKnm > onWidth.MdWindKnm ? onDepth : onWidth;
+}
+
 function calcSeismic({ WpKn, sds, zcM }) {
   const FpCalc = FP_CALC_FACTOR * sds * WpKn;
   const FpMin = FP_MIN_FACTOR * sds * SEIS_IP * WpKn;
@@ -671,9 +720,10 @@ function calcStability({ foundation, Kpd, sds, WpKn }) {
   const topShortIn = Math.min(foundation.top.w, foundation.top.d);
   // Passive-pressure width uses the actual tapered shell/mantle bottom (narrower),
   // NOT the flared base-plate foot shown as the marketing "Base" dimension — see
-  // foundation.shellBottom. Falls back to the base-plate footprint (previous
-  // behaviour) only where the shell-bottom dimension hasn't been confirmed yet
-  // (currently: NordBase Large).
+  // foundation.shellBottom. Falls back to the base-plate footprint only for a
+  // foundation whose shell-bottom dimension isn't confirmed yet — every
+  // current foundation (incl. Large, confirmed 2026-08-21) has it, so this
+  // fallback is currently unused; kept for the next unconfirmed concept.
   const bottomForPassive = foundation.shellBottom || foundation.bottom;
   const bottomShortIn = Math.min(bottomForPassive.w, bottomForPassive.d);
   // Tipping-edge lever arm 'a': the source workbook's cell COMMENT says
@@ -691,8 +741,16 @@ function calcStability({ foundation, Kpd, sds, WpKn }) {
   const FpSoilKn = 0.5 * Kpd * SOIL_UNIT_WEIGHT_KNM3 * Math.pow(hM, 2) * bMedM;
   const MpKnm = FpSoilKn * ((2 * hM) / 3);
   const seismicDeadFactor = 0.9 - 0.2 * sds;
+  // Both stabilizing moments are 0.9·(dead weight arm) + 0.9·(passive-earth
+  // arm) — MpKnm is the same physical H (lateral passive-earth resistance)
+  // in both load cases, so it gets the same ASCE 7 §2.3.1 0.9 factor in
+  // both, only the dead-weight coefficient changes between wind's flat 0.9
+  // and seismic's SDS-dependent (0.9-0.2·SDS). MstbSeis previously left
+  // MpKnm unfactored (effectively 1.0×), which overstated seismic
+  // overturning capacity — fixed 2026-09 after an Opus review flagged the
+  // inconsistency with the wind case directly above.
   const MstbWind = GRAVITY_STAB_FACTOR * (WpKn * aM + MpKnm);
-  const MstbSeis = seismicDeadFactor * WpKn * aM + MpKnm;
+  const MstbSeis = seismicDeadFactor * WpKn * aM + GRAVITY_STAB_FACTOR * MpKnm;
   const slideCapacityKn = 0.9 * FpSoilKn;
   return {
     aM,
@@ -727,8 +785,9 @@ function runCheck({
   const SDS = Number(sds) || 0;
   const adapterWeightLb = foundation.adapterPlateWeightLb || 0;
 
-  const wind = calcWind({
+  const wind = calcGoverningWind({
     chargerWidthIn: w,
+    chargerDepthIn: d,
     chargerHeightIn: h,
     windSpeedMph: V,
   });
@@ -777,8 +836,9 @@ function runCheck({
   ];
 
   // Wall-plate bending — needs a confirmed wall gauge (foundation.wallThicknessMm).
-  // Not available yet for NordBase Large, so the check is simply omitted there
-  // rather than reported against a guessed thickness.
+  // Every current foundation has one (Large confirmed 2026-08-21), so this
+  // check runs for all of them today; the guard stays for the next
+  // unconfirmed concept rather than reporting against a guessed thickness.
   if (foundation.wallThicknessMm) {
     const topShortMm = Math.min(foundation.top.w, foundation.top.d) * 25.4;
     const demandMPa =
@@ -887,8 +947,9 @@ function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
   // 2026-08-27 — do NOT multiply by unitCount; the width Simon supplied
   // (2000mm) already matches the group's own envelope width, not a single
   // per-slot charger).
-  const wind = calcWind({
+  const wind = calcGoverningWind({
     chargerWidthIn: charger.widthIn,
+    chargerDepthIn: charger.depthIn,
     chargerHeightIn: charger.heightIn,
     windSpeedMph: V,
   });
@@ -908,8 +969,12 @@ function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
   const aGroupM = inToM(plate.widthIn) / 2;
   const MpGroupKnm = FpSoilGroupKn * ((2 * hM) / 3);
   const seismicDeadFactor = 0.9 - 0.2 * SDS;
+  // Same fix as the single-foundation calcStability() above (2026-09): the
+  // passive-earth moment MpGroupKnm gets the same 0.9 factor in both load
+  // cases, since it's the same physical resisting force in both.
   const MstbWindGroup = GRAVITY_STAB_FACTOR * (WpGroupKn * aGroupM + MpGroupKnm);
-  const MstbSeisGroup = seismicDeadFactor * WpGroupKn * aGroupM + MpGroupKnm;
+  const MstbSeisGroup =
+    seismicDeadFactor * WpGroupKn * aGroupM + GRAVITY_STAB_FACTOR * MpGroupKnm;
   // Same φ=0.9 resistance factor on passive-earth sliding capacity applied to
   // BOTH load cases, consistent with calcStability() above (the confirmed
   // single-foundation engine uses one slideCapacityKn for wind and seismic
@@ -1803,6 +1868,25 @@ export default function NordBaseCalculator() {
     setStep((s) => Math.max(0, s - 1));
   }
 
+  // Site data must be a real, positive wind speed and a non-negative SDS —
+  // NOT just "the field isn't empty". `!!windSpeed` alone treated the string
+  // "0" (and "-5") as valid, since a non-empty string is truthy: a user who
+  // cleared the field to 0 mph / 0g (or typed a negative SDS) could advance
+  // past this step, and every downstream demand comes out 0 (or negative),
+  // which makes every check DCR<=1 — a silent, wrong "PASS" on the final
+  // report. windSpeed=0 is never physically valid (ASCE always specifies a
+  // minimum mapped speed); SDS=0 is allowed (very low seismic sites exist)
+  // but negative SDS is not.
+  const windSpeedNum = Number(windSpeed);
+  const sdsNum = Number(sds);
+  const hasValidSiteData =
+    windSpeed !== "" &&
+    sds !== "" &&
+    Number.isFinite(windSpeedNum) &&
+    windSpeedNum > 0 &&
+    Number.isFinite(sdsNum) &&
+    sdsNum >= 0;
+
   const canNext = [
     true, // project info optional
     !!foundation,
@@ -1815,7 +1899,7 @@ export default function NordBaseCalculator() {
         !!chargerH &&
         !!chargerWeight &&
         !!effectiveCc,
-    !!windSpeed && !!sds,
+    hasValidSiteData,
     true,
     false,
   ];
@@ -2963,6 +3047,7 @@ export default function NordBaseCalculator() {
                   <div className="flex gap-2">
                     <input
                       type="number"
+                      min="1"
                       value={windSpeed}
                       onChange={(e) => setWindSpeed(e.target.value)}
                       className="w-full border rounded-md px-3 py-2 text-sm"
@@ -2987,6 +3072,7 @@ export default function NordBaseCalculator() {
                     <input
                       type="number"
                       step="0.05"
+                      min="0"
                       value={sds}
                       onChange={(e) => {
                         setSds(e.target.value);
