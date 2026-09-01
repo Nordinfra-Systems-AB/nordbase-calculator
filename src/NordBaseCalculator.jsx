@@ -229,6 +229,21 @@ const FOUNDATIONS = {
       ccOptionsY: [5, 6, 8, 9, 10.6],
       note: null,
     },
+    // Adapter-plate-to-FOUNDATION mounting bolts — a separate connection
+    // from adapterPlate.ccOptionsX/Y above (that's the customer's charger
+    // bolted to the plate; this is the plate bolted down to the foundation
+    // itself). Confirmed by Simon Gullberg, 2026-09-01: "DC Small =
+    // 270x270mm M12" — SS304 A2-70, same spec as Medium/Large below. Bolt
+    // count NOT explicitly stated for Small (Medium/Large both got an
+    // explicit count with a described corner+mid-side layout — Small didn't)
+    // — 4 is inferred here as a plain square 4-corner pattern; flag to Simon
+    // to confirm before treating this count as load-bearing fact.
+    mountingBolts: {
+      spec: "M12 A2-70 stainless (ISO 3506-1)",
+      count: 4, // ⚠ inferred (4-corner square), not explicitly confirmed like Medium/Large — ask Simon
+      ccWIn: 270 / 25.4,
+      ccDIn: 270 / 25.4,
+    },
     blurb:
       "For Level 2 pedestals. Adapter plate with a grid of standard hole positions (square or rectangular bolt patterns) or a custom dimension.",
     // Reference charger size for the Foundation-step card (Simon Gullberg,
@@ -281,6 +296,21 @@ const FOUNDATIONS = {
       // downloadable drawings still being finalized even for confirmed models.
       note: "Bolt spacing (CC) is now confirmed for most listed chargers above. Downloadable adapter-plate drawings are still being finalized — contact Nordinfra if you need one sooner, or if your charger isn't listed yet.",
     },
+    // Adapter-plate-to-FOUNDATION mounting bolts (separate from
+    // adapterPlate.ccOptionsX/Y, which is empty here since Medium uses
+    // per-charger CC instead — see the comment on usesSharedPlateGrid further
+    // down). Confirmed by Simon Gullberg, 2026-09-01: "DC Medium = 462,5 x
+    // 612,5 (mitt emellan 612,5mm sitter det ett till bultpar alltå
+    // adapterplåt sitter med 6 bultar) M12" — SS304 A2-70. This is the SAME
+    // physical pattern Kempower C503's Power Block group reuses per
+    // foundation (boltGroups.plateToFoundation in shared/chargerData.js,
+    // pitchIn 612mm — cross-referenced 2026-09-01).
+    mountingBolts: {
+      spec: "M12 A2-70 stainless (ISO 3506-1)",
+      count: 6, // 4 corners + 1 pair mid-span on the two 612.5mm sides
+      ccWIn: 462.5 / 25.4,
+      ccDIn: 612.5 / 25.4,
+    },
     blurb:
       "For Level 3 DC fast chargers. Rectangular base gives a larger stabilizing footprint for heavier equipment.",
     // See SMALL's chargerFit comment — same sizing-cue purpose, no hard limit.
@@ -319,6 +349,18 @@ const FOUNDATIONS = {
       // Plate size/thickness/material (above) are still genuinely
       // unconfirmed for Large, so that part of the note stays.
       note: "Bolt spacing (CC) is now confirmed for most listed chargers above. Plate dimensions/material and downloadable drawings are still being finalized — contact Nordinfra if you need these sooner, or if your charger isn't listed yet.",
+    },
+    // Adapter-plate-to-FOUNDATION mounting bolts. Confirmed by Simon
+    // Gullberg, 2026-09-01: "DC Large = 8st M12 29,5" x 29,5" med en bult
+    // mitt emellan 29,5" så det blir 8st totalt" — SS304 A2-70. Read as 4
+    // corners + 1 additional bolt centered on EACH of the 4 equal 29.5"
+    // sides = 8 total (unlike Medium, which only got a mid-span pair on its
+    // two longer sides — Large's square pattern gets one on every side).
+    mountingBolts: {
+      spec: "M12 A2-70 stainless (ISO 3506-1)",
+      count: 8, // 4 corners + 1 mid-span bolt on each of the 4 sides
+      ccWIn: 29.5,
+      ccDIn: 29.5,
     },
     // Stability (overturning/sliding), wall-plate bending, and bolt-tension are now
     // calculated the same way as Small/Medium, from the confirmed DC Large workbook.
@@ -460,14 +502,37 @@ const BOLT_TENSION_PHI = 0.75; // ACI 318-19 §17.6.1
 const BOLT_TENSION_CAPACITY_KN =
   BOLT_TENSION_PHI * BOLT_AS_MM2 * (BOLT_FUB_MPA / 1000);
 
-// M12 class 8.8 — Power Block plate bolts (plate-to-foundation, charger-to-
-// plate). Different spec from the M16 8.8 above used on Small/Medium/Large.
-// Confirmed 2026-08-27 against Nordinfra_Master_USA_ASCE7_v6's own corrective
-// comment (M12 tensile stress area = 84.3mm² per ISO 898-1).
+// M12 class 8.8 — Power Block CHARGER-to-plate bolts only (the charger
+// manufacturer's own mounting hardware; Simon Gullberg, 2026-09-01: this
+// connection is the charger OEM's own design responsibility, Nordinfra
+// assumes they sized it correctly, so it keeps this generic carbon-steel
+// assumption rather than Nordinfra's own confirmed SS304 spec below).
+// Different spec from the M16 8.8 above used on Small/Medium/Large's own
+// charger-to-plate check. Confirmed 2026-08-27 against
+// Nordinfra_Master_USA_ASCE7_v6's own corrective comment (M12 tensile stress
+// area = 84.3mm² per ISO 898-1).
 const BOLT_M12_SPEC_LABEL = "M12 class 8.8 (ISO 898-1)";
 const BOLT_M12_AS_MM2 = 84.3;
 const BOLT_M12_TENSION_CAPACITY_KN =
-  BOLT_TENSION_PHI * BOLT_M12_AS_MM2 * (BOLT_FUB_MPA / 1000); // = 50.58 kN
+  BOLT_TENSION_PHI * BOLT_M12_AS_MM2 * (BOLT_FUB_MPA / 1000); // = 50.58 kN — ONE bolt's capacity
+
+// M12 A2-70 stainless (ISO 3506-1) — the FOUNDATION-to-adapter-plate
+// connection specifically (Simon Gullberg, 2026-09-01: "M12 eller 1/2" som
+// bult i SS304 kvalite... Utgå från A2-70"), used both for Power Block's
+// plate-to-foundation bolts and the standalone Small/Medium/Large mounting-
+// bolt check below. Property class "70" per ISO 3506-1 = 700 MPa minimum
+// tensile strength (same designation logic as steel's "8.8" = 800 MPa,
+// just a different, lower-strength stainless grade — same M12 tensile
+// stress area, 84.3mm², since that's geometry, not material). Unlike the
+// two constants above, THIS capacity is meant to be multiplied by the
+// connection's actual bolt count (Simon, 2026-09-01: "Skala mot antal
+// bultar - alltid... Kapacitet ska vara baserat på antalet bultar mellan
+// fundament och adapterplåt ej skalad till endast 1 bult") — see each call
+// site for `count × BOLT_M12_A2_70_TENSION_CAPACITY_KN`.
+const BOLT_M12_A2_70_SPEC_LABEL = "M12 A2-70 stainless (ISO 3506-1)";
+const BOLT_A2_70_FUB_MPA = 700;
+const BOLT_M12_A2_70_TENSION_CAPACITY_KN =
+  BOLT_TENSION_PHI * BOLT_M12_AS_MM2 * (BOLT_A2_70_FUB_MPA / 1000); // = 44.26 kN — ONE bolt's capacity, multiply by count at each call site
 
 const SDS_REFERENCE = [
   { city: "Los Angeles, CA", sds: 1.25 },
@@ -870,6 +935,36 @@ function runCheck({
     });
   }
 
+  // Adapter-plate-to-FOUNDATION mounting bolts — a separate connection from
+  // the charger-to-plate check above (that one uses whatever CC the
+  // customer's charger has; this one is Nordinfra's own fixed bolt pattern
+  // for mounting the adapter plate down onto the foundation itself). Added
+  // 2026-09-01 per Simon Gullberg's confirmed bolt patterns
+  // (FOUNDATIONS[key].mountingBolts) — M12 A2-70 stainless, capacity scaled
+  // by the connection's actual bolt count (Simon, 2026-09-01: "Skala mot
+  // antal bultar - alltid... ej skalad till endast 1 bult"), NOT the
+  // single-bolt-vs-total-demand convention used for the customer-CC check
+  // above (that one stays conservative because we don't know the customer's
+  // actual bolt count; here we do). Uses the shorter of the two CC
+  // dimensions as the governing lever arm, same worst-case-axis convention
+  // as the charger-to-plate check elsewhere in this file. Not run for
+  // Bollard (no mountingBolts data — Simon, 2026-09-01: bollard bolts may
+  // deliberately be an under-strength breakaway design instead, still
+  // undecided).
+  if (foundation.mountingBolts) {
+    const mb = foundation.mountingBolts;
+    const ccShortIn = Math.min(mb.ccWIn, mb.ccDIn);
+    const mountDemandKn = governingMomentKnm / inToM(ccShortIn);
+    const mountCapacityKn = mb.count * BOLT_M12_A2_70_TENSION_CAPACITY_KN;
+    checks.push({
+      key: "bolt-mounting",
+      label: `Adapter-plate-to-foundation bolts (${mb.count}×${BOLT_M12_A2_70_SPEC_LABEL.split(" ")[0]})`,
+      capacity: mountCapacityKn,
+      demand: mountDemandKn,
+      unit: "kN",
+    });
+  }
+
   const scoredChecks = checks.map((c) => ({
     ...c,
     dcr: c.capacity > 0 ? c.demand / c.capacity : Infinity,
@@ -1016,12 +1111,38 @@ function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
 
   const governingMomentKnm = Math.max(wind.MdWindKnm, seismic.MdSeisKnm);
 
-  // Hat-profile rivet connection (one long side) — PLACEHOLDER capacity
-  // (model.hatProfile.rivetCapacityEachKn), not yet a manufacturer-confirmed
-  // spec value. Conservative simplifying assumption carried from the xlsx:
-  // one long side's rivets must carry the full lateral demand of one end
-  // unit (group demand / unitCount), direct shear only — moment/
-  // eccentricity in the joint is not modeled.
+  // Wall-plate bending — Power Block units are the same NordBase Medium
+  // shell used standalone elsewhere in this file, just several bolted
+  // side-by-side under one shared adapter plate (Simon Gullberg, 2026-09-01:
+  // "power block är bara våra fundament fast flera på rad så väggböjning är
+  // samma" — Power Block is just our foundations, several in a row, so wall
+  // bending is the same). Same formula as runCheck()'s wall-bending check,
+  // using FOUNDATIONS.MEDIUM's confirmed wall gauge and shell-top width.
+  // Demand is the group's governing moment split evenly across unitCount
+  // foundations — the same "group demand / unitCount" simplifying
+  // assumption already used for the rivet-shear check below (one unit's
+  // tributary share, not a full FEA of load distribution through the shared
+  // plate). This check was previously missing entirely for Power Block.
+  const topShortMmPB =
+    Math.min(FOUNDATIONS.MEDIUM.top.w, FOUNDATIONS.MEDIUM.top.d) * 25.4;
+  const wallDemandMPa =
+    ((governingMomentKnm / unitCount) * 1e6) /
+    (2 * FOUNDATIONS.MEDIUM.wallThicknessMm * Math.pow(topShortMmPB / 2, 2));
+  checks.push({
+    key: "wall-bending",
+    label: "Wall plate bending (per unit)",
+    capacity: STEEL_BENDING_CAPACITY_MPA,
+    demand: wallDemandMPa,
+    unit: "MPa",
+  });
+
+  // Hat-profile rivet connection (one long side) — shear capacity confirmed
+  // by Simon Gullberg 2026-09-01 (rivetCapacityEachKn = 4 kN per rivet,
+  // 4.8mm SS304 blind rivet — no longer a placeholder). Conservative
+  // simplifying assumption carried from the xlsx: one long side's rivets
+  // must carry the full lateral demand of one end unit (group demand /
+  // unitCount), direct shear only — moment/eccentricity in the joint is not
+  // modeled.
   const hat = model.hatProfile;
   const rivetSideCapacityKn = hat.rivetsPerSide * hat.rivetCapacityEachKn * hat.phi;
   const rivetDemandKn = Math.max(wind.FwKn, seismic.FpDesign) / unitCount;
@@ -1033,27 +1154,57 @@ function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
     unit: "kN",
   });
 
-  // Plate-to-foundation and charger-to-plate bolt tension — M12 class 8.8,
-  // same φNsa formula as the confirmed M16 spec used elsewhere in this file,
-  // scaled to this connection's own bolt spec and each group's measured
-  // pitch/lever arm (model.boltGroups).
+  // Plate-to-foundation and charger-to-plate bolt tension.
+  //
+  // pitchIn CONFIRMED 2026-09-01 as the FULL center-to-center bolt spacing
+  // across the tipping axis (same convention as runCheck()'s ccIn) — cross-
+  // checked against Simon Gullberg's confirmed standalone bolt patterns: DC
+  // Medium's own adapter-plate-to-foundation CC is 462.5×612.5mm, and
+  // C503's plateToFoundation.pitchIn (612mm, i.e. mmToIn(612) here) is
+  // exactly that same 612.5mm dimension carried over — C503 is 3 Medium
+  // foundations sharing one plate, reusing Medium's own mounting pattern.
+  // runCheck()'s proven formula for a FULL cc spacing is demand = M / cc
+  // (lever arm = cc/2, demand = M / (2 * cc/2) = M/cc). The previous
+  // formula here — M / (2 * pitchIn) — treated pitchIn as if it were
+  // already the half-spacing lever arm, understating demand by 2x. Fixed to
+  // match runCheck()'s convention on both bolt groups (same field
+  // semantics, same code shape, so both had the same bug).
+  //
+  // CAPACITY (2026-09-01, Simon Gullberg): "Skala mot antal bultar - alltid!
+  // Kapacitet ska vara baserat på antalet bultar mellan fundament och
+  // adapterplåt ej skalad till endast 1 bult" — capacity is now count ×
+  // one bolt's φNsa on BOTH connections, not the single-bolt-vs-total-demand
+  // simplification used elsewhere in this file (that older convention was
+  // deliberately conservative for a customer-entered/unknown bolt count;
+  // here the count is a known, confirmed hardware spec, so using it directly
+  // is both more accurate and what Simon asked for).
+  //
+  // MATERIAL: plate-to-foundation is the SAME physical connection as the
+  // standalone-foundation mounting-bolt check below (same reused hole
+  // pattern, per the pitchIn match above) — Simon's 2026-09-01 SS304 A2-70
+  // spec for "bultar mellan fundament och adapterplåt" applies here too, so
+  // this switches from the earlier (unconfirmed) M12 class 8.8 assumption
+  // to BOLT_M12_A2_70_TENSION_CAPACITY_KN. Charger-to-plate stays class 8.8
+  // — that's the charger OEM's own hardware, a separate, unconfirmed
+  // assumption Simon has said Nordinfra doesn't own (see BOLT_M12_SPEC_LABEL
+  // above), not the SS304 spec Simon just confirmed.
   const bolts = model.boltGroups;
   const demandPlateToFoundationKn =
-    governingMomentKnm / (2 * inToM(bolts.plateToFoundation.pitchIn));
+    governingMomentKnm / inToM(bolts.plateToFoundation.pitchIn);
   checks.push({
     key: "bolt-plate-foundation",
-    label: `Plate-to-foundation bolts (${bolts.plateToFoundation.count}×${BOLT_M12_SPEC_LABEL.split(" ")[0]}) — tension`,
-    capacity: BOLT_M12_TENSION_CAPACITY_KN,
+    label: `Plate-to-foundation bolts (${bolts.plateToFoundation.count}×${BOLT_M12_A2_70_SPEC_LABEL.split(" ")[0]}) — tension`,
+    capacity: bolts.plateToFoundation.count * BOLT_M12_A2_70_TENSION_CAPACITY_KN,
     demand: demandPlateToFoundationKn,
     unit: "kN",
   });
 
   const demandChargerToPlateKn =
-    governingMomentKnm / (2 * inToM(bolts.chargerToPlate.pitchIn));
+    governingMomentKnm / inToM(bolts.chargerToPlate.pitchIn);
   checks.push({
     key: "bolt-charger-plate",
     label: `Charger-to-plate bolts (${bolts.chargerToPlate.count}×${BOLT_M12_SPEC_LABEL.split(" ")[0]}) — tension`,
-    capacity: BOLT_M12_TENSION_CAPACITY_KN,
+    capacity: bolts.chargerToPlate.count * BOLT_M12_TENSION_CAPACITY_KN,
     demand: demandChargerToPlateKn,
     unit: "kN",
   });
