@@ -1,15 +1,21 @@
+import {
+  DC_FAST_CHARGER_PRESETS,
+  POWER_BLOCK_MODELS,
+} from "../../shared/chargerData.js";
+
 // ---------------------------------------------------------------------------
 // PRODUCT DETAIL DATA — one shared template page (product.html?f=<slug>)
-// reads this instead of four separate static pages. Every number here is
-// pulled directly from the FOUNDATIONS/CHARGER_PRESETS objects in the
-// calculator's NordBaseCalculator.jsx — nothing here is estimated or
-// re-derived. The calculator and this site are separate deployments with no
-// shared imports, so this is kept in sync manually, same as PARTNERS and the
-// document-library PDFs.
+// reads this instead of four separate static pages. Charger manufacturer/
+// model counts below are imported live from ../../shared/chargerData.js
+// (2026-09-01) — the same file the calculator reads from — so they can't go
+// stale. Everything else here (foundation dimensions, product copy) is still
+// specific to the website and kept in sync with the calculator's FOUNDATIONS
+// object by hand, same as PARTNERS and the document-library PDFs.
 //
 // HOW TO ADD/UPDATE A FOUNDATION: edit the matching entry below. If a
 // dimension changes in the calculator's FOUNDATIONS object, mirror the
-// change here too.
+// change here too. Charger manufacturer/model data does NOT need mirroring
+// anymore — edit ../../shared/chargerData.js once and both apps pick it up.
 //
 // CHARGER/PEDESTAL COMPATIBILITY (updated 2026-08-26 to match the
 // calculator's PEDESTAL_CHARGER_PRESETS/DC_FAST_CHARGER_PRESETS split +
@@ -29,54 +35,30 @@
 // ---------------------------------------------------------------------------
 
 // DC fast charger manufacturers for Medium/Large (freestanding Level 3/4
-// units, not pedestals) — list + alphabetical order per Simon Gullberg,
-// 2026-08-26. Mirrors DC_FAST_CHARGER_PRESETS in NordBaseCalculator.jsx.
-// UPDATED 2026-08-31 to match the calculator's real model counts (42 models
-// total across Medium+Large, from the 2026-08-31 60-model verified dataset)
-// — most manufacturers now have real models on file, so most entries no
-// longer show `models: 0`. A manufacturer still at 0 (BTC Power, FreeWire)
-// genuinely has no dimensions/bolt patterns on file yet in the calculator.
-// Also added "Blink Charging", "InCharge Energy", Wallbox, "Zerova (Phihong)"
-// — present in the calculator's DC_FAST_CHARGER_PRESETS but missing from
-// this list before. See the `chargerManufacturers` rendering below for how a
-// manufacturer with zero models on file is shown differently from one with
-// confirmed models.
-const DC_FAST_CHARGER_MANUFACTURERS = [
-  { name: "ABB", models: 3 },
-  { name: "Alpitronic", models: 3 },
-  { name: "Autel", models: 5 },
-  { name: "Blink Charging", models: 2 },
-  { name: "BTC Power", models: 0 },
-  { name: "ChargePoint", models: 3 },
-  { name: "Delta Electronics", models: 1 },
-  { name: "Ekoenergetyka", models: 4 },
-  { name: "FreeWire", models: 0 },
-  { name: "InCharge Energy", models: 3 },
-  { name: "Kempower", models: 2 },
-  { name: "Power Electronics", models: 5 },
-  { name: "Siemens", models: 3 },
-  { name: "Tesla", models: 1 },
-  { name: "Tritium", models: 4 },
-  { name: "Wallbox", models: 1 },
-  { name: "Zerova (Phihong)", models: 2 },
-];
+// units, not pedestals). DERIVED (2026-09-01) from DC_FAST_CHARGER_PRESETS in
+// ../../shared/chargerData.js — the SAME data object the calculator's
+// dropdown reads from, imported directly rather than copied by hand. This
+// list can no longer go stale: it always reflects however many models are
+// actually on file, because it's computed from that file instead of
+// maintained as a separate hardcoded array. (Previously this was a manually
+// copy-pasted list that drifted out of sync more than once — see the
+// 2026-08-31 fixes in the delivery notes for the bugs that caused.) A
+// manufacturer with zero models genuinely has no dimensions/bolt patterns on
+// file yet in the calculator — see the `chargerManufacturers` rendering
+// below for how that's shown differently from one with confirmed models.
+const DC_FAST_CHARGER_MANUFACTURERS = Object.entries(DC_FAST_CHARGER_PRESETS)
+  .map(([name, models]) => ({ name, models: models.length }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 // Power Block manufacturers — its own separate list (NOT the Medium/Large
-// list above). Added 2026-08-31 to match POWER_BLOCK_MODELS in
-// NordBaseCalculator.jsx (16 models total, all `configPending: true` —
-// cabinet dimensions are confirmed manufacturer datasheet data, but
+// list above). DERIVED (2026-09-01) the same way, from POWER_BLOCK_MODELS in
+// ../../shared/chargerData.js (currently 16 models, all `configPending: true`
+// — cabinet dimensions are confirmed manufacturer datasheet data, but
 // single-vs-group foundation configuration is still pending Nordinfra PE
-// review; see the note on POWER_BLOCK_MODELS in the calculator). Previously
-// this product wrongly reused DC_FAST_CHARGER_MANUFACTURERS.
-const POWER_BLOCK_MANUFACTURERS = [
-  { name: "ABB", models: 2 },
-  { name: "Autel", models: 1 },
-  { name: "Kempower", models: 4 },
-  { name: "Power Electronics", models: 2 },
-  { name: "Siemens", models: 3 },
-  { name: "Tesla", models: 1 },
-  { name: "Tritium", models: 3 },
-];
+// review; see the note on POWER_BLOCK_MODELS in the shared data file).
+const POWER_BLOCK_MANUFACTURERS = Object.entries(POWER_BLOCK_MODELS)
+  .map(([name, models]) => ({ name, models: models.length }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 export const PRODUCTS = {
   bollard: {
