@@ -91,10 +91,9 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-10 border-t border-white/10 pt-6 text-xs text-white/40">
-          PREVIEW — this page is a working draft, not yet the live
-          nord-infra.com site. Content is a starting point for review, not
-          final marketing copy. Preliminary calculations from the calculator
-          are not a substitute for a PE-stamped package.
+          Preliminary calculations from the NordBase Foundation Selector are
+          for planning purposes only and are not a substitute for a
+          PE-stamped engineering package.
         </div>
       </div>
     </footer>
