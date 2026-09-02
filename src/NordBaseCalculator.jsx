@@ -1671,6 +1671,7 @@ export default function NordBaseCalculator() {
   const [showDetails, setShowDetails] = useState(false);
   const [consentGiven, setConsentGiven] = useState(false);
   const [showConsentWarning, setShowConsentWarning] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState("idle"); // idle | sending | sent | error
   const [partnerStateFilter, setPartnerStateFilter] = useState("");
   const [expandedPartnerId, setExpandedPartnerId] = useState(null);
 
@@ -2151,9 +2152,11 @@ export default function NordBaseCalculator() {
     custom: { label: "Custom", desc: "Zip · choose included assets" },
   };
 
-  function buildMailto() {
-    if (!result) return "#";
-    const to = "info@nord-infra.com";
+  // Shared by both the mailto: fallback and the real submit-lead endpoint
+  // below, so the two paths can never drift apart. Returns null if there's
+  // no result yet (nothing to send).
+  function buildSubmissionContent() {
+    if (!result) return null;
     const subject = `NordBase calc — ${contactName || "Customer"} — ${
       foundation?.name || ""
     }`;
@@ -2192,9 +2195,61 @@ export default function NordBaseCalculator() {
       `Package: ${PACKAGE_TYPES[packageType].label}`,
       nevi ? "NEVI/BABA certificate: yes" : "",
     ].filter(Boolean);
+    return { subject, text: lines.join("\n") };
+  }
+
+  function buildMailto() {
+    const content = buildSubmissionContent();
+    if (!content) return "#";
+    const to = "info@nord-infra.com";
     return `mailto:${to}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(lines.join("\n"))}`;
+      content.subject
+    )}&body=${encodeURIComponent(content.text)}`;
+  }
+
+  // Real lead capture (2026-09-02) — replaces relying on the customer's own
+  // email client actually being configured and them actually hitting send.
+  // POSTs to a Vercel serverless function (api/submit-lead.js) which emails
+  // Nordinfra directly. Falls back to the old mailto: link automatically if
+  // the endpoint isn't reachable/configured yet (e.g. RESEND_API_KEY not set
+  // in Vercel) — so this can ship before that setup step is done, and never
+  // leaves the customer with a dead button.
+  async function submitLead() {
+    const content = buildSubmissionContent();
+    if (!content) return;
+    setSubmitStatus("sending");
+    try {
+      const res = await fetch("/api/submit-lead", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: content.subject,
+          text: content.text,
+          consent: consentGiven,
+          meta: {
+            contactName,
+            contactEmail,
+            projectName,
+            address,
+            quantity,
+            foundationKey,
+            windSpeed,
+            sds,
+            packageType,
+            governingCheck: result?.governing?.label,
+            dcrPct: result ? Math.round(result.governing.dcr * 100) : null,
+            pass: result?.pass ?? null,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error(`status_${res.status}`);
+      setSubmitStatus("sent");
+    } catch (e) {
+      // Server not reachable/configured — fall back to the customer's own
+      // email client rather than leaving them stuck.
+      setSubmitStatus("error");
+      window.location.href = buildMailto();
+    }
   }
 
   return (
@@ -4449,25 +4504,40 @@ export default function NordBaseCalculator() {
                 </span>
               </label>
 
-              <a
-                href={consentGiven ? buildMailto() : undefined}
-                onClick={(e) => {
+              <button
+                type="button"
+                disabled={submitStatus === "sending" || submitStatus === "sent"}
+                onClick={() => {
                   if (!consentGiven) {
-                    e.preventDefault();
                     setShowConsentWarning(true);
+                    return;
                   }
+                  submitLead();
                 }}
                 className="print:hidden w-full py-3 rounded-md font-bold text-sm flex items-center justify-center gap-2 border"
                 style={{
                   borderColor: brand.dark,
                   color: brand.dark,
                   opacity: consentGiven ? 1 : 0.5,
-                  cursor: consentGiven ? "pointer" : "not-allowed",
+                  cursor:
+                    consentGiven && submitStatus !== "sending"
+                      ? "pointer"
+                      : "not-allowed",
                 }}
               >
-                <Mail size={16} /> Send calc to Nordinfra (opens your email
-                client)
-              </a>
+                {submitStatus === "sending" ? (
+                  "Sending…"
+                ) : submitStatus === "sent" ? (
+                  <>
+                    <CheckCircle2 size={16} style={{ color: "#2E7D32" }} />{" "}
+                    Sent — we'll be in touch
+                  </>
+                ) : (
+                  <>
+                    <Mail size={16} /> Send calc to Nordinfra
+                  </>
+                )}
+              </button>
               {showConsentWarning && (
                 <p
                   className="print:hidden text-xs text-center mt-1"
@@ -4476,13 +4546,23 @@ export default function NordBaseCalculator() {
                   Please check the box above before sending.
                 </p>
               )}
+              {submitStatus === "error" && (
+                <p
+                  className="print:hidden text-xs text-center mt-1"
+                  style={{ color: brand.amber }}
+                >
+                  Couldn't reach our server — opened your email client
+                  instead so you can still send it.
+                </p>
+              )}
               <p
                 className="print:hidden text-xs text-center mt-2"
                 style={{ color: brand.steel }}
               >
                 The production version generates a formatted PDF + DWG + Word
-                spec directly. The email opens in your own email client —
-                nothing is sent or stored by the tool itself.
+                spec directly. Sends your details and this calculation
+                straight to Nordinfra — see the Privacy Policy above for how
+                that information is used.
               </p>
             </div>
           )}
