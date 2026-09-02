@@ -7,8 +7,38 @@
     <title>Nordinfra | NordBase Foundation</title>
     <meta
       name="description"
-      content="NordBase foundation dimensions, materials, drawings, and documentation, by size."
+      content="NordBase foundation dimensions, materials, drawings, and documentation, by size — Bollard, Small, Medium, Large, and Power Block, compatible with Kempower, ABB, Tritium and other DC fast charger and pedestal brands."
     />
+    <!--
+      Canonical points at the base URL (no ?f= query) rather than a
+      per-product URL. This is one shared React template rendering all five
+      products from a query string (confirmed with Simon 2026-08-25, see
+      ProductApp.jsx) — a crawler that doesn't run JS only ever sees this
+      one generic head, so treating the ?f= variants as one page avoids a
+      duplicate-content signal until/unless real per-product static pages
+      exist. ProductApp.jsx sets document.title/description per product at
+      runtime (2026-09-02) for JS-rendering crawlers and in-app UX, but that
+      alone doesn't reach non-JS crawlers or link-preview bots — see the
+      2026-09-02 SEO chat for the tradeoff and the prerendering option.
+    -->
+    <link rel="canonical" href="https://nordbaseusa.com/product.html" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Nordinfra" />
+    <meta property="og:title" content="Nordinfra | NordBase Foundation" />
+    <meta
+      property="og:description"
+      content="NordBase foundation dimensions, materials, drawings, and documentation, by size — Bollard, Small, Medium, Large, and Power Block, compatible with Kempower, ABB, Tritium and other DC fast charger and pedestal brands."
+    />
+    <meta property="og:url" content="https://nordbaseusa.com/product.html" />
+    <meta property="og:image" content="https://nordbaseusa.com/foundation-render.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Nordinfra | NordBase Foundation" />
+    <meta
+      name="twitter:description"
+      content="NordBase foundation dimensions, materials, drawings, and documentation, by size — Bollard, Small, Medium, Large, and Power Block, compatible with Kempower, ABB, Tritium and other DC fast charger and pedestal brands."
+    />
+    <meta name="twitter:image" content="https://nordbaseusa.com/foundation-render.png" />
   </head>
   <body>
     <div id="root"></div>
