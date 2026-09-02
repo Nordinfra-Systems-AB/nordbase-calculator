@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Site Planner is paused/hidden from navigation (2026-09-01) — not linked
+# from anywhere, kept out of the crawl on purpose until it's re-launched.
+Disallow: /site-planner.html
+
+Sitemap: https://nordbaseusa.com/sitemap.xml
