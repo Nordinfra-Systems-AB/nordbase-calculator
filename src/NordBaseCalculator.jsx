@@ -234,13 +234,12 @@ const FOUNDATIONS = {
     // bolted to the plate; this is the plate bolted down to the foundation
     // itself). Confirmed by Simon Gullberg, 2026-09-01: "DC Small =
     // 270x270mm M12" — SS304 A2-70, same spec as Medium/Large below. Bolt
-    // count NOT explicitly stated for Small (Medium/Large both got an
-    // explicit count with a described corner+mid-side layout — Small didn't)
-    // — 4 is inferred here as a plain square 4-corner pattern; flag to Simon
-    // to confirm before treating this count as load-bearing fact.
+    // count confirmed separately (Simon Gullberg, 2026-09-01: "small är 4
+    // bultar") — a plain 4-corner square pattern, no mid-span bolts like
+    // Medium/Large.
     mountingBolts: {
       spec: "M12 A2-70 stainless (ISO 3506-1)",
-      count: 4, // ⚠ inferred (4-corner square), not explicitly confirmed like Medium/Large — ask Simon
+      count: 4, // confirmed by Simon Gullberg, 2026-09-01
       ccWIn: 270 / 25.4,
       ccDIn: 270 / 25.4,
     },
@@ -3880,12 +3879,6 @@ export default function NordBaseCalculator() {
                       </>
                     ) : foundation.wallThicknessMm ? (
                       <>
-                        Wall plate bending uses confirmed material data:{" "}
-                        {foundation.wallThicknessMm}mm ASTM A1011 SS Gr 33 +
-                        ZM115, φ·f<sub>y</sub> = {STEEL_BENDING_CAPACITY_MPA}{" "}
-                        MPa (AISC 360-22 §F1).
-                        {foundation.hasCharger &&
-                          ` Bolt tension uses ${BOLT_SPEC_LABEL}, φNₛₐ = ${BOLT_TENSION_CAPACITY_KN} kN (ACI 318-19 §17.6.1), with the lever arm taken from your selected CC spacing above.`}{" "}
                         Source: Nordinfra_Master_USA_ASCE7_v6 — confirmed
                         2026-08-21.
                       </>
