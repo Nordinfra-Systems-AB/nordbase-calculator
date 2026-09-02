@@ -4463,15 +4463,6 @@ export default function NordBaseCalculator() {
                 </div>
               </div>
 
-              <button
-                onClick={() => window.print()}
-                className="print:hidden w-full py-3 rounded-md font-bold text-sm flex items-center justify-center gap-2 mb-2"
-                style={{ background: brand.gold, color: brand.dark }}
-              >
-                <Download size={16} /> Download{" "}
-                {PACKAGE_TYPES[packageType].label} package
-              </button>
-
               <label
                 className="print:hidden flex items-start gap-2 mb-2 text-xs"
                 style={{ color: brand.dark }}
@@ -4504,46 +4495,62 @@ export default function NordBaseCalculator() {
                 </span>
               </label>
 
+              {/* Single download button (2026-09-02, per Simon Gullberg) —
+                  the separate "Send calc to Nordinfra" button was removed.
+                  Consent is now required to download at all (previously the
+                  checkbox only gated the separate send button, and download
+                  worked unconditionally) — checking it also lights the
+                  button from its dimmed/"ljusgul" state to full gold.
+                  Clicking it both submits the lead (submitLead(), same
+                  serverless endpoint + mailto fallback as before) and opens
+                  the browser print dialog for the package — the print/
+                  download itself never waits on the network call. */}
               <button
                 type="button"
-                disabled={submitStatus === "sending" || submitStatus === "sent"}
+                disabled={submitStatus === "sending"}
                 onClick={() => {
                   if (!consentGiven) {
                     setShowConsentWarning(true);
                     return;
                   }
+                  setShowConsentWarning(false);
                   submitLead();
+                  window.print();
                 }}
-                className="print:hidden w-full py-3 rounded-md font-bold text-sm flex items-center justify-center gap-2 border"
+                className="print:hidden w-full py-3 rounded-md font-bold text-sm flex items-center justify-center gap-2 mb-2"
                 style={{
-                  borderColor: brand.dark,
+                  background: brand.gold,
                   color: brand.dark,
-                  opacity: consentGiven ? 1 : 0.5,
+                  opacity: consentGiven
+                    ? submitStatus === "sending"
+                      ? 0.7
+                      : 1
+                    : 0.4,
                   cursor:
-                    consentGiven && submitStatus !== "sending"
-                      ? "pointer"
-                      : "not-allowed",
+                    submitStatus === "sending" ? "not-allowed" : "pointer",
                 }}
               >
-                {submitStatus === "sending" ? (
-                  "Sending…"
-                ) : submitStatus === "sent" ? (
-                  <>
-                    <CheckCircle2 size={16} style={{ color: "#2E7D32" }} />{" "}
-                    Sent — we'll be in touch
-                  </>
-                ) : (
-                  <>
-                    <Mail size={16} /> Send calc to Nordinfra
-                  </>
-                )}
+                <Download size={16} /> Download{" "}
+                {PACKAGE_TYPES[packageType].label} package
               </button>
               {showConsentWarning && (
                 <p
                   className="print:hidden text-xs text-center mt-1"
                   style={{ color: "#C0392B" }}
                 >
-                  Please check the box above before sending.
+                  Please check the box above before downloading.
+                </p>
+              )}
+              {submitStatus === "sent" && (
+                <p
+                  className="print:hidden text-xs text-center mt-1"
+                  style={{ color: "#2E7D32" }}
+                >
+                  <CheckCircle2
+                    size={12}
+                    style={{ display: "inline", marginRight: 4 }}
+                  />
+                  Sent to Nordinfra — we'll be in touch.
                 </p>
               )}
               {submitStatus === "error" && (
