@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowLeft,
@@ -128,6 +128,29 @@ function NotFound() {
 export default function ProductApp() {
   const [slug] = useState(getSlugFromUrl);
   const product = slug ? PRODUCTS[slug] : null;
+
+  // Sets document.title/meta description per product (2026-09-02) — partial
+  // SEO fix for the fact that product.html is one shared template for all
+  // five products (confirmed with Simon 2026-08-25), so its static <head>
+  // in product.html can only carry one generic title/description. This
+  // reaches JS-rendering crawlers (Googlebot does run JS) and gives real
+  // visitors a correct browser-tab title, but NOT non-JS crawlers or
+  // link-preview bots (Slack/LinkedIn/iMessage previews don't execute JS) —
+  // those still see the generic static tags. Real per-product static/
+  // prerendered pages would close that gap too; flagged separately in the
+  // 2026-09-02 SEO discussion, not built here since it touches the build
+  // setup rather than just this component.
+  useEffect(() => {
+    if (!product) return;
+    const brandNames = (product.chargerManufacturers || []).map((m) => m.name);
+    const brandsText = brandNames.length
+      ? ` Compatible with ${brandNames.join(", ")}.`
+      : "";
+    document.title = `${product.name} — ${product.subtitle} | Nordinfra`;
+    const description = `${product.tagline}${brandsText} Dimensions, drawings, and documentation.`;
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) metaDescription.setAttribute("content", description);
+  }, [product]);
 
   if (!product) return <NotFound />;
 
