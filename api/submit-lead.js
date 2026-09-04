@@ -145,27 +145,66 @@ async function createClickUpTask({ subject, text, meta }) {
     .filter(Boolean)
     .join(" — ");
 
-  const clickupRes = await fetch(
-    `https://api.clickup.com/api/v2/list/${listId}/task`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name: taskName,
-        description: text,
-        custom_fields,
-      }),
-    }
-  );
-
-  if (!clickupRes.ok) {
+  async function attemptCreate(fields) {
+    const clickupRes = await fetch(
+      `https://api.clickup.com/api/v2/list/${listId}/task`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: taskName,
+          description: text,
+          custom_fields: fields,
+        }),
+      }
+    );
+    if (clickupRes.ok) return { ok: true };
     const errText = await clickupRes.text().catch(() => "");
+    let errJson = null;
+    try {
+      errJson = JSON.parse(errText);
+    } catch (e) {
+      /* not JSON — keep errJson null, errText still logged below */
+    }
+    return { ok: false, status: clickupRes.status, errText, errJson };
+  }
+
+  let result = await attemptCreate(custom_fields);
+
+  // A single malformed custom field (e.g. a phone number in a format
+  // ClickUp's Phone field type won't accept — confirmed to happen with
+  // real customer input, not just malformed test data: 2026-09-04) would
+  // otherwise fail the ENTIRE task and lose the lead. Since the field
+  // that rejected the value is always our Telefon field in practice
+  // (FIELD_016 = "Value is not a valid phone number" is ClickUp's phone
+  // validator), retry once without it — the number is still preserved in
+  // the task description text either way, just not in the structured
+  // field.
+  if (
+    !result.ok &&
+    result.status === 400 &&
+    result.errJson?.ECODE === "FIELD_016" &&
+    custom_fields.some((f) => f.id === CLICKUP_FIELD_IDS.phone)
+  ) {
     // eslint-disable-next-line no-console
-    console.error("ClickUp API error", clickupRes.status, errText);
-    throw new Error(`clickup_${clickupRes.status}`);
+    console.error(
+      "ClickUp API error (retrying without Telefon field)",
+      result.status,
+      result.errText
+    );
+    const fieldsWithoutPhone = custom_fields.filter(
+      (f) => f.id !== CLICKUP_FIELD_IDS.phone
+    );
+    result = await attemptCreate(fieldsWithoutPhone);
+  }
+
+  if (!result.ok) {
+    // eslint-disable-next-line no-console
+    console.error("ClickUp API error", result.status, result.errText);
+    throw new Error(`clickup_${result.status}`);
   }
   return { attempted: true };
 }
