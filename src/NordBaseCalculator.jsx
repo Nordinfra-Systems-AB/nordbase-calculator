@@ -33,6 +33,19 @@ import {
   DC_FAST_CHARGER_PRESETS,
 } from "../shared/chargerData.js";
 
+// Standard USPS 2-letter state codes (+ DC) — used for the "State" select in
+// the project info step. Fixed to a controlled list (rather than free text)
+// as of 2026-09-04 so every submitted value matches exactly one option in
+// ClickUp's "Delstat" dropdown field, which lets Nordinfra group/filter
+// leads by state natively in ClickUp without needing a paid Dashboard.
+const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+  "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
+  "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+  "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+  "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+];
+
 // =====================================================================================
 // NORDBASE FOUNDATION CALCULATOR — v2 PROTOTYPE
 // -----------------------------------------------------------------------------------
@@ -2411,13 +2424,19 @@ export default function NordBaseCalculator() {
                   />
                 </Field>
                 <Field label="State">
-                  <input
+                  <select
                     value={projectState}
                     onChange={(e) => setProjectState(e.target.value)}
-                    placeholder="e.g. TX"
-                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-white"
                     style={{ borderColor: "#D9D9D6" }}
-                  />
+                  >
+                    <option value="">Select a state…</option>
+                    {US_STATES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
                 <Field label="Contact name">
                   <input
