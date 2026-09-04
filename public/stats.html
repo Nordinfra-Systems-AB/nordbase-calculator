@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Kalkylator-leads — Statistik</title>
+<style>
+  :root {
+    --navy: #0f1f3d;
+    --gold: #c9a227;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --border: #e3e6ec;
+    --text: #1b2333;
+    --muted: #6b7280;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 60px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 8px; }
+  h1 { font-size: 22px; margin: 0; color: var(--navy); }
+  .sub { color: var(--muted); font-size: 13px; }
+  .refresh-btn {
+    background: var(--navy); color: #fff; border: none; border-radius: 6px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer;
+  }
+  .refresh-btn:hover { opacity: 0.9; }
+  .summary-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .stat-card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: var(--navy); }
+  .stat-card .note { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .panel {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .panel h2 { font-size: 14px; margin: 0 0 14px; color: var(--navy); }
+  .bar-row { margin-bottom: 10px; }
+  .bar-row .bar-label {
+    display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px;
+  }
+  .bar-row .bar-label .n { color: var(--muted); }
+  .bar-track { background: #eef0f4; border-radius: 4px; height: 8px; overflow: hidden; }
+  .bar-fill { background: var(--gold); height: 100%; border-radius: 4px; }
+  .empty { color: var(--muted); font-size: 13px; padding: 8px 0; }
+  #gate {
+    max-width: 380px; margin: 120px auto; background: var(--card);
+    border: 1px solid var(--border); border-radius: 10px; padding: 28px;
+    text-align: center;
+  }
+  #gate h1 { font-size: 18px; margin-bottom: 6px; }
+  #gate p { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  #gate input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 6px; font-size: 14px; margin-bottom: 12px;
+  }
+  #gate button {
+    width: 100%; background: var(--navy); color: #fff; border: none;
+    border-radius: 6px; padding: 10px; font-size: 14px; cursor: pointer;
+  }
+  #gate .err { color: #b3261e; font-size: 13px; margin-top: 10px; min-height: 16px; }
+  #app { display: none; }
+  .loading, .error-box { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .error-box { color: #b3261e; }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h1>Kalkylator-leads — Statistik</h1>
+  <p>Ange lösenord för att se lead-statistik.</p>
+  <input type="password" id="keyInput" placeholder="Lösenord" />
+  <button id="unlockBtn">Visa statistik</button>
+  <div class="err" id="gateErr"></div>
+</div>
+
+<div id="app">
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Kalkylator-leads — Statistik</h1>
+        <div class="sub" id="generatedAt"></div>
+      </div>
+      <button class="refresh-btn" id="refreshBtn">Uppdatera</button>
+    </header>
+
+    <div id="content">
+      <div class="loading">Hämtar data från ClickUp…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY_STORAGE = "nordbase_stats_key";
+
+  function fmtCurrency(n) {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  }
+
+  function renderBars(container, items, total) {
+    container.innerHTML = "";
+    if (!items || items.length === 0) {
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = "Ingen data ännu.";
+      container.appendChild(e);
+      return;
+    }
+    var max = Math.max.apply(null, items.map(function (i) { return i.count; }));
+    items.forEach(function (item) {
+      var row = document.createElement("div");
+      row.className = "bar-row";
+      var pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+      var widthPct = max > 0 ? Math.round((item.count / max) * 100) : 0;
+      row.innerHTML =
+        '<div class="bar-label"><span>' + escapeHtml(item.label) + '</span>' +
+        '<span class="n">' + item.count + ' (' + pct + '%)</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + widthPct + '%"></div></div>';
+      container.appendChild(row);
+    });
+  }
+
+  function escapeHtml(s) {
+    var d = document.createElement("div");
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  function renderData(data) {
+    var content = document.getElementById("content");
+    var generatedAt = document.getElementById("generatedAt");
+    generatedAt.textContent = "Uppdaterad " + new Date(data.generatedAt).toLocaleString("sv-SE");
+
+    content.innerHTML =
+      '<div class="summary-row">' +
+        '<div class="stat-card"><div class="label">Totalt antal leads</div><div class="value" id="totalLeads"></div></div>' +
+        '<div class="stat-card"><div class="label">Summerat ordervärde</div><div class="value" id="orderSum"></div><div class="note" id="orderNote"></div></div>' +
+      '</div>' +
+      '<div class="grid">' +
+        '<div class="panel"><h2>Delstat</h2><div id="byState"></div></div>' +
+        '<div class="panel"><h2>Fundamenttyp</h2><div id="byFoundation"></div></div>' +
+        '<div class="panel"><h2>Laddartillverkare</h2><div id="byManufacturer"></div></div>' +
+      '</div>';
+
+    document.getElementById("totalLeads").textContent = data.totalLeads;
+    document.getElementById("orderSum").textContent = fmtCurrency(data.orderValue.sum);
+    document.getElementById("orderNote").textContent =
+      data.orderValue.leadsWithValue + " av " + data.totalLeads + " leads har ett ifyllt ordervärde (fylls i manuellt av säljare — växer allteftersom fler leads kvalificeras).";
+
+    renderBars(document.getElementById("byState"), data.byState, data.totalLeads);
+    renderBars(document.getElementById("byFoundation"), data.byFoundation, data.totalLeads);
+    renderBars(document.getElementById("byManufacturer"), data.byManufacturer, data.totalLeads);
+  }
+
+  function showError(message) {
+    document.getElementById("content").innerHTML = '<div class="error-box">' + escapeHtml(message) + '</div>';
+  }
+
+  function load(key) {
+    document.getElementById("gate").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    document.getElementById("content").innerHTML = '<div class="loading">Hämtar data från ClickUp…</div>';
+
+    fetch("/api/stats?key=" + encodeURIComponent(key))
+      .then(function (res) {
+        if (res.status === 401) {
+          try { localStorage.removeItem(KEY_STORAGE); } catch (e) {}
+          document.getElementById("app").style.display = "none";
+          document.getElementById("gate").style.display = "block";
+          document.getElementById("gateErr").textContent = "Fel lösenord.";
+          throw new Error("unauthorized");
+        }
+        return res.json().then(function (json) {
+          if (!res.ok || !json.ok) throw new Error(json.message || json.error || "unknown_error");
+          return json;
+        });
+      })
+      .then(renderData)
+      .catch(function (err) {
+        if (err.message === "unauthorized") return;
+        showError("Kunde inte hämta statistik: " + err.message);
+      });
+  }
+
+  document.getElementById("unlockBtn").addEventListener("click", function () {
+    var key = document.getElementById("keyInput").value.trim();
+    if (!key) return;
+    try { localStorage.setItem(KEY_STORAGE, key); } catch (e) {}
+    load(key);
+  });
+  document.getElementById("keyInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("unlockBtn").click();
+  });
+  document.getElementById("refreshBtn").addEventListener("click", function () {
+    var key = null;
+    try { key = localStorage.getItem(KEY_STORAGE); } catch (e) {}
+    if (key) load(key);
+  });
+
+  var storedKey = null;
+  try { storedKey = localStorage.getItem(KEY_STORAGE); } catch (e) {}
+  var urlKey = new URLSearchParams(window.location.search).get("key");
+  if (urlKey) {
+    try { localStorage.setItem(KEY_STORAGE, urlKey); } catch (e) {}
+    load(urlKey);
+  } else if (storedKey) {
+    load(storedKey);
+  }
+})();
+</script>
+</body>
+</html>
