@@ -75,6 +75,7 @@ const CLICKUP_FIELD_IDS = {
   state: "7567c5b9-5dc0-49cb-a59d-c9b4a1c2c6d2", // Delstat
   foundationType: "a64fcb4e-cfa7-4010-94e1-7aa6a6e4c3ee", // Fundamenttyp
   email: "c2553654-d974-42fe-bc31-e0444dcc7c9d", // E-post
+  chargerManufacturer: "7160be8d-d8c3-4c0f-b726-377d420ef1c9", // Laddartillverkare (added 2026-09-04, for lead stats)
   // Uppskattat Ordervarde (c8947cf8-f30d-475d-9218-d4a10717d7a2) is
   // deliberately left unset — the calculator has no pricing data to
   // source it from; sales fills it in manually after review.
@@ -133,6 +134,11 @@ async function createClickUpTask({ subject, text, meta }) {
     custom_fields.push({ id: CLICKUP_FIELD_IDS.state, value: m.projectState });
   if (m.contactEmail)
     custom_fields.push({ id: CLICKUP_FIELD_IDS.email, value: m.contactEmail });
+  if (m.presetMfr)
+    custom_fields.push({
+      id: CLICKUP_FIELD_IDS.chargerManufacturer,
+      value: m.presetMfr,
+    });
   const foundationOptionId =
     m.foundationKey && FOUNDATION_TO_CLICKUP_OPTION[m.foundationKey];
   if (foundationOptionId)
