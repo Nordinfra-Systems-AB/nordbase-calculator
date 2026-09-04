@@ -2247,6 +2247,7 @@ export default function NordBaseCalculator() {
             address,
             quantity,
             foundationKey,
+            presetMfr,
             windSpeed,
             sds,
             packageType,
