@@ -25,9 +25,9 @@
 // returns "not_configured" — so there's no accidental unprotected window.
 
 const CLICKUP_FIELD_IDS = {
-  state: "7567c5b9-5dc0-49cb-a59d-c9b4a1c2c6d2", // Delstat
+  state: "b3d0d0f2-7b4c-49bb-a558-9733f5c70bd8", // Delstat — converted short_text → dropdown 2026-09-04
   foundationType: "a64fcb4e-cfa7-4010-94e1-7aa6a6e4c3ee", // Fundamenttyp
-  chargerManufacturer: "7160be8d-d8c3-4c0f-b726-377d420ef1c9", // Laddartillverkare
+  chargerManufacturer: "c6053cdb-ae4f-4081-bc73-2135556d0dae", // Laddartillverkare — converted short_text → dropdown 2026-09-04
   orderValue: "c8947cf8-f30d-475d-9218-d4a10717d7a2", // Uppskattat Ordervarde
 };
 
