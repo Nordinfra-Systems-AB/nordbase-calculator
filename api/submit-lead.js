@@ -1,11 +1,23 @@
 // Vercel serverless function — receives the "Send calc to Nordinfra"
-// submittal payload directly from the calculator and emails it to Nordinfra
-// via Resend, instead of relying on a mailto: link (which depended on the
-// customer's own email client being configured AND them actually hitting
-// send in it — a real conversion leak). Added 2026-09-02 per Simon
+// submittal payload directly from the calculator and delivers it to
+// Nordinfra two ways: (1) email via Resend, and (2) a task created
+// directly in ClickUp's "Kalkylator-leads" list — instead of relying on a
+// mailto: link (which depended on the customer's own email client being
+// configured AND them actually hitting send in it — a real conversion
+// leak). Added 2026-09-02 (Resend) / 2026-09-04 (ClickUp) per Simon
 // Gullberg's decision to build lead capture now and add a full CRM later.
 //
-// SETUP REQUIRED before this actually sends anything (Simon/Nordinfra):
+// Both channels are attempted independently (Promise.allSettled) so a
+// failure in one never blocks the other — per Simon's explicit choice to
+// keep both rather than go ClickUp-only, so no lead is lost if either
+// integration is down or not yet configured. The response is ok:true as
+// soon as AT LEAST ONE channel succeeds; the calculator's UI only falls
+// back to the customer's own mailto: link if BOTH fail (see submitLead()
+// in NordBaseCalculator.jsx).
+//
+// SETUP REQUIRED before this actually sends/creates anything (Simon/Nordinfra):
+//
+//   EMAIL (Resend):
 //   1. Create a Resend account: https://resend.com (generous free tier —
 //      100 emails/day / 3,000/month, plenty for lead notifications).
 //   2. Verify a sending domain in Resend (e.g. nordbaseusa.com or
@@ -26,20 +38,141 @@
 //        FROM_EMAIL — must be on the domain verified in step 2 (default:
 //          leads@nordbaseusa.com)
 //
-// Until RESEND_API_KEY is set, this endpoint returns an error and the
-// calculator's UI automatically falls back to the old mailto: link (see
-// submitLead() in NordBaseCalculator.jsx) — so this ships safely before
-// that setup is done; leads just aren't captured server-side yet.
+//   CLICKUP:
+//   1. In ClickUp: click your avatar (bottom-left) → Settings → Apps →
+//      "API Token" → Generate → copy the personal token (starts with
+//      "pk_").
+//   2. In Vercel → the same calculator project → Settings → Environment
+//      Variables, add:
+//        CLICKUP_API_TOKEN = <the pk_... token from step 1>
+//      Redeploy after adding it.
+//   3. Optional override: CLICKUP_LIST_ID (default: 1200320000000218, the
+//      "Kalkylator-leads" list in the Product & Distribution space).
+//
+// Each channel ships safely on its own: until RESEND_API_KEY is set the
+// email half is skipped (not an error), and until CLICKUP_API_TOKEN is set
+// the ClickUp half is skipped. Only when NEITHER is configured (or both
+// fail) does this endpoint return an error and the UI falls back to the
+// old mailto: link — so this can go live with just one of the two set up.
+
+// Maps the calculator's internal foundation key to the matching option in
+// ClickUp's "Fundamenttyp" dropdown on Kalkylator-leads. These are the same
+// 5 real product names as FOUNDATIONS[key].name in NordBaseCalculator.jsx
+// (fixed 2026-09-04 — the dropdown previously had invented, unrelated
+// option names that didn't match the calculator's actual products).
+const FOUNDATION_TO_CLICKUP_OPTION = {
+  BOLLARD: "93b7fb85-ff69-4e85-a96c-2e011bbb8057", // NordBase Bollard
+  SMALL: "9913cec6-95af-4eec-b849-23ee3f14a78b", // NordBase Small
+  MEDIUM: "de634859-a1d8-49d0-acce-f6f53e6a7881", // NordBase Medium
+  LARGE: "d9540e18-ec0c-4431-a60b-0aaacbf5244f", // NordBase Large
+  POWER_BLOCK: "34c2de21-e046-42d5-9b9d-dda9d4540e55", // NordBase Power Block
+};
+
+const CLICKUP_FIELD_IDS = {
+  company: "18abfce7-08d3-4893-89ff-ec855655ab0f", // Företag
+  contactName: "18cf1747-1a1d-4965-9a49-69e97c7c1d09", // Kontaktperson
+  phone: "2ca2a01c-acac-417e-808e-d26d1ad789c5", // Telefon
+  state: "7567c5b9-5dc0-49cb-a59d-c9b4a1c2c6d2", // Delstat
+  foundationType: "a64fcb4e-cfa7-4010-94e1-7aa6a6e4c3ee", // Fundamenttyp
+  email: "c2553654-d974-42fe-bc31-e0444dcc7c9d", // E-post
+  // Uppskattat Ordervarde (c8947cf8-f30d-475d-9218-d4a10717d7a2) is
+  // deliberately left unset — the calculator has no pricing data to
+  // source it from; sales fills it in manually after review.
+};
+
+async function sendEmail({ subject, text, meta }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return { attempted: false };
+
+  const toEmail = process.env.LEAD_TO_EMAIL || "info@nord-infra.com";
+  const fromEmail = process.env.FROM_EMAIL || "leads@nordbaseusa.com";
+  const replyTo = meta && meta.contactEmail ? meta.contactEmail : undefined;
+
+  const resendRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: `NordBase Foundation Selector <${fromEmail}>`,
+      to: [toEmail],
+      reply_to: replyTo,
+      subject,
+      text,
+    }),
+  });
+
+  if (!resendRes.ok) {
+    const errText = await resendRes.text().catch(() => "");
+    // eslint-disable-next-line no-console
+    console.error("Resend API error", resendRes.status, errText);
+    throw new Error(`resend_${resendRes.status}`);
+  }
+  return { attempted: true };
+}
+
+async function createClickUpTask({ subject, text, meta }) {
+  const token = process.env.CLICKUP_API_TOKEN;
+  if (!token) return { attempted: false };
+
+  const listId = process.env.CLICKUP_LIST_ID || "1200320000000218";
+  const m = meta || {};
+
+  const custom_fields = [];
+  if (m.companyName)
+    custom_fields.push({ id: CLICKUP_FIELD_IDS.company, value: m.companyName });
+  if (m.contactName)
+    custom_fields.push({
+      id: CLICKUP_FIELD_IDS.contactName,
+      value: m.contactName,
+    });
+  if (m.contactPhone)
+    custom_fields.push({ id: CLICKUP_FIELD_IDS.phone, value: m.contactPhone });
+  if (m.projectState)
+    custom_fields.push({ id: CLICKUP_FIELD_IDS.state, value: m.projectState });
+  if (m.contactEmail)
+    custom_fields.push({ id: CLICKUP_FIELD_IDS.email, value: m.contactEmail });
+  const foundationOptionId =
+    m.foundationKey && FOUNDATION_TO_CLICKUP_OPTION[m.foundationKey];
+  if (foundationOptionId)
+    custom_fields.push({
+      id: CLICKUP_FIELD_IDS.foundationType,
+      value: foundationOptionId,
+    });
+
+  const taskName = [m.companyName || m.contactName || "New calculator lead", m.projectName]
+    .filter(Boolean)
+    .join(" — ");
+
+  const clickupRes = await fetch(
+    `https://api.clickup.com/api/v2/list/${listId}/task`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: token,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: taskName,
+        description: text,
+        custom_fields,
+      }),
+    }
+  );
+
+  if (!clickupRes.ok) {
+    const errText = await clickupRes.text().catch(() => "");
+    // eslint-disable-next-line no-console
+    console.error("ClickUp API error", clickupRes.status, errText);
+    throw new Error(`clickup_${clickupRes.status}`);
+  }
+  return { attempted: true };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "method_not_allowed" });
-    return;
-  }
-
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ ok: false, error: "not_configured" });
     return;
   }
 
@@ -73,38 +206,38 @@ export default async function handler(req, res) {
     return;
   }
 
-  const toEmail = process.env.LEAD_TO_EMAIL || "info@nord-infra.com";
-  const fromEmail = process.env.FROM_EMAIL || "leads@nordbaseusa.com";
-  const replyTo = meta && meta.contactEmail ? meta.contactEmail : undefined;
+  const [emailResult, clickupResult] = await Promise.allSettled([
+    sendEmail({ subject, text, meta }),
+    createClickUpTask({ subject, text, meta }),
+  ]);
 
-  try {
-    const resendRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: `NordBase Foundation Selector <${fromEmail}>`,
-        to: [toEmail],
-        reply_to: replyTo,
-        subject,
-        text,
-      }),
-    });
+  const emailOk = emailResult.status === "fulfilled" && emailResult.value.attempted;
+  const clickupOk =
+    clickupResult.status === "fulfilled" && clickupResult.value.attempted;
+  // "Configured" = the env var was set, whether or not the call itself
+  // then succeeded — used only to pick the right error code below.
+  const emailConfigured = emailResult.status === "rejected" || emailOk;
+  const clickupConfigured = clickupResult.status === "rejected" || clickupOk;
 
-    if (!resendRes.ok) {
-      const errText = await resendRes.text().catch(() => "");
-      // eslint-disable-next-line no-console
-      console.error("Resend API error", resendRes.status, errText);
-      res.status(502).json({ ok: false, error: "send_failed" });
-      return;
-    }
-
-    res.status(200).json({ ok: true });
-  } catch (e) {
+  if (emailResult.status === "rejected") {
     // eslint-disable-next-line no-console
-    console.error("submit-lead error", e);
-    res.status(500).json({ ok: false, error: "server_error" });
+    console.error("submit-lead: email channel failed", emailResult.reason);
   }
+  if (clickupResult.status === "rejected") {
+    // eslint-disable-next-line no-console
+    console.error("submit-lead: clickup channel failed", clickupResult.reason);
+  }
+
+  if (emailOk || clickupOk) {
+    res.status(200).json({ ok: true, email: emailOk, clickup: clickupOk });
+    return;
+  }
+
+  // Neither channel is configured, or both attempts failed — let the
+  // client fall back to mailto: so the lead is never simply lost.
+  const neitherConfigured = !emailConfigured && !clickupConfigured;
+  res.status(neitherConfigured ? 500 : 502).json({
+    ok: false,
+    error: neitherConfigured ? "not_configured" : "send_failed",
+  });
 }
