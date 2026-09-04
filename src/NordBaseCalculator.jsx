@@ -1593,6 +1593,9 @@ export default function NordBaseCalculator() {
   const [address, setAddress] = useState(savedData.address ?? "");
   const [contactName, setContactName] = useState(savedData.contactName ?? "");
   const [contactEmail, setContactEmail] = useState(savedData.contactEmail ?? "");
+  const [companyName, setCompanyName] = useState(savedData.companyName ?? "");
+  const [contactPhone, setContactPhone] = useState(savedData.contactPhone ?? "");
+  const [projectState, setProjectState] = useState(savedData.projectState ?? "");
   const [quantity, setQuantity] = useState(savedData.quantity ?? "1");
 
   // step 1 — foundation
@@ -1706,6 +1709,9 @@ export default function NordBaseCalculator() {
       address,
       contactName,
       contactEmail,
+      companyName,
+      contactPhone,
+      projectState,
       quantity,
       foundationKey,
       useCustomCc,
@@ -1757,6 +1763,9 @@ export default function NordBaseCalculator() {
     address,
     contactName,
     contactEmail,
+    companyName,
+    contactPhone,
+    projectState,
     quantity,
     foundationKey,
     useCustomCc,
@@ -2161,12 +2170,14 @@ export default function NordBaseCalculator() {
       foundation?.name || ""
     }`;
     const lines = [
-      `${contactName || "(name not provided)"} (${
-        contactEmail || "email not provided"
+      `${contactName || "(name not provided)"}${
+        companyName ? ` (${companyName})` : ""
+      } (${contactEmail || "email not provided"}${
+        contactPhone ? `, ${contactPhone}` : ""
       }) has run a calculation on the following:`,
       "",
       `Project: ${projectName || "-"}`,
-      `Address: ${address || "-"}`,
+      `Address: ${address || "-"}${projectState ? `, ${projectState}` : ""}`,
       `Quantity: ${quantity}`,
       `Foundation: ${foundation?.name || "-"} (${
         foundation?.levelLabel || "-"
@@ -2229,6 +2240,9 @@ export default function NordBaseCalculator() {
           meta: {
             contactName,
             contactEmail,
+            companyName,
+            contactPhone,
+            projectState,
             projectName,
             address,
             quantity,
@@ -2368,6 +2382,14 @@ export default function NordBaseCalculator() {
                     style={{ borderColor: "#D9D9D6" }}
                   />
                 </Field>
+                <Field label="Company">
+                  <input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
                 <Field label="Number of foundations">
                   <input
                     type="number"
@@ -2387,10 +2409,28 @@ export default function NordBaseCalculator() {
                     style={{ borderColor: "#D9D9D6" }}
                   />
                 </Field>
+                <Field label="State">
+                  <input
+                    value={projectState}
+                    onChange={(e) => setProjectState(e.target.value)}
+                    placeholder="e.g. TX"
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
                 <Field label="Contact name">
                   <input
                     value={contactName}
                     onChange={(e) => setContactName(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  />
+                </Field>
+                <Field label="Phone">
+                  <input
+                    type="tel"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
                     className="w-full border rounded-md px-3 py-2 text-sm"
                     style={{ borderColor: "#D9D9D6" }}
                   />
