@@ -4710,9 +4710,10 @@ export default function NordBaseCalculator() {
           aria-label="Cookie consent"
         >
           <p className="text-xs flex-1">
-            This site uses cookies to understand how visitors use our
-            calculator and to improve it. You can accept or decline
-            non-essential cookies at any time.{" "}
+            This site saves your progress locally in your browser. We
+            don't currently use analytics or advertising cookies, but you
+            can accept or decline non-essential cookies at any time if
+            that changes.{" "}
             <a
               href="/privacy"
               target="_blank"
