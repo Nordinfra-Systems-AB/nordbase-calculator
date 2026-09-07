@@ -612,6 +612,46 @@ function universalAdapterDrawingKey(foundationKey) {
   return `${foundationKey}|universal`.toLowerCase();
 }
 const ADAPTER_PLATE_DRAWINGS = {
+  // First 16 real drawings added 2026-09-07 (Simon Gullberg) — part numbers
+  // 200100-200116 (see NordBase_DC_Laddare_Mall_V3_1.xlsx in the project for
+  // the master reference). 200103 (Alpitronic HYC200) intentionally omitted
+  // — Simon has a drawing for it but hasn't confirmed it's a US-market model
+  // (no HYC200 entry exists in DC_FAST_CHARGER_PRESETS above either).
+  [adapterDrawingKey("MEDIUM", "ABB", "C50")]:
+    "/drawings/adapter-plates/medium_abb_c50.pdf",
+  [adapterDrawingKey("MEDIUM", "ABB", "A200/300/400")]:
+    "/drawings/adapter-plates/medium_abb_a200-300-400.pdf",
+  [adapterDrawingKey("MEDIUM", "ABB", "OM Solo/Duo")]:
+    "/drawings/adapter-plates/medium_abb_om-solo-duo.pdf",
+  [adapterDrawingKey("MEDIUM", "Alpitronic", "HYC300/400")]:
+    "/drawings/adapter-plates/medium_alpitronic_hyc300-400.pdf",
+  [adapterDrawingKey("MEDIUM", "Alpitronic", "HYC1000 - MCS-Dispenser")]:
+    "/drawings/adapter-plates/medium_alpitronic_hyc1000-mcs-dispenser.pdf",
+  [adapterDrawingKey("MEDIUM", "Alpitronic", "HYC1000 - MCS")]:
+    "/drawings/adapter-plates/medium_alpitronic_hyc1000-mcs.pdf",
+  [adapterDrawingKey("MEDIUM", "Autel", "MaxiCharger DC Compact")]:
+    "/drawings/adapter-plates/medium_autel_dc-compact.pdf",
+  [adapterDrawingKey("MEDIUM", "Autel", "DH480")]:
+    "/drawings/adapter-plates/medium_autel_dh480.pdf",
+  [adapterDrawingKey("MEDIUM", "Autel", "MaxiCharger DC Fast DF240")]:
+    "/drawings/adapter-plates/medium_autel_maxicharger-df240.pdf",
+  [adapterDrawingKey("MEDIUM", "Blink Charging", "DCFC 60-300kW")]:
+    "/drawings/adapter-plates/medium_blink-charging_dcfc-60-300kw.pdf",
+  [adapterDrawingKey("MEDIUM", "ChargePoint", "Express 250/280")]:
+    "/drawings/adapter-plates/medium_chargepoint_express-250-280.pdf",
+  // NOTE: this preset's model string has a trailing space in
+  // DC_FAST_CHARGER_PRESETS ("Express Plus - Power Link 2000 ") — the key
+  // must match it exactly (adapterDrawingKey lowercases but doesn't trim).
+  [adapterDrawingKey("MEDIUM", "ChargePoint", "Express Plus - Power Link 2000 ")]:
+    "/drawings/adapter-plates/medium_chargepoint_express-power-link-2000.pdf",
+  [adapterDrawingKey("MEDIUM", "Siemens", "SICHARGE D Dispenser")]:
+    "/drawings/adapter-plates/medium_siemens_sicharge-d-dispenser.pdf",
+  [adapterDrawingKey("MEDIUM", "Siemens", "SICHARGE D")]:
+    "/drawings/adapter-plates/medium_siemens_sicharge-d.pdf",
+  [adapterDrawingKey("MEDIUM", "Siemens", "SICHARGE FLEX - Dispenser Big")]:
+    "/drawings/adapter-plates/medium_siemens_sicharge-flex-dispenser-big.pdf",
+  [adapterDrawingKey("SMALL", "Siemens", "SICHARGE FLEX - Dispenser Small")]:
+    "/drawings/adapter-plates/small_siemens_sicharge-flex-dispenser-small.pdf",
   // Example (remove once the real PDF replaces it):
   // [adapterDrawingKey("MEDIUM", "Kempower", "Satellite C-Series")]:
   //   "/drawings/adapter-plates/medium_kempower_satellite-c-series.pdf",
@@ -2732,6 +2772,36 @@ export default function NordBaseCalculator() {
                 </div>
               )}
 
+              {/* Adapter-plate reference photo — shown as soon as a specific
+                  manufacturer/model is picked, independent of whether that
+                  model also has an official drawing PDF on file yet (see
+                  ADAPTER_PLATE_DRAWINGS below). Added 2026-09-07 alongside
+                  the first 16 real refPhotoUrl entries in chargerData.js. */}
+              {presetModelData?.refPhotoUrl && (
+                <div
+                  className="mt-3 flex items-center gap-3 rounded-md border px-3 py-2.5"
+                  style={{ borderColor: "#E3E6EC", background: brand.bgSoft }}
+                >
+                  <img
+                    src={presetModelData.refPhotoUrl}
+                    alt={`NordBase adapter plate for ${selectedChargerModelName}`}
+                    className="w-16 h-16 object-contain shrink-0 rounded"
+                    style={{ background: "#fff" }}
+                  />
+                  <div className="text-xs" style={{ color: brand.steel }}>
+                    <span className="font-semibold" style={{ color: brand.dark }}>
+                      NordBase adapter plate for {selectedChargerModelName}
+                    </span>
+                    {presetModelData.partNo && (
+                      <>
+                        <br />
+                        Part No. {presetModelData.partNo}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="h-px my-5" style={{ background: "#F0F0EE" }} />
 
               <div
@@ -4122,6 +4192,14 @@ export default function NordBaseCalculator() {
                         >
                           CC {effectiveCcW}"×{effectiveCcD}" ·{" "}
                           {foundation.adapterPlate.material || "Material TBD"}
+                        </div>
+                      )}
+                      {presetModelData?.partNo && (
+                        <div
+                          className="text-xs"
+                          style={{ color: brand.steel }}
+                        >
+                          Part No. {presetModelData.partNo}
                         </div>
                       )}
                       {officialDrawingUrl && (

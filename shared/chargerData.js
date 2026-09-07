@@ -713,6 +713,8 @@ export const PEDESTAL_CHARGER_PRESETS = {
       basePlateD: 11.81,
       partNumber: "NI-ADP-DCS-Siemens-Sicharge-Flex-Dispenser-Small-US",
       partName: "NordBase Small Adapter plate – Siemens SICHARGE FLEX - Dispenser Small",
+      partNo: "200116",
+      refPhotoUrl: "/adapter-plates/200116.png",
     },
   ],
 };
@@ -744,6 +746,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 9.45,
       partNumber: "NI-ADP-DCM-ABB-C50-US",
       partName: "NordBase Medium Adapter plate – ABB C50",
+      partNo: "200100",
+      refPhotoUrl: "/adapter-plates/200100.png",
     },
     {
       model: "A200/300/400",
@@ -757,6 +761,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 23.62,
       partNumber: "NI-ADP-DCM-ABB-A200-300-400-US",
       partName: "NordBase Medium Adapter plate– ABB A200/300/400",
+      partNo: "200101",
+      refPhotoUrl: "/adapter-plates/200101.png",
     },
     {
       model: "OM Solo/Duo",
@@ -770,6 +776,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 9.84,
       partNumber: "NI-ADP-DCM-ABB-OM-Solo-Duo-US",
       partName: "NordBase Medium Adapter plate – ABB OM Solo/Duo",
+      partNo: "200102",
+      refPhotoUrl: "/adapter-plates/200102.png",
     },
   ],
   Alpitronic: [
@@ -785,6 +793,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 19.69,
       partNumber: "NI-ADP-DCM-Alpitronic-HYC400-US",
       partName: "NordBase Medium Adapter plate – Alpitronic HYC300/400",
+      partNo: "200104",
+      refPhotoUrl: "/adapter-plates/200104.png",
     },
     {
       model: "HYC1000 - MCS",
@@ -798,6 +808,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 7.09,
       partNumber: "NI-ADP-DCM-Alpitronic-HYC1000-MCS-US",
       partName: "NordBase Medium Adapter plate – Alpitronic HYC1000 - MCS",
+      partNo: "200106",
+      refPhotoUrl: "/adapter-plates/200106.png",
     },
     {
       model: "HYC1000 - MCS-Dispenser",
@@ -811,6 +823,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 7.09,
       partNumber: "NI-ADP-DCM-Alpitronic-HYC1000-MCS-Dispenser-US",
       partName: "NordBase Medium Adapter plate – Alpitronic HYC1000 - MCS-Dispenser",
+      partNo: "200105",
+      refPhotoUrl: "/adapter-plates/200105.png",
     },
   ],
   Autel: [
@@ -839,6 +853,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 21.65,
       partNumber: "NI-ADP-DCM-Autel-Maxicharger-DF240-US",
       partName: "NordBase Medium Adapter plate – Autel MaxiCharger DC Fast DF240",
+      partNo: "200109",
+      refPhotoUrl: "/adapter-plates/200109.png",
     },
     {
       model: "DH480",
@@ -852,6 +868,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 22.44,
       partNumber: "NI-ADP-DCM-Autel-DH480-US",
       partName: "NordBase Medium Adapter plate – Autel DH480",
+      partNo: "200108",
+      refPhotoUrl: "/adapter-plates/200108.png",
     },
     {
       model: "MaxiCharger DC HiPower - Dispenser",
@@ -878,6 +896,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 13.78,
       partNumber: "NI-ADP-DCM-Autel-DC-Compact-US",
       partName: "NordBase Medium Adapter plate – Autel MaxiCharger DC Compact",
+      partNo: "200107",
+      refPhotoUrl: "/adapter-plates/200107.png",
     },
   ],
   "Blink Charging": [
@@ -893,6 +913,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 27.56,
       partNumber: "NI-ADP-DCM-Blink-Charging-DCFC-60-300kw-US",
       partName: "NordBase Medium Adapter plate – Blink Charging DCFC 60-300",
+      partNo: "200110",
+      refPhotoUrl: "/adapter-plates/200110.png",
     },
     {
       model: "Sinexcel DCFC 120-240kW",
@@ -922,6 +944,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 19.69,
       partNumber: "NI-ADP-DCM-Chargepoint-Express-250-280-US",
       partName: "NordBase Medium Adapterplåt – ChargePoint Express 250/280",
+      partNo: "200111",
+      refPhotoUrl: "/adapter-plates/200111.png",
     },
     {
       model: "Express Plus - Power Block",
@@ -948,6 +972,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 19.69,
       partNumber: "NI-ADP-DCM-Chargepoint-Express-Power-Link-2000-US",
       partName: "NordBase Medium Adapter plate – ChargePoint Express Plus - Power Link 2000",
+      partNo: "200112",
+      refPhotoUrl: "/adapter-plates/200112.png",
     },
   ],
   "Delta Electronics": [
@@ -1173,6 +1199,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 21.65,
       partNumber: "NI-ADP-DCM-Siemens-Sicharge-D-US",
       partName: "NordBase Medium Adapter plate – Siemens SICHARGE D",
+      partNo: "200114",
+      refPhotoUrl: "/adapter-plates/200114.png",
     },
     {
       model: "SICHARGE D Dispenser",
@@ -1186,6 +1214,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 11.81,
       partNumber: "NI-ADP-DCM-Siemens-Sicharge-D-Dispenser-US",
       partName: "NordBase Medium Adapter plate – Siemens SICHARGE D Dispenser",
+      partNo: "200113",
+      refPhotoUrl: "/adapter-plates/200113.png",
     },
     {
       model: "SICHARGE FLEX - Dispenser Big",
@@ -1199,6 +1229,8 @@ export const DC_FAST_CHARGER_PRESETS = {
       basePlateD: 11.81,
       partNumber: "NI-ADP-DCM-Siemens-Sicharge-Flex-Dispenser-Big-US",
       partName: "NordBase Medium Adapter plate – Siemens SICHARGE FLEX - Dispenser Big",
+      partNo: "200115",
+      refPhotoUrl: "/adapter-plates/200115.png",
     },
   ],
   Tesla: [
