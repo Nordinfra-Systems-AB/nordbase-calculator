@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-
-# Dimensioned adapter-plate drawings are gated behind the report's consent
-# checkbox in the app itself, but the PDF URLs are still publicly reachable
-# if guessed/linked directly — kept out of search indexing on purpose
-# (2026-09-07, competitive-exposure concern, Simon Gullberg).
-Disallow: /drawings/
