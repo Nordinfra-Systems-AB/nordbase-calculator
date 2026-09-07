@@ -25,6 +25,7 @@ import {
   Globe,
   Link2,
   X,
+  Lock,
 } from "lucide-react";
 
 import {
@@ -2920,9 +2921,14 @@ export default function NordBaseCalculator() {
                   {foundation.adapterPlate.material}
                 </div>
               )}
+              {/* No direct download here anymore (2026-09-07, Simon
+                  Gullberg) — the real dimensioned PDF is a competitively
+                  sensitive asset, so it's gated behind the consent checkbox
+                  and only offered from "Documents for this foundation" in
+                  the Report step now. This banner just confirms one exists. */}
               {officialDrawingUrl && (
                 <div
-                  className="mb-4 flex items-center justify-between rounded-md border px-3 py-2.5"
+                  className="mb-4 rounded-md border px-3 py-2.5"
                   style={{ borderColor: brand.gold, background: "#FBF6E8" }}
                 >
                   <div className="text-xs" style={{ color: brand.dark }}>
@@ -2930,18 +2936,9 @@ export default function NordBaseCalculator() {
                       ✓ Official manufacturer drawing available
                     </span>
                     <br />
-                    Dimensioned PDF — verified more accurate than the preview
-                    sketch below.
+                    Dimensioned PDF — available under "Documents for this
+                    foundation" once you complete the report below.
                   </div>
-                  <a
-                    href={officialDrawingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs font-semibold px-3 py-1.5 rounded-md whitespace-nowrap"
-                    style={{ background: brand.gold, color: brand.dark }}
-                  >
-                    Download PDF
-                  </a>
                 </div>
               )}
               {foundation.adapterPlate.size &&
@@ -4176,7 +4173,15 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        {presetModelData?.partNumber
+                        {/* Part.no is the clean customer-facing identifier
+                            once assigned (2026-09-07, Simon Gullberg) — the
+                            long descriptive NI-ADP-... string only shows as
+                            a fallback for models that don't have a Part.no
+                            yet. Remove this fallback branch's use of
+                            partNumber once every model has a Part.no. */}
+                        {presetModelData?.partNo
+                          ? `Adapter Plate — Part No. ${presetModelData.partNo}`
+                          : presetModelData?.partNumber
                           ? `Adapter Plate: ${presetModelData.partNumber}`
                           : `Adapter plate, CC ${effectiveCcW}"×${effectiveCcD}"`}
                       </div>
@@ -4185,34 +4190,14 @@ export default function NordBaseCalculator() {
                           ? presetModelData.partName
                           : foundation.adapterPlate.material || "Material TBD"}
                       </div>
-                      {presetModelData?.partNumber && (
-                        <div
-                          className="text-xs"
-                          style={{ color: brand.steel }}
-                        >
-                          CC {effectiveCcW}"×{effectiveCcD}" ·{" "}
-                          {foundation.adapterPlate.material || "Material TBD"}
-                        </div>
-                      )}
-                      {presetModelData?.partNo && (
-                        <div
-                          className="text-xs"
-                          style={{ color: brand.steel }}
-                        >
-                          Part No. {presetModelData.partNo}
-                        </div>
-                      )}
-                      {officialDrawingUrl && (
-                        <a
-                          href={officialDrawingUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs font-semibold"
-                          style={{ color: brand.gold }}
-                        >
-                          Official drawing (PDF) ↗
-                        </a>
-                      )}
+                      {/* Bolt-spacing (CC) line removed 2026-09-07 per Simon
+                          Gullberg — felt redundant now that a real drawing/
+                          part number is shown; CC is still used internally
+                          for the structural check, just not displayed here.
+                          The drawing download link that used to sit here was
+                          also removed the same day — it's gated behind
+                          consent now, see "Documents for this foundation"
+                          below instead of a free, ungated link. */}
                     </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
                       Price on request
@@ -4373,6 +4358,44 @@ export default function NordBaseCalculator() {
                       soon. Contact Nordinfra for interim guidance.
                     </div>
                   )}
+                  {/* Adapter-plate drawing — real dimensioned PDF, moved here
+                      and gated behind the consent checkbox below (2026-09-07,
+                      Simon Gullberg): these are competitively sensitive
+                      (exact bolt patterns), unlike the manual/warranty/spec
+                      docs above and below, so this one entry needs consent
+                      first while the others stay open. */}
+                  {officialDrawingUrl &&
+                    (consentGiven ? (
+                      <a
+                        href={officialDrawingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
+                        style={{ borderColor: "#F0F0EE" }}
+                      >
+                        <span style={{ color: brand.dark }}>
+                          Adapter plate drawing
+                          {selectedChargerModelName
+                            ? ` — ${selectedChargerModelName}`
+                            : ""}
+                        </span>
+                        <Download size={14} color={brand.steel} />
+                      </a>
+                    ) : (
+                      <div
+                        className="flex items-center justify-between text-sm rounded-md border px-3 py-2"
+                        style={{ borderColor: "#F0F0EE", color: brand.steel }}
+                      >
+                        <span>
+                          Adapter plate drawing
+                          {selectedChargerModelName
+                            ? ` — ${selectedChargerModelName}`
+                            : ""}{" "}
+                          — check the consent box below to unlock
+                        </span>
+                        <Lock size={14} color={brand.steel} />
+                      </div>
+                    ))}
                   <a
                     href={WARRANTY_PDF}
                     target="_blank"
