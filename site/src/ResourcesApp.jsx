@@ -1,6 +1,105 @@
-import React from "react";
-import { Download, FileText, ArrowLeft } from "lucide-react";
+import React, { useState } from "react";
+import { Download, FileText, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
+
+// ---------------------------------------------------------------------------
+// ADAPTER PLATE GALLERY — reference photos only, NOT the dimensioned PDF
+// drawings. Deliberate (2026-09-07, per Simon Gullberg): the dimensioned
+// drawings (bolt patterns / CC spacing) stay behind the consent checkbox in
+// the calculator's own report — publishing them openly here would defeat
+// that. These photos are just for browsing/credibility, mirrors
+// shared/chargerData.js's partNo/refPhotoUrl fields in the calculator repo.
+//
+// HOW TO ADD ONE: drop the photo into site/public/adapter-plates/ and add a
+// row below — { partNo, manufacturer, model, image }.
+// ---------------------------------------------------------------------------
+const ADAPTER_PLATE_PHOTOS = [
+  { partNo: "200100", manufacturer: "ABB", model: "C50", image: "/adapter-plates/200100.png" },
+  { partNo: "200101", manufacturer: "ABB", model: "A200/300/400", image: "/adapter-plates/200101.png" },
+  { partNo: "200102", manufacturer: "ABB", model: "OM Solo/Duo", image: "/adapter-plates/200102.png" },
+  { partNo: "200104", manufacturer: "Alpitronic", model: "HYC300/400", image: "/adapter-plates/200104.png" },
+  { partNo: "200105", manufacturer: "Alpitronic", model: "HYC1000 - MCS-Dispenser", image: "/adapter-plates/200105.png" },
+  { partNo: "200106", manufacturer: "Alpitronic", model: "HYC1000 - MCS", image: "/adapter-plates/200106.png" },
+  { partNo: "200107", manufacturer: "Autel", model: "MaxiCharger DC Compact", image: "/adapter-plates/200107.png" },
+  { partNo: "200108", manufacturer: "Autel", model: "DH480", image: "/adapter-plates/200108.png" },
+  { partNo: "200109", manufacturer: "Autel", model: "MaxiCharger DC Fast DF240", image: "/adapter-plates/200109.png" },
+  { partNo: "200110", manufacturer: "Blink Charging", model: "DCFC 60-300kW", image: "/adapter-plates/200110.png" },
+  { partNo: "200111", manufacturer: "ChargePoint", model: "Express 250/280", image: "/adapter-plates/200111.png" },
+  { partNo: "200112", manufacturer: "ChargePoint", model: "Express Plus - Power Link 2000", image: "/adapter-plates/200112.png" },
+  { partNo: "200113", manufacturer: "Siemens", model: "SICHARGE D Dispenser", image: "/adapter-plates/200113.png" },
+  { partNo: "200114", manufacturer: "Siemens", model: "SICHARGE D", image: "/adapter-plates/200114.png" },
+  { partNo: "200115", manufacturer: "Siemens", model: "SICHARGE FLEX - Dispenser Big", image: "/adapter-plates/200115.png" },
+  { partNo: "200116", manufacturer: "Siemens", model: "SICHARGE FLEX - Dispenser Small", image: "/adapter-plates/200116.png" },
+];
+
+const GALLERY_COLLAPSED_COUNT = 8;
+
+function AdapterPlateGallery() {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded
+    ? ADAPTER_PLATE_PHOTOS
+    : ADAPTER_PLATE_PHOTOS.slice(0, GALLERY_COLLAPSED_COUNT);
+  const hasMore = ADAPTER_PLATE_PHOTOS.length > GALLERY_COLLAPSED_COUNT;
+
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {shown.map((p) => (
+          <div
+            key={p.partNo}
+            className="flex flex-col overflow-hidden rounded-lg border border-black/10 bg-white"
+          >
+            <div className="flex aspect-square items-center justify-center bg-bgSoft p-3">
+              <img
+                src={p.image}
+                alt={`NordBase adapter plate — ${p.manufacturer} ${p.model}`}
+                className="max-h-full max-w-full object-contain"
+                loading="lazy"
+              />
+            </div>
+            <div className="px-2.5 py-2">
+              <div className="text-xs font-semibold text-dark">
+                {p.manufacturer} {p.model}
+              </div>
+              <div className="text-[11px] text-steel">Part No. {p.partNo}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-4 inline-flex items-center gap-1.5 rounded-md border border-black/10 bg-white px-3 py-1.5 text-xs font-semibold text-dark hover:bg-bgSoft"
+        >
+          {expanded ? (
+            <>
+              Show fewer <ChevronUp className="h-3.5 w-3.5" />
+            </>
+          ) : (
+            <>
+              Show all {ADAPTER_PLATE_PHOTOS.length} adapter plates{" "}
+              <ChevronDown className="h-3.5 w-3.5" />
+            </>
+          )}
+        </button>
+      )}
+      <p className="mt-3 text-xs text-steel">
+        Reference photos only. Dimensioned drawings (bolt patterns / mounting
+        detail) are available per-project in the{" "}
+        <a
+          href={CALCULATOR_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-dark underline"
+        >
+          foundation calculator's
+        </a>{" "}
+        report, once you accept the data-use terms there.
+      </p>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // RESOURCE LIBRARY — every non-unique document (i.e. everything except a
@@ -48,7 +147,7 @@ const CATEGORIES = [
       {
         label: "Adapter plate drawings (by charger manufacturer/model)",
         available: false,
-        note: "~15 DC Medium drawings + Small universal plate in progress — see the calculator's Configuration step for drawings as they're added.",
+        note: "Dimensioned PDFs (bolt patterns / mounting detail) aren't published openly — see the adapter plate gallery below for reference photos, and the calculator's own report for the downloadable drawing once you accept its data-use terms.",
       },
     ],
   },
@@ -178,6 +277,19 @@ export default function ResourcesApp() {
               </div>
             </div>
           ))}
+
+          <div>
+            <h2 className="text-lg font-bold text-dark">
+              Adapter plate gallery
+            </h2>
+            <p className="mt-0.5 text-sm text-steel">
+              Reference photos of NordBase adapter plates, by charger
+              manufacturer and model.
+            </p>
+            <div className="mt-3">
+              <AdapterPlateGallery />
+            </div>
+          </div>
         </div>
 
         <div className="mt-14 rounded-lg border border-black/10 bg-white p-4 text-xs text-steel">
