@@ -1725,7 +1725,14 @@ export default function NordBaseCalculator() {
   const [linkCopyStatus, setLinkCopyStatus] = useState("idle"); // idle | copied | error
 
   // step 5 — report
-  const [showDetails, setShowDetails] = useState(false);
+  // Defaults to visible (2026-09-08, Simon Gullberg): window.print() prints
+  // whatever is currently in the DOM, so when this defaulted to false, a
+  // customer who downloaded the report without clicking "Show calculation
+  // details" first got ONLY the governing-check summary box — no
+  // capacity/demand/DCR breakdown at all. That's very likely why a customer
+  // asked in a meeting whether the report showed how DCR was derived: it
+  // does, it just wasn't visible unless someone knew to click first.
+  const [showDetails, setShowDetails] = useState(true);
   const [consentGiven, setConsentGiven] = useState(false);
   const [showConsentWarning, setShowConsentWarning] = useState(false);
   const [submitStatus, setSubmitStatus] = useState("idle"); // idle | sending | sent | error
