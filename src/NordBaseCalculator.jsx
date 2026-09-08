@@ -105,12 +105,17 @@ async function geocodeSuggest(query) {
   }));
 }
 
-// USGS's own ASCE 7-22 web service — free, no API key required. This is the
+// USGS's own ASCE 7 web service — free, no API key required. This is the
 // same underlying data source ASCE's paid Hazard Tool re-packages, so it's
 // authoritative, not an approximation, and it's live rather than a static
-// table so it stays correct as USGS updates its hazard model.
-async function fetchSdsFromUsgs(lat, lon) {
-  const url = `https://earthquake.usgs.gov/ws/designmaps/asce7-22.json?latitude=${lat}&longitude=${lon}&riskCategory=${SDS_LOOKUP_RISK_CATEGORY}&siteClass=${SDS_LOOKUP_SITE_CLASS}&title=NordBase`;
+// table so it stays correct as USGS updates its hazard model. USGS serves a
+// SEPARATE endpoint per ASCE 7 edition (asce7-22.json, asce7-16.json, ...)
+// with the same request/response shape — confirmed live 2026-09-08 — so
+// `edition` picks the right one via CODE_EDITIONS[edition].usgsSlug rather
+// than always hitting 7-22 regardless of what the customer's report claims.
+async function fetchSdsFromUsgs(lat, lon, edition = CODE_EDITION_DEFAULT) {
+  const slug = CODE_EDITIONS[edition]?.usgsSlug || CODE_EDITIONS[CODE_EDITION_DEFAULT].usgsSlug;
+  const url = `https://earthquake.usgs.gov/ws/designmaps/${slug}.json?latitude=${lat}&longitude=${lon}&riskCategory=${SDS_LOOKUP_RISK_CATEGORY}&siteClass=${SDS_LOOKUP_SITE_CLASS}&title=NordBase`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("usgs_lookup_failed");
   const data = await res.json();
@@ -382,7 +387,12 @@ const FOUNDATIONS = {
     // failure mode from the global stability checks above. Flag this to the customer
     // until wall-panel-specific data/testing is available.
     structuralNote:
-      "Global stability, wall-plate bending, and bolt tension are calculated per ASCE 7-22 / IBC 2021, same methodology as NordBase Small/Medium. Local wall-panel buckling under backfill compaction load is a separate failure mode not covered by these checks and has not yet been independently verified for this larger panel size.",
+      // 2026-09-08: dropped the "/ IBC 2021" pairing that used to be hardcoded
+      // here — it mismatched ASCE 7-22 (IBC 2021 references 7-16). The
+      // report's main disclaimer now states the correct edition/IBC pairing
+      // dynamically based on the customer's Code edition selection; this note
+      // doesn't need to repeat a specific IBC year.
+      "Global stability, wall-plate bending, and bolt tension are calculated per ASCE 7, same methodology as NordBase Small/Medium. Local wall-panel buckling under backfill compaction load is a separate failure mode not covered by these checks and has not yet been independently verified for this larger panel size.",
     blurb:
       "For Level 4 / high-power DC charging. Widened base plate and reinforced shell for larger equipment — adapter-plate CC options are still in development.",
     // See SMALL's chargerFit comment. Reference photo confirmed (Simon
@@ -428,7 +438,9 @@ const FOUNDATIONS = {
     isPowerBlock: true,
     preliminary: true,
     structuralNote:
-      "Preliminary release. Group overturning/sliding resistance and adapter-plate bolt tension are calculated per ASCE 7-22 / IBC 2021 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the multi-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Not PE-stamped.",
+      // 2026-09-08: dropped the "/ IBC 2021" pairing (mismatched ASCE 7-22)
+      // for the same reason as NordBase Large's note above.
+      "Preliminary release. Group overturning/sliding resistance and adapter-plate bolt tension are calculated per ASCE 7 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the multi-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Not PE-stamped.",
     blurb:
       "Multiple NordBase Medium foundations joined by a hat-profile with one shared adapter plate, sized for a specific DC fast-charger cabinet. Pick a manufacturer and model in the next step.",
     // Reference photo for the Foundation-step card (added 2026-08-31) — a
@@ -466,23 +478,78 @@ const BACKFILL_OPTIONS = [
 const SOIL_UNIT_WEIGHT_KNM3 = 19; // compacted crushed aggregate, all backfill options
 
 // ---------------------------------------------------------------------------
-// STRUCTURAL CONSTANTS — ASCE 7-22 / IBC 2021, held at Nordinfra's verified
-// worst-case values (Exposure C, flat terrain, box-shaped bluff body).
-// ---------------------------------------------------------------------------
-const KZ = 0.85,
-  KZT = 1.0,
+// STRUCTURAL CONSTANTS — ASCE 7-22 / ASCE 7-16, flat terrain, box-shaped
+// bluff body. Dual-edition support added 2026-09-08 (Simon Gullberg, after
+// discovering the report's old fixed "ASCE 7-22 / IBC 2021" citation paired
+// the WRONG IBC edition — IBC 2021 actually references ASCE 7-16; IBC 2024
+// references ASCE 7-22. See CODE_EDITIONS below for the citation mapping.
+//
+// KZ_BY_EXPOSURE — velocity pressure exposure coefficient at 0–15 ft (this
+// product's entire height range: tallest charger center-height zc is under
+// 4 ft, well inside this band for every model). Values are IDENTICAL between
+// ASCE 7-16 and ASCE 7-22 at this height — confirmed via the Florida
+// Building Commission's official 7-22 code-adoption fact sheet, which states
+// the 7-22 Kz revision only touches Exposure B at mean roof height ≥40 ft
+// and Exposure C at ≥140 ft, both far above this product's range:
+// http://www.floridabuilding.org/fbc/thecode/2023_Code_Development/2023_Code_Resources/ASCE-7-22_Wind_Loads_Fact_Sheet.pdf
+// So ONE table serves both editions. Exposure C = 0.85 matches the value
+// already verified against Nordinfra's own Master_USA_ASCE7_v6 workbook
+// (used as the cross-check anchor below). B and D were NOT read off the
+// actual ASCE 7 table (which is a paywalled standard, not freely
+// reproducible) — they're the closed-form ASCE 7 equation
+// Kz = 2.01(z/zg)^(2/α) computed independently and cross-checked against 4
+// separate secondary sources (worked examples + published tables), all of
+// which land on the same numbers to 2 decimal places. HIGH confidence, but
+// NOT primary-source-confirmed — flagged for sign-off against Nordinfra's
+// own licensed copy of the standard before being treated as beyond dispute.
+// Full research trail: claude/ASCE_7_16_7_22_Wind_Research_20260908.md.
+const KZ_BY_EXPOSURE = { B: 0.57, C: 0.85, D: 1.03 };
+const EXPOSURE_CATEGORY_DEFAULT = "C";
+
+// KZT (topographic factor) and KD (wind directionality) confirmed unchanged
+// between 7-16 and 7-22 — both stay fixed. KZT=1.0 is a FLAT-TERRAIN
+// ASSUMPTION made silently on the customer's behalf, not a code constant —
+// a site on a hilltop/escarpment crest can see Kzt well above 1.0. Out of
+// scope for this edition/exposure change (Simon didn't ask for a
+// topographic-factor input), but flagged here since it surfaced during
+// research as arguably the single largest un-surfaced assumption in the
+// whole model. KD=0.85 assumes the charger cabinet is classified as a
+// "building" under ASCE 7 Table 26.6-1 — research could not confirm this
+// vs. a "tank/similar structure" classification (reportedly ~0.90) without
+// the full paywalled table; also flagged, also out of scope here.
+const KZT = 1.0,
   KD = 0.85,
   GCF = 1.3;
-// LRFD 0.9D + 1.0W (ASCE 7-16/7-22 §2.3.1, combination 6) — NOT the pre-2010
-// service-level 0.9D+1.6W combo. qz above (0.00256·Kz·Kzt·Kd·V²) is built to
-// take V straight from the ASCE Hazard Tool's ultimate/strength-level wind
-// speed map (the same tool this step links to), which already produces a
-// strength-level pressure — applying 1.6 on top of that double-counts the
-// factor and overstates wind demand by 60%. Fixed 2026-09 after an Opus
-// review flagged the mismatch between this comment (labeled "7-22") and the
-// actual pre-2010 factor it was using.
+// LRFD 0.9D + 1.0W (ASCE 7-16 AND 7-22 §2.3.1, combination 6 in both — same
+// section number, same factor, confirmed identical across editions) — NOT
+// the pre-2010 service-level 0.9D+1.6W combo. qz above (0.00256·Kz·Kzt·Kd·V²)
+// is built to take V straight from the ASCE Hazard Tool's ultimate/
+// strength-level wind speed map (the same tool this step links to), which
+// already produces a strength-level pressure — applying 1.6 on top of that
+// double-counts the factor and overstates wind demand by 60%. Confirmed this
+// holds for BOTH editions: strength-level mapped wind speeds have been the
+// norm since ASCE 7-10, so 7-16's map is strength-level too, not a step back
+// to a service-level convention. Fixed 2026-09 after an Opus review flagged
+// the mismatch between this comment (labeled "7-22") and the actual
+// pre-2010 factor it was using.
 const WIND_DESTAB_FACTOR = 1.0;
 const GRAVITY_STAB_FACTOR = 0.9;
+
+// ---------------------------------------------------------------------------
+// CODE EDITION — which ASCE 7 edition (and its paired IBC edition, for the
+// report citation) the customer's jurisdiction has adopted. usgsSlug drives
+// the seismic SDS lookup — USGS's free public API serves both editions with
+// the same request/response shape, so no fabrication needed on the seismic
+// side. Wind speed itself stays a manual field either way (see the "Basic
+// wind speed" Field below) — ASCE's own Hazard Tool supports both editions
+// but its API is a paid subscription, so there's no free equivalent to the
+// USGS seismic lookup for wind.
+// ---------------------------------------------------------------------------
+const CODE_EDITIONS = {
+  "7-22": { label: "ASCE 7-22", ibcLabel: "IBC 2024", usgsSlug: "asce7-22" },
+  "7-16": { label: "ASCE 7-16", ibcLabel: "IBC 2021", usgsSlug: "asce7-16" },
+};
+const CODE_EDITION_DEFAULT = "7-22";
 const SEIS_AP = 1.0,
   SEIS_RP = 1.5,
   SEIS_IP = 1.0;
@@ -787,8 +854,13 @@ if (typeof window !== "undefined") {
 // ---------------------------------------------------------------------------
 // CALCULATION ENGINE
 // ---------------------------------------------------------------------------
-function calcWind({ chargerWidthIn, chargerHeightIn, windSpeedMph }) {
-  const qzPsf = 0.00256 * KZ * KZT * KD * Math.pow(windSpeedMph, 2);
+function calcWind({
+  chargerWidthIn,
+  chargerHeightIn,
+  windSpeedMph,
+  kz = KZ_BY_EXPOSURE[EXPOSURE_CATEGORY_DEFAULT],
+}) {
+  const qzPsf = 0.00256 * kz * KZT * KD * Math.pow(windSpeedMph, 2);
   const ArefFt2 = inToM(chargerWidthIn) * inToM(chargerHeightIn) * 10.764;
   const FwLbf = GCF * qzPsf * ArefFt2;
   const FwKn = FwLbf * 0.0044482216;
@@ -814,13 +886,15 @@ function calcGoverningWind({
   chargerDepthIn,
   chargerHeightIn,
   windSpeedMph,
+  kz = KZ_BY_EXPOSURE[EXPOSURE_CATEGORY_DEFAULT],
 }) {
-  const onWidth = calcWind({ chargerWidthIn, chargerHeightIn, windSpeedMph });
+  const onWidth = calcWind({ chargerWidthIn, chargerHeightIn, windSpeedMph, kz });
   if (!chargerDepthIn || chargerDepthIn === chargerWidthIn) return onWidth;
   const onDepth = calcWind({
     chargerWidthIn: chargerDepthIn,
     chargerHeightIn,
     windSpeedMph,
+    kz,
   });
   return onDepth.MdWindKnm > onWidth.MdWindKnm ? onDepth : onWidth;
 }
@@ -893,6 +967,7 @@ function runCheck({
   sds,
   backfill,
   ccIn, // adapter-plate CC spacing (in) — drives the bolt-tension check lever arm; omit/0 to skip that check
+  exposureCategory = EXPOSURE_CATEGORY_DEFAULT,
 }) {
   if (!foundation) return null;
   const w = Number(chargerWidthIn) || 0;
@@ -902,12 +977,14 @@ function runCheck({
   const V = Number(windSpeedMph) || 0;
   const SDS = Number(sds) || 0;
   const adapterWeightLb = foundation.adapterPlateWeightLb || 0;
+  const kz = KZ_BY_EXPOSURE[exposureCategory] || KZ_BY_EXPOSURE[EXPOSURE_CATEGORY_DEFAULT];
 
   const wind = calcGoverningWind({
     chargerWidthIn: w,
     chargerDepthIn: d,
     chargerHeightIn: h,
     windSpeedMph: V,
+    kz,
   });
   const WpKn = lbToKN(foundation.weightLb + adapterWeightLb + cw);
   const seismic = calcSeismic({ WpKn, sds: SDS, zcM: wind.zcM });
@@ -1053,10 +1130,17 @@ function runCheck({
 // not foundation-driven, so each model supplies its own confirmed numbers.
 // Only call this for a model with dataConfirmed === true.
 // ---------------------------------------------------------------------------
-function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
+function runPowerBlockCheck({
+  model,
+  windSpeedMph,
+  sds,
+  backfill,
+  exposureCategory = EXPOSURE_CATEGORY_DEFAULT,
+}) {
   if (!model || !model.dataConfirmed) return null;
   const V = Number(windSpeedMph) || 0;
   const SDS = Number(sds) || 0;
+  const kz = KZ_BY_EXPOSURE[exposureCategory] || KZ_BY_EXPOSURE[EXPOSURE_CATEGORY_DEFAULT];
   const unitCount = model.unitCount;
   const charger = model.chargerSpec;
   const plate = model.groupPlate;
@@ -1100,6 +1184,7 @@ function runPowerBlockCheck({ model, windSpeedMph, sds, backfill }) {
     chargerDepthIn: charger.depthIn,
     chargerHeightIn: charger.heightIn,
     windSpeedMph: V,
+    kz,
   });
 
   // Seismic — combined weight = N foundations + 1 shared plate + 1 cabinet
@@ -1684,6 +1769,22 @@ export default function NordBaseCalculator() {
   const [backfillKey, setBackfillKey] = useState(savedData.backfillKey ?? "B");
   const [nevi, setNevi] = useState(savedData.nevi ?? false);
   const [showSdsRef, setShowSdsRef] = useState(false);
+  // Code edition + exposure category (2026-09-08, Simon Gullberg — matches
+  // a competitor tool's "code edition" selector he found, after we
+  // discovered the report's citation mismatched IBC 2021 with ASCE 7-22).
+  // Defaults preserve old behavior exactly for existing saved drafts/resume
+  // links that predate these fields.
+  const [codeEdition, setCodeEdition] = useState(
+    savedData.codeEdition ?? CODE_EDITION_DEFAULT
+  );
+  const [exposureCategory, setExposureCategory] = useState(
+    savedData.exposureCategory ?? EXPOSURE_CATEGORY_DEFAULT
+  );
+  // Last geocoded address coords — kept around (not just the display string)
+  // so switching code edition can silently re-fetch SDS from the matching
+  // USGS endpoint instead of leaving a stale cross-edition value sitting in
+  // the field.
+  const [sdsLookupLatLon, setSdsLookupLatLon] = useState(null);
 
   // step 3 — address-driven SDS auto-fill (Mapbox suggestions, same pattern
   // as Site Planner, + a live USGS ASCE 7-22 lookup). Wind stays manual.
@@ -1796,6 +1897,8 @@ export default function NordBaseCalculator() {
       addSensorPole,
       packageType,
       customAssets,
+      codeEdition,
+      exposureCategory,
     };
   }
 
@@ -1849,6 +1952,8 @@ export default function NordBaseCalculator() {
     addCover,
     addSensorPole,
     packageType,
+    codeEdition,
+    exposureCategory,
     customAssets,
   ]);
 
@@ -1924,11 +2029,12 @@ export default function NordBaseCalculator() {
     setSdsLookupStatus("loading");
     setSdsLookupError("");
     try {
-      const sdsValue = await fetchSdsFromUsgs(s.lat, s.lon);
+      const sdsValue = await fetchSdsFromUsgs(s.lat, s.lon, codeEdition);
       setSds(String(Math.round(sdsValue * 100) / 100));
       setSdsSource("usgs");
       setSdsLookupAddress(s.placeName);
       setSdsLookupStatus("done");
+      setSdsLookupLatLon({ lat: s.lat, lon: s.lon });
     } catch (err) {
       setSdsLookupStatus("error");
       setSdsLookupError(
@@ -1936,6 +2042,35 @@ export default function NordBaseCalculator() {
       );
     }
   }
+
+  // Re-fetch SDS from the matching USGS endpoint when the customer switches
+  // code edition AFTER already looking up an address — otherwise the SDS
+  // field would silently keep showing a value from the OTHER edition's
+  // seismic map while the report claims the new edition. Only fires when a
+  // USGS lookup is actually the current source (a manually-typed SDS is left
+  // alone — it's the customer's own number, not ours to overwrite).
+  useEffect(() => {
+    if (sdsSource !== "usgs" || !sdsLookupLatLon) return;
+    let cancelled = false;
+    setSdsLookupStatus("loading");
+    fetchSdsFromUsgs(sdsLookupLatLon.lat, sdsLookupLatLon.lon, codeEdition)
+      .then((sdsValue) => {
+        if (cancelled) return;
+        setSds(String(Math.round(sdsValue * 100) / 100));
+        setSdsLookupStatus("done");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSdsLookupStatus("error");
+        setSdsLookupError(
+          "Couldn't re-fetch SDS for the new code edition — check the value manually, or use the USGS link."
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [codeEdition]);
 
   const backfill = BACKFILL_OPTIONS.find((b) => b.key === backfillKey);
 
@@ -2024,6 +2159,7 @@ export default function NordBaseCalculator() {
         windSpeedMph: windSpeed,
         sds,
         backfill,
+        exposureCategory,
       });
     }
     if (!foundation || !foundation.hasCharger) {
@@ -2040,6 +2176,7 @@ export default function NordBaseCalculator() {
           windSpeedMph: windSpeed,
           sds,
           backfill,
+          exposureCategory,
         });
       }
       return null;
@@ -2054,6 +2191,7 @@ export default function NordBaseCalculator() {
       sds,
       backfill,
       ccIn: effectiveCc,
+      exposureCategory,
     });
   }, [
     foundation,
@@ -2066,6 +2204,7 @@ export default function NordBaseCalculator() {
     backfill,
     effectiveCc,
     selectedPowerBlockModel,
+    exposureCategory,
   ]);
 
   // ---- step visibility / skip logic -----------------------------------
@@ -2164,6 +2303,9 @@ export default function NordBaseCalculator() {
     setSdsSource("manual");
     setBackfillKey("B");
     setNevi(false);
+    setCodeEdition(CODE_EDITION_DEFAULT);
+    setExposureCategory(EXPOSURE_CATEGORY_DEFAULT);
+    setSdsLookupLatLon(null);
     try {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     } catch (e) {
@@ -3295,8 +3437,34 @@ export default function NordBaseCalculator() {
               </p>
 
               <Field
+                label="Code edition"
+                hint="Which ASCE 7 edition your jurisdiction has adopted — IBC 2021 references ASCE 7-16; IBC 2024 references ASCE 7-22. Check with your local building department (AHJ) if unsure."
+              >
+                <div className="flex gap-4">
+                  {Object.entries(CODE_EDITIONS).map(([key, ed]) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-2 text-sm cursor-pointer"
+                      style={{ color: brand.dark }}
+                    >
+                      <input
+                        type="radio"
+                        name="codeEdition"
+                        checked={codeEdition === key}
+                        onChange={() => setCodeEdition(key)}
+                      />
+                      {ed.label}{" "}
+                      <span style={{ color: brand.steel }}>
+                        ({ed.ibcLabel})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </Field>
+
+              <Field
                 label="Project address"
-                hint="Auto-fills SDS below from USGS (ASCE 7-22, Site Class D, Risk Category II). Wind speed is not auto-filled yet — enter it manually."
+                hint={`Auto-fills SDS below from USGS (${CODE_EDITIONS[codeEdition].label}, Site Class D, Risk Category II). Wind speed is not auto-filled yet — enter it manually.`}
               >
                 <div className="relative">
                   <div className="flex gap-2">
@@ -3378,10 +3546,10 @@ export default function NordBaseCalculator() {
                 )}
               </Field>
 
-              <div className="grid sm:grid-cols-2 gap-4 mt-4">
+              <div className="grid sm:grid-cols-3 gap-4 mt-4">
                 <Field
                   label="Basic wind speed (mph)"
-                  hint="Look up via ASCE Hazard Tool"
+                  hint={`Look up via ASCE Hazard Tool — select "${CODE_EDITIONS[codeEdition].label}" there too, the two editions' wind maps differ.`}
                 >
                   <div className="flex gap-2">
                     <input
@@ -3402,6 +3570,21 @@ export default function NordBaseCalculator() {
                       <ExternalLink size={14} className="mr-1" /> ASCE
                     </a>
                   </div>
+                </Field>
+                <Field
+                  label="Exposure category"
+                  hint="ASCE 7 terrain roughness around the site — same table in both editions at this equipment's height."
+                >
+                  <select
+                    value={exposureCategory}
+                    onChange={(e) => setExposureCategory(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    style={{ borderColor: "#D9D9D6" }}
+                  >
+                    <option value="B">B — Urban/suburban, wooded</option>
+                    <option value="C">C — Open terrain, scattered obstructions</option>
+                    <option value="D">D — Flat, unobstructed, coastal/water</option>
+                  </select>
                 </Field>
                 <Field
                   label="SDS — seismic (g)"
@@ -3947,7 +4130,8 @@ export default function NordBaseCalculator() {
                 Report
               </h2>
               <p className="text-sm mb-6" style={{ color: brand.steel }}>
-                Preliminary check per ASCE 7-22 / IBC 2021 — not PE-stamped.
+                Preliminary check per {CODE_EDITIONS[codeEdition].label} /{" "}
+                {CODE_EDITIONS[codeEdition].ibcLabel} — not PE-stamped.
               </p>
 
               <div
@@ -3986,8 +4170,10 @@ export default function NordBaseCalculator() {
                     {selectedPowerBlockModel &&
                       ` — ${presetMfr} ${selectedPowerBlockModel.model}`}
                   </div>
-                  <div>Wind: {windSpeed} mph</div>
+                  <div>Wind: {windSpeed} mph, Exposure {exposureCategory}</div>
                   <div>SDS: {sds}g</div>
+                  <div>Code: {CODE_EDITIONS[codeEdition].label}</div>
+                  <div>Terrain: flat (Kzt=1.0 assumed)</div>
                 </div>
               </div>
 
