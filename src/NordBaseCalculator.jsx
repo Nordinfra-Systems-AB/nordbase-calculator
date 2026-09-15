@@ -748,7 +748,15 @@ const ADAPTER_PLATE_DRAWINGS = {
 const FOUNDATION_MANUALS = {
   BOLLARD: "/docs/manuals/NI_Manual_AC_001_US.pdf",
   SMALL: "/docs/manuals/NI_Manual_DCS_001_US.pdf",
-  // MEDIUM / LARGE manuals not yet supplied — falls back to a "coming soon" note.
+  MEDIUM: "/docs/manuals/NI_Manual_DCM_001_US.pdf",
+  // LARGE manual not yet supplied — falls back to a "coming soon" note.
+};
+// Datasheets (2026-09-15, Simon Gullberg) — same per-foundation pattern as
+// FOUNDATION_MANUALS above. LARGE not yet supplied.
+const FOUNDATION_DATASHEETS = {
+  BOLLARD: "/docs/datasheets/NI_DS_AC_001_US.pdf",
+  SMALL: "/docs/datasheets/NI_DS_DCS_001_US.pdf",
+  MEDIUM: "/docs/datasheets/NI_DS_DCM_001_US.pdf",
 };
 const BABA_CERTIFICATE_PDF = "/docs/certificates/NI_BABA_001_US_Certificate.pdf";
 const BABA_COVERED_FOUNDATIONS = new Set(["BOLLARD", "SMALL", "MEDIUM"]);
@@ -4595,6 +4603,27 @@ export default function NordBaseCalculator() {
                     >
                       Installation manual for {foundation.name} — coming
                       soon. Contact Nordinfra for interim guidance.
+                    </div>
+                  )}
+                  {FOUNDATION_DATASHEETS[foundation.key] ? (
+                    <a
+                      href={FOUNDATION_DATASHEETS[foundation.key]}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
+                      style={{ borderColor: "#F0F0EE" }}
+                    >
+                      <span style={{ color: brand.dark }}>
+                        Product datasheet — {foundation.name}
+                      </span>
+                      <Download size={14} color={brand.steel} />
+                    </a>
+                  ) : (
+                    <div
+                      className="text-xs rounded-md border px-3 py-2"
+                      style={{ borderColor: "#F0F0EE", color: brand.steel }}
+                    >
+                      Product datasheet for {foundation.name} — coming soon.
                     </div>
                   )}
                   {/* Adapter-plate drawing — real dimensioned PDF, moved here
