@@ -30,6 +30,10 @@ const ADAPTER_PLATE_PHOTOS = [
   { partNo: "200114", manufacturer: "Siemens", model: "SICHARGE D", image: "/adapter-plates/200114.png" },
   { partNo: "200115", manufacturer: "Siemens", model: "SICHARGE FLEX - Dispenser Big", image: "/adapter-plates/200115.png" },
   { partNo: "200116", manufacturer: "Siemens", model: "SICHARGE FLEX - Dispenser Small", image: "/adapter-plates/200116.png" },
+  { partNo: "200117", manufacturer: "Kempower", model: "Satellite", image: "/adapter-plates/200117.png" },
+  { partNo: "200118", manufacturer: "Universal", model: "Pedestal 6\"/8\"/9\" & Pedestal PRO 8\"x5\"", image: "/adapter-plates/200118.png" },
+  { partNo: "200119", manufacturer: "Leviton", model: "EPED1-1 / EPED2-2 / EPCMX-6 / EPCMY-6", image: "/adapter-plates/200119.png" },
+  { partNo: "200120", manufacturer: "Leviton", model: "EPED1 / EPED2", image: "/adapter-plates/200120.png" },
 ];
 
 const GALLERY_COLLAPSED_COUNT = 8;
