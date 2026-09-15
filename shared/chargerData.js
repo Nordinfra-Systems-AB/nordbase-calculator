@@ -501,14 +501,31 @@ export const POWER_BLOCK_MODELS = {
 // ---------------------------------------------------------------------------
 export const PEDESTAL_CHARGER_PRESETS = {
   Kempower: [
+    // CC confirmed by Simon Gullberg (2026-09-15): 240x240mm (~9.45"x9.45"),
+    // same bolt pattern/plate/foundation pairing as "Satellite" below (see
+    // that entry's comment for the dedicatedPlate/200117/100201 reasoning —
+    // identical here since it's the same confirmed hole pattern). NOT yet
+    // resolved: this entry's weight (132 lb) was an earlier, unsourced
+    // placeholder and has NOT been confirmed/reconciled against "Satellite"'s
+    // weight (242.51 lb) below — Simon has been asked whether these two
+    // dropdown entries are the same physical charger (and if so, which
+    // weight is correct / whether one entry should be removed) or two
+    // distinct Kempower models that happen to share this bolt pattern. Do
+    // NOT delete either entry or pick a weight until that's answered.
     {
       model: "Satellite C-Series",
       w: 11.8,
       d: 11.8,
       h: 59.1,
       weight: 132,
-      ccW: null, // no confirmed bolt pattern on file yet for this unit
-      ccD: null,
+      ccW: 9.45,
+      ccD: 9.45,
+      partNumber: "NI-ADP-DCS-Kempower-Satellite-US",
+      partName: "NordBase Small Adapter plate – Kempower Satellite",
+      partNo: "200117",
+      dedicatedPlate: true,
+      dedicatedFoundationPartNo: "100201",
+      refPhotoUrl: "/adapter-plates/200117.png",
     },
     // Added from calculator_charger_dataset.json (2026-08-31, 60-model verified dataset)
     // Part No. + dedicatedPlate confirmed by Simon Gullberg (2026-09-14): this
