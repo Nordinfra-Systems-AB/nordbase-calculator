@@ -141,9 +141,18 @@ const CATEGORIES = [
     title: "Foundation datasheets",
     desc: "Dimensions, materials, and load capacity summaries per foundation.",
     items: [
-      { label: "NordBase Bollard — Datasheet", available: false },
-      { label: "NordBase Small — Datasheet", available: false },
-      { label: "NordBase Medium — Datasheet", available: false },
+      {
+        label: "NordBase AC & Bollard Foundation — Datasheet",
+        file: "/docs/datasheets/NI_DS_AC_001_US.pdf",
+      },
+      {
+        label: "NordBase Small — Datasheet",
+        file: "/docs/datasheets/NI_DS_DCS_001_US.pdf",
+      },
+      {
+        label: "NordBase Medium — Datasheet",
+        file: "/docs/datasheets/NI_DS_DCM_001_US.pdf",
+      },
       { label: "NordBase Large — Datasheet", available: false },
     ],
   },
