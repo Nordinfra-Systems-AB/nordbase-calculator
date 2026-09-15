@@ -77,8 +77,13 @@ export const PRODUCTS = {
     dims: {
       top: { w: 7.6, d: 7.6 },
       bottom: { w: 14.2, d: 14.2 },
-      depthIn: 19.8,
-      weightLb: 16.3,
+      // Updated 2026-09-13 per Simon Gullberg — redrawn to 550mm depth
+      // (was ~502.92mm/19.8") with a redesigned, stronger flange; weight
+      // now 8080g/17.81lb (was the old, unconfirmed 16.3lb). Mirrors the
+      // same fix in src/NordBaseCalculator.jsx's FOUNDATIONS.BOLLARD — see
+      // claude/NordBase_Bollard_Djupandring_550mm_20260913.md in the project.
+      depthIn: 21.65,
+      weightLb: 17.81,
       basePlateType: "Round",
     },
     material: "1.9mm ASTM A1011 SS Gr33 + ZM115 coating, 14ga wall thickness.",
@@ -104,6 +109,10 @@ export const PRODUCTS = {
       "/photos/small-pedestal-detail.png",
       "/photos/small-sensor-detail1.png",
       "/photos/small-sensor-detail2.png",
+      "/adapter-plates/200117.png",
+      "/adapter-plates/200118.png",
+      "/adapter-plates/200119.png",
+      "/adapter-plates/200120.png",
     ],
     hasCharger: true,
     dims: {
