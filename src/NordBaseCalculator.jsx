@@ -200,8 +200,18 @@ const FOUNDATIONS = {
     levelDesc: "No charger foundation",
     top: { w: 7.6, d: 7.6 },
     bottom: { w: 14.2, d: 14.2 },
-    depthIn: 19.8,
-    weightLb: 16.3,
+    // Depth + weight updated 2026-09-13 per Simon Gullberg: foundation
+    // redrawn to 550mm depth (was ~502.92mm/19.8") with a redesigned,
+    // stronger flange (8x3mm kerf bridges, was 4x3mm) — everything else
+    // (footprint, wall thickness) unchanged. 550mm / 25.4 = 21.65".
+    // Weight confirmed 2026-09-13: 8080g / 453.59237 = 17.81lb (was the old,
+    // unconfirmed 16.3lb). Re-verified against calcStability() with both
+    // weights — negligible effect (<0.1 percentage-point DCR change on the
+    // governing check), confirming Simon's own assessment. See
+    // claude/NordBase_Bollard_Djupandring_550mm_20260913.md in the project
+    // for the full recalculation.
+    depthIn: 21.65,
+    weightLb: 17.81,
     photoUrl: "/nordbase-bollard.png",
     hasCharger: false,
     hasAccessories: true,
@@ -2109,11 +2119,20 @@ export default function NordBaseCalculator() {
   // gap (ADAPTER_PLATE_DRAWINGS / the "Download official drawing" UI), not
   // a reason to block the customer from proceeding.
   const usesSharedPlateGrid = foundation?.key === "SMALL";
+  // `dedicatedPlate: true` (2026-09-14, Simon Gullberg — Kempower Satellite/
+  // 200117/100201 case) marks a preset whose confirmed CC is NOT one of the
+  // shared universal plate's drilled holes, but which ships on its own
+  // separate, dedicated adapter plate + foundation variant instead. Such a
+  // model still counts as "confirmed" (skips the shared-grid membership
+  // check below) — but its CC must NOT be added to
+  // foundation.adapterPlate.ccOptionsX/Y, since that would wrongly imply the
+  // shared universal plate has a hole for it.
   const modelCcOnGrid =
     !!presetModelData &&
     presetModelData.ccW != null &&
     presetModelData.ccD != null &&
     (!usesSharedPlateGrid ||
+      presetModelData.dedicatedPlate ||
       (!!foundation?.adapterPlate?.ccOptionsX?.includes(presetModelData.ccW) &&
         !!foundation?.adapterPlate?.ccOptionsY?.includes(presetModelData.ccD)));
   const ccAutoFilled = modelCcOnGrid && !useCustomCc;
@@ -2972,8 +2991,24 @@ export default function NordBaseCalculator() {
                       {presetModelData.ccW}"×{presetModelData.ccD}" CC
                     </span>
                     <br />
-                    Matches a hole position we've confirmed on the adapter
-                    plate — filled in automatically.
+                    {presetModelData.dedicatedPlate ? (
+                      <>
+                        This model ships on its own dedicated adapter plate
+                        {presetModelData.partNo
+                          ? ` (Part No. ${presetModelData.partNo})`
+                          : ""}{" "}
+                        — not the shared universal plate — paired with
+                        foundation Part No.{" "}
+                        {presetModelData.dedicatedFoundationPartNo ||
+                          "TBD"}
+                        . Confirmed, filled in automatically.
+                      </>
+                    ) : (
+                      <>
+                        Matches a hole position we've confirmed on the
+                        adapter plate — filled in automatically.
+                      </>
+                    )}
                   </div>
                   <button
                     onClick={() => setUseCustomCc(true)}
@@ -4304,7 +4339,18 @@ export default function NordBaseCalculator() {
                     style={{ borderColor: "#F0F0EE" }}
                   >
                     <div>
-                      <div style={{ color: brand.dark }}>{foundation.name}</div>
+                      <div style={{ color: brand.dark }}>
+                        {/* Dedicated-foundation-variant case (2026-09-14,
+                            Kempower Satellite/100201): the physical shell is
+                            identical to the standard foundation, but it must
+                            be ordered under its own Part No. so it's paired
+                            with the right (dedicated) adapter plate — see
+                            presetModelData.dedicatedPlate above. */}
+                        {foundation.name}
+                        {presetModelData?.dedicatedFoundationPartNo
+                          ? ` — Part No. ${presetModelData.dedicatedFoundationPartNo}`
+                          : ""}
+                      </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
                         {foundation.levelLabel}
                       </div>
