@@ -130,7 +130,10 @@ const CATEGORIES = [
         label: "NordBase Small — Installation Manual",
         file: "/docs/manuals/NI_Manual_DCS_001_US.pdf",
       },
-      { label: "NordBase Medium — Installation Manual", available: false },
+      {
+        label: "NordBase Medium — Installation Manual",
+        file: "/docs/manuals/NI_Manual_DCM_001_US.pdf",
+      },
       { label: "NordBase Large — Installation Manual", available: false },
     ],
   },
