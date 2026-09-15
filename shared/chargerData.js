@@ -511,6 +511,16 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: null,
     },
     // Added from calculator_charger_dataset.json (2026-08-31, 60-model verified dataset)
+    // Part No. + dedicatedPlate confirmed by Simon Gullberg (2026-09-14): this
+    // model's 9.45"x9.45" bolt pattern is NOT one of the holes drilled into
+    // NordBase Small's shared "universal" adapter plate (100200/FOUNDATIONS.
+    // SMALL.adapterPlate.ccOptionsX/Y) — it ships on its own dedicated,
+    // smaller plate (200117, 12.6"x12.6") paired with its own dedicated
+    // foundation variant (100201, same shell as 100200). `dedicatedPlate:
+    // true` tells the Configuration step (see modelCcOnGrid) to treat this
+    // CC as confirmed WITHOUT checking it against the shared grid — adding
+    // 9.45 to that grid instead would incorrectly imply the shared universal
+    // plate fits this charger, when it doesn't.
     {
       model: "Satellite",
       w: 11.81,
@@ -523,6 +533,10 @@ export const PEDESTAL_CHARGER_PRESETS = {
       basePlateD: 11.81,
       partNumber: "NI-ADP-DCS-Kempower-Satellite-US",
       partName: "NordBase Small Adapter plate – Kempower Satellite",
+      partNo: "200117",
+      dedicatedPlate: true,
+      dedicatedFoundationPartNo: "100201",
+      refPhotoUrl: "/adapter-plates/200117.png",
     },
   ],
   ABB: [
@@ -536,6 +550,13 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 9.5,
     },
   ],
+  // Part No. 200118 (2026-09-14, Simon Gullberg) is the real Part No. for
+  // NordBase Small's shared "universal" adapter plate itself (13.4"x13.4",
+  // drawing text: "COMPATIBLE WITH 6"-8"-9" PEDESTALS & PEDESTAL PRO 8"x5"")
+  // — i.e. FOUNDATIONS.SMALL.adapterPlate in src/NordBaseCalculator.jsx.
+  // Added below to every existing preset whose confirmed ccW/ccD already
+  // lands on that shared grid ([6,8,9,10.6]/[5,6,8,9,10.6]), matching the
+  // "6-8-9 & Pedestal PRO 8x5" compatibility text on the 200118 drawing.
   WiLLev: [
     {
       model: "EV-SSAA",
@@ -547,6 +568,8 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 6,
       basePlateW: 8.5,
       basePlateD: 8.5,
+      partNo: "200118",
+      refPhotoUrl: "/adapter-plates/200118.png",
     },
   ],
   Postlane: [
@@ -560,6 +583,8 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 9,
       basePlateW: 12,
       basePlateD: 12,
+      partNo: "200118",
+      refPhotoUrl: "/adapter-plates/200118.png",
     },
     {
       model: "6ft Aluminium CW (triangular)",
@@ -571,6 +596,8 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 9,
       basePlateW: 12,
       basePlateD: 12,
+      partNo: "200118",
+      refPhotoUrl: "/adapter-plates/200118.png",
     },
   ],
   "Pedestal PRO": [
@@ -584,6 +611,8 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 5,
       basePlateW: 6.5,
       basePlateD: 20,
+      partNo: "200118",
+      refPhotoUrl: "/adapter-plates/200118.png",
     },
   ],
   BHS: [
@@ -597,6 +626,8 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 8,
       basePlateW: 9.25,
       basePlateD: 9.25,
+      partNo: "200118",
+      refPhotoUrl: "/adapter-plates/200118.png",
     },
   ],
   Eaton: [
@@ -615,6 +646,14 @@ export const PEDESTAL_CHARGER_PRESETS = {
       basePlateD: 14.5,
     },
   ],
+  // Part No.s 200119/200120 (2026-09-14, Simon Gullberg) confirmed each of
+  // these two Leviton models ships on its OWN dedicated adapter plate — not
+  // the shared universal grid (their ccW/ccD below were already noted as
+  // off-grid). `dedicatedPlate: true` unblocks them the same way as Kempower
+  // Satellite (200117/100201) above, but WITHOUT a dedicatedFoundationPartNo
+  // — Simon confirmed only the Kempower case needs a distinct foundation
+  // variant (100201); these two still use the standard 100200 foundation,
+  // just with their own plate.
   Leviton: [
     {
       model: "EPED1-1 / EPED2-2 / EPCMX-6 / EPCMY-6",
@@ -626,6 +665,9 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 5.3,
       basePlateW: 7.1,
       basePlateD: 7.1,
+      partNo: "200119",
+      dedicatedPlate: true,
+      refPhotoUrl: "/adapter-plates/200119.png",
     },
     {
       model: "EPED1 / EPED2",
@@ -637,6 +679,9 @@ export const PEDESTAL_CHARGER_PRESETS = {
       ccD: 3.67, // does not land on the grid (grid's shortest Y is 5")
       basePlateW: 6.1,
       basePlateD: 10.63,
+      partNo: "200120",
+      dedicatedPlate: true,
+      refPhotoUrl: "/adapter-plates/200120.png",
     },
   ],
   Chargepoint: [
@@ -715,6 +760,13 @@ export const PEDESTAL_CHARGER_PRESETS = {
       partName: "NordBase Small Adapter plate – Siemens SICHARGE FLEX - Dispenser Small",
       partNo: "200116",
       refPhotoUrl: "/adapter-plates/200116.png",
+      // Bug found + fixed 2026-09-14: this model's CC (11.22"x8.66") was
+      // already confirmed and already had a real Part No., but was NOT on
+      // the shared SMALL grid and had no dedicatedPlate flag — so the live
+      // Configuration step was showing "contact Nordinfra to verify
+      // compatibility" for it despite having a fully confirmed dedicated
+      // plate. Same fix pattern as Kempower Satellite/200117 above.
+      dedicatedPlate: true,
     },
   ],
 };
