@@ -450,7 +450,12 @@ const FOUNDATIONS = {
     structuralNote:
       // 2026-09-08: dropped the "/ IBC 2021" pairing (mismatched ASCE 7-22)
       // for the same reason as NordBase Large's note above.
-      "Preliminary release. Group overturning/sliding resistance and adapter-plate bolt tension are calculated per ASCE 7 / AISC 360-22 / ACI 318-19, extending the same methodology validated for the single NordBase Medium foundation to the multi-unit array (group efficiency factor confirmed for the governing wind-on-cabinet-long-side load case). Adapter-plate BENDING itself has NOT been calculated — the plate rests on a multi-point support pattern that a simple 1D beam check would misrepresent; a 2-way plate check or FEA by the engineer is recommended before this is relied on. Not PE-stamped.",
+      // 2026-09-17 textgenomgång fix: this banner ran ~90 words (3 dense
+      // sentences) for what's meant to be a quick-glance warning in Step 1/2.
+      // Shortened while keeping every safety-relevant fact (codes used,
+      // adapter-plate bending NOT calculated, not PE-stamped) — no content
+      // dropped, just said more directly.
+      "Preliminary release. Group overturning, sliding, and bolt tension are calculated per ASCE 7 / AISC 360-22 / ACI 318-19. Adapter-plate bending is NOT yet calculated — an engineer should check this separately before relying on it. Not PE-stamped.",
     blurb:
       "Multiple NordBase Medium foundations joined by a hat-profile with one shared adapter plate, sized for a specific DC fast-charger cabinet. Pick a manufacturer and model in the next step.",
     // Reference photo for the Foundation-step card (added 2026-08-31) — a
@@ -1830,7 +1835,10 @@ export default function NordBaseCalculator() {
   const [customAssets, setCustomAssets] = useState({
     datasheet: true,
     drawingPdf: true,
-    drawingDwg: true,
+    // DWG generation doesn't exist yet (see "Coming soon" flag on this
+    // asset below and in PACKAGE_TYPES.specification) — never default it
+    // to checked/promised. 2026-09-17 textgenomgång fix.
+    drawingDwg: false,
     csi: false,
     ...(savedData.customAssets || {}),
   });
@@ -2384,7 +2392,11 @@ export default function NordBaseCalculator() {
         { name: "Calc File (Cover + Calc Report + References, PDF)" },
         { name: "Product Data Sheet (PDF)" },
         { name: "Foundation Detail Drawing (PDF)" },
-        { name: "Foundation Detail Drawing (DWG)" },
+        // 2026-09-17 textgenomgång fix: DWG export isn't built — this used
+        // to be listed as included with no caveat, which promised a file
+        // type the app has no way to produce. Flagged "Coming soon" like
+        // the CSI spec line below, not silently removed.
+        { name: "Foundation Detail Drawing (DWG)", comingSoon: true },
         { name: "CSI Specification (DOCX)", comingSoon: true },
       ],
     },
@@ -2999,17 +3011,20 @@ export default function NordBaseCalculator() {
                       {presetModelData.ccW}"×{presetModelData.ccD}" CC
                     </span>
                     <br />
+                    {/* 2026-09-17 textgenomgång fix: "Confirmed, filled in
+                        automatically" restated what the ✓ header and the
+                        surrounding "filled in automatically" copy already
+                        say — dropped. */}
                     {presetModelData.dedicatedPlate ? (
                       <>
-                        This model ships on its own dedicated adapter plate
+                        Ships on its own dedicated adapter plate
                         {presetModelData.partNo
                           ? ` (Part No. ${presetModelData.partNo})`
-                          : ""}{" "}
-                        — not the shared universal plate — paired with
-                        foundation Part No.{" "}
+                          : ""}
+                        , paired with foundation Part No.{" "}
                         {presetModelData.dedicatedFoundationPartNo ||
                           "TBD"}
-                        . Confirmed, filled in automatically.
+                        .
                       </>
                     ) : (
                       <>
@@ -3187,8 +3202,9 @@ export default function NordBaseCalculator() {
                 Power Block — manufacturer &amp; model
               </h2>
               <p className="text-sm mb-4" style={{ color: brand.steel }}>
-                Nordinfra's concept solution for bigger units, such as
-                satellite/power units for EV DC fast charging and MCS.
+                For larger installations — multiple foundations joined to
+                support one satellite/power cabinet (e.g. DC fast charging or
+                MCS).
               </p>
 
               <div className="flex gap-2 mb-4">
@@ -3236,15 +3252,15 @@ export default function NordBaseCalculator() {
                   className="mb-4 rounded-md border px-3 py-2.5"
                   style={{ borderColor: brand.gold, background: "#FBF6E8" }}
                 >
+                  {/* 2026-09-17 textgenomgång fix: three overlapping
+                      sentences trimmed to one — the button below already
+                      reinforces "use Medium instead" visually. */}
                   <div className="text-xs" style={{ color: brand.dark }}>
                     <span className="font-semibold">
-                      {presetMfr} {selectedPowerBlockModel.model} is a single
-                      NordBase Medium foundation
-                    </span>
-                    <br />
-                    No group hardware — this is the standard single-unit
-                    product. Continue there for charger dimensions and
-                    adapter-plate CC spacing.
+                      {presetMfr} {selectedPowerBlockModel.model}
+                    </span>{" "}
+                    uses a single standard NordBase Medium foundation — no
+                    group hardware needed.
                   </div>
                   <button
                     onClick={() => setFoundationKey("MEDIUM")}
@@ -3386,35 +3402,36 @@ export default function NordBaseCalculator() {
                     </div>
                   )}
 
+                  {/* 2026-09-17 textgenomgång fix: this banner used to end
+                      with "— added 2026-08-31, preliminary", an internal
+                      changelog fragment that had leaked into customer-facing
+                      copy. Removed; message shortened to match. */}
                   {selectedPowerBlockModel.configPending && (
                     <Banner>
                       <span className="font-semibold">
                         Foundation configuration for {presetMfr}{" "}
-                        {selectedPowerBlockModel.model} is not yet confirmed
-                        by Nordinfra.
+                        {selectedPowerBlockModel.model} isn't confirmed yet.
                       </span>{" "}
-                      Cabinet dimensions above are from the manufacturer's
-                      datasheet, but whether this unit mounts on a single
-                      NordBase foundation (like C501) or requires a
-                      multi-foundation hat-profile group (like C503) is a
-                      structural engineering decision pending Nordinfra PE
-                      review — added 2026-08-31, preliminary. Contact
-                      Nordinfra for a manual assessment before specifying this
-                      model.
+                      Cabinet dimensions are from the datasheet, but whether
+                      it needs one foundation or a multi-foundation array is
+                      still a pending engineering decision. Contact Nordinfra
+                      before specifying this model.
                     </Banner>
                   )}
 
                   {!selectedPowerBlockModel.dataConfirmed &&
                     !selectedPowerBlockModel.configPending && (
+                    // 2026-09-17 textgenomgång fix: shortened — the
+                    // "cabinet dimensions above are already confirmed"
+                    // parenthetical repeated the confirmed-dimensions block
+                    // already shown right above this banner.
                     <Banner>
                       <span className="font-semibold">
                         Structural data for {presetMfr}{" "}
-                        {selectedPowerBlockModel.model} is not yet confirmed.
+                        {selectedPowerBlockModel.model} isn't confirmed yet.
                       </span>{" "}
-                      Hat-profile rivet count, bolt pattern, and adapter-plate
-                      size are still pending (cabinet dimensions above are
-                      already confirmed). Contact Nordinfra for a manual
-                      assessment in the meantime.
+                      Rivet count, bolt pattern, and plate size are pending.
+                      Contact Nordinfra for a manual assessment.
                     </Banner>
                   )}
 
@@ -3719,13 +3736,14 @@ export default function NordBaseCalculator() {
                 style={{ background: brand.bgSoft, color: brand.steel }}
               >
                 <Info size={14} className="shrink-0 mt-0.5" />
+                {/* 2026-09-17 textgenomgång fix: dropped the parenthetical
+                    R&D status note (Sweden pull-out testing) — internal
+                    progress update, not something the customer can act on
+                    right now. */}
                 <span>
-                  Asphalt or concrete (≥60mm) poured as a top layer after
-                  compaction provides additional passive resistance beyond this
-                  calculation's assumptions, but is not included in the result
-                  below — contact Nordinfra for an in-depth calculation if this
-                  should be credited. (Pull-out testing on a Swedish test
-                  installation is in progress.)
+                  A poured asphalt/concrete cap (≥60mm) adds passive
+                  resistance not credited in this calculation. Contact
+                  Nordinfra if you'd like that accounted for.
                 </span>
               </div>
 
@@ -3861,11 +3879,11 @@ export default function NordBaseCalculator() {
                       className="text-xs ml-6 mt-1"
                       style={{ color: brand.steel }}
                     >
-                      Two-post frame that straddles the foundation to shield a
-                      sensor/camera pole from vehicle contact. ~34 lb
-                      assembly, 40.7"×33.7" footprint. Frame hot-dip
-                      galvanized per ASTM A123; the two stainless posts are
-                      powder-coated OSHA safety yellow and ship separately.
+                      {/* 2026-09-17 textgenomgång fix: three facts (purpose,
+                          weight/footprint, finish) condensed to one line. */}
+                      Two-post frame that shields a sensor/camera pole from
+                      vehicle contact. ~34 lb, 40.7"×33.7" footprint,
+                      galvanized frame with OSHA-yellow posts.
                     </div>
                     {addSensorPole && (
                       <div className="ml-6 mt-3 max-w-[360px]">
@@ -3986,11 +4004,11 @@ export default function NordBaseCalculator() {
                       className="text-xs ml-6 mt-1"
                       style={{ color: brand.steel }}
                     >
-                      Two-post frame that straddles the foundation to shield a
-                      sensor/camera pole from vehicle contact. ~34 lb
-                      assembly, 40.7"×33.7" footprint. Frame hot-dip
-                      galvanized per ASTM A123; the two stainless posts are
-                      powder-coated OSHA safety yellow and ship separately.
+                      {/* 2026-09-17 textgenomgång fix: three facts (purpose,
+                          weight/footprint, finish) condensed to one line. */}
+                      Two-post frame that shields a sensor/camera pole from
+                      vehicle contact. ~34 lb, 40.7"×33.7" footprint,
+                      galvanized frame with OSHA-yellow posts.
                     </div>
                     {addSensorPole && (
                       <div className="ml-6 mt-3 max-w-[360px]">
@@ -4098,7 +4116,6 @@ export default function NordBaseCalculator() {
                     {[
                       ["datasheet", "Product Data Sheet (PDF)"],
                       ["drawingPdf", "Foundation Detail Drawing (PDF)"],
-                      ["drawingDwg", "Foundation Detail Drawing (DWG)"],
                     ].map(([k, label]) => (
                       <label key={k} className="flex items-center gap-2">
                         <input
@@ -4114,6 +4131,24 @@ export default function NordBaseCalculator() {
                         {label}
                       </label>
                     ))}
+                    {/* 2026-09-17 textgenomgång fix: DWG isn't generated
+                        anywhere in this app — this checkbox used to be a
+                        normal, selectable option next to it, which promised
+                        a file we can't produce. Disabled + "Coming soon",
+                        same pattern as CSI Specification below. */}
+                    <label className="flex items-center gap-2 opacity-70">
+                      <input type="checkbox" disabled checked={false} />{" "}
+                      Foundation Detail Drawing (DWG){" "}
+                      <span
+                        className="text-[10px] px-1.5 py-0.5 rounded"
+                        style={{
+                          background: brand.amberBg,
+                          color: brand.amber,
+                        }}
+                      >
+                        Coming soon
+                      </span>
+                    </label>
                     <label className="flex items-center gap-2 opacity-70">
                       <input type="checkbox" disabled checked={false} /> CSI
                       Specification (DOCX){" "}
@@ -5139,9 +5174,14 @@ export default function NordBaseCalculator() {
           className="print:hidden text-center text-xs mt-6"
           style={{ color: brand.steel }}
         >
-          NordBase Foundation Selector — Prototype v2. Calculation engine ported
-          from Nordinfra_Master_USA_ASCE7_v6.xlsx. Not for construction use
-          without PE review.
+          {/* 2026-09-17 textgenomgång fix: dropped the internal workbook
+              filename — no value to a customer reading this footer. (The
+              "Source: Nordinfra_Master_USA_ASCE7_v6" citation inside "Show
+              calculation details" is left as-is — that's a traceability
+              citation for the engineer reviewing the calc table, not
+              incidental footer text.) */}
+          NordBase Foundation Selector — Prototype v2. Not for construction
+          use without PE review.
         </p>
       </div>
 
@@ -5156,11 +5196,12 @@ export default function NordBaseCalculator() {
           role="dialog"
           aria-label="Cookie consent"
         >
+          {/* 2026-09-17 textgenomgång fix: the "if that changes" hedge
+              was about a hypothetical future state rather than what the
+              site does today — trimmed. */}
           <p className="text-xs flex-1">
-            This site saves your progress locally in your browser. We
-            don't currently use analytics or advertising cookies, but you
-            can accept or decline non-essential cookies at any time if
-            that changes.{" "}
+            This site saves your progress locally in your browser only — no
+            analytics or ad cookies are used.{" "}
             <a
               href="/privacy"
               target="_blank"
