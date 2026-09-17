@@ -4323,6 +4323,17 @@ export default function NordBaseCalculator() {
                 >
                   <Package size={14} /> BILL OF MATERIALS
                 </div>
+                {/* Fix 2026-09-17 (Simon Gullberg / launch checklist item B):
+                    "Number of foundations" (quantity, step 0) was captured
+                    and echoed in the lead-email text but never multiplied
+                    into the article list below — every line always read as
+                    if exactly one unit was ordered. qty is the sanitized,
+                    always->=1 version of that field, applied to every line
+                    item that scales 1:1 with the foundation count. */}
+                {(() => {
+                  const qty = Math.max(1, parseInt(quantity, 10) || 1);
+                  return (
+                <>
                 {foundation.isPowerBlock && selectedPowerBlockModel ? (
                   <div
                     className="flex justify-between text-sm py-1.5 border-b"
@@ -4330,11 +4341,14 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        {selectedPowerBlockModel.unitCount}× NordBase Medium
-                        foundation
+                        {qty * selectedPowerBlockModel.unitCount}× NordBase
+                        Medium foundation
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
                         {foundation.levelLabel} — joined array
+                        {qty > 1
+                          ? ` (${qty}× ${selectedPowerBlockModel.unitCount}-foundation array)`
+                          : ""}
                       </div>
                     </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
@@ -4354,7 +4368,7 @@ export default function NordBaseCalculator() {
                             be ordered under its own Part No. so it's paired
                             with the right (dedicated) adapter plate — see
                             presetModelData.dedicatedPlate above. */}
-                        {foundation.name}
+                        {qty}× {foundation.name}
                         {presetModelData?.dedicatedFoundationPartNo
                           ? ` — Part No. ${presetModelData.dedicatedFoundationPartNo}`
                           : ""}
@@ -4375,7 +4389,7 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Hat-profile connector,{" "}
+                        {qty}× Hat-profile connector,{" "}
                         {selectedPowerBlockModel.hatProfile.sides} long sides
                       </div>
                     </div>
@@ -4391,6 +4405,7 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
+                        {qty}×{" "}
                         {selectedPowerBlockModel.partNumber
                           ? `Adapter Plate: ${selectedPowerBlockModel.partNumber}`
                           : `Shared adapter plate — ${presetMfr} ${selectedPowerBlockModel.model}`}
@@ -4426,6 +4441,7 @@ export default function NordBaseCalculator() {
                             a fallback for models that don't have a Part.no
                             yet. Remove this fallback branch's use of
                             partNumber once every model has a Part.no. */}
+                        {qty}×{" "}
                         {presetModelData?.partNo
                           ? `Adapter Plate — Part No. ${presetModelData.partNo}`
                           : presetModelData?.partNumber
@@ -4458,7 +4474,7 @@ export default function NordBaseCalculator() {
                   >
                     <div>
                       <div style={{ color: brand.dark }}>
-                        NordBase Bollard foundation
+                        {qty}× NordBase Bollard foundation
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
                         Standalone — for the bollard assembly below
@@ -4475,7 +4491,7 @@ export default function NordBaseCalculator() {
                     style={{ borderColor: "#F0F0EE" }}
                   >
                     <div style={{ color: brand.dark }}>
-                      Bollard,{" "}
+                      {qty}× Bollard,{" "}
                       {bollardTier === "sch10"
                         ? "Schedule 10"
                         : "Schedule 40 (Duplex)"}
@@ -4490,7 +4506,9 @@ export default function NordBaseCalculator() {
                     className="flex justify-between text-sm py-1.5 border-b"
                     style={{ borderColor: "#F0F0EE" }}
                   >
-                    <div style={{ color: brand.dark }}>Bollard cover</div>
+                    <div style={{ color: brand.dark }}>
+                      {qty}× Bollard cover
+                    </div>
                     <div className="text-xs" style={{ color: brand.steel }}>
                       Price on request
                     </div>
@@ -4500,7 +4518,7 @@ export default function NordBaseCalculator() {
                   <div className="flex justify-between text-sm py-1.5">
                     <div>
                       <div style={{ color: brand.dark }}>
-                        Sensor pole (collision-protection frame)
+                        {qty}× Sensor pole (collision-protection frame)
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
                         ~34 lb, galvanized frame + OSHA-yellow SS304 posts
@@ -4511,6 +4529,9 @@ export default function NordBaseCalculator() {
                     </div>
                   </div>
                 )}
+                </>
+                  );
+                })()}
               </div>
 
               {/* AVAILABLE-BUT-NOT-SELECTED ACCESSORIES — print-only (part of
@@ -4995,10 +5016,16 @@ export default function NordBaseCalculator() {
                 className="print:hidden text-xs text-center mt-2"
                 style={{ color: brand.steel }}
               >
-                The production version generates a formatted PDF + DWG + Word
-                spec directly. Sends your details and this calculation
-                straight to Nordinfra — see the Privacy Policy above for how
-                that information is used.
+                {/* Fix 2026-09-17 (launch checklist item B): the previous
+                    copy claimed this button "generates a formatted PDF +
+                    DWG + Word spec directly" — it doesn't; Download PDF is
+                    just the browser's print dialog (see window.print()
+                    above), and DWG/DOCX aren't generated anywhere in this
+                    app. Rewritten to describe only what actually happens. */}
+                Downloads this report as a PDF using your browser's print
+                dialog, and sends your details and this calculation straight
+                to Nordinfra — see the Privacy Policy above for how that
+                information is used.
               </p>
             </div>
           )}
