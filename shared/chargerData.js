@@ -762,30 +762,22 @@ export const PEDESTAL_CHARGER_PRESETS = {
       partName: "NordBase Small Adapter plate – Blink Charging Pedestal 22kW",
     },
   ],
-  Siemens: [
-    {
-      model: "SICHARGE FLEX - Dispenser Small",
-      w: 14.37,
-      d: 11.81,
-      h: 86.61,
-      weight: 275.58,
-      ccW: 11.22,
-      ccD: 8.66,
-      basePlateW: 14.37,
-      basePlateD: 11.81,
-      partNumber: "NI-ADP-DCS-Siemens-Sicharge-Flex-Dispenser-Small-US",
-      partName: "NordBase Small Adapter plate – Siemens SICHARGE FLEX - Dispenser Small",
-      partNo: "200116",
-      refPhotoUrl: "/adapter-plates/200116.png",
-      // Bug found + fixed 2026-09-14: this model's CC (11.22"x8.66") was
-      // already confirmed and already had a real Part No., but was NOT on
-      // the shared SMALL grid and had no dedicatedPlate flag — so the live
-      // Configuration step was showing "contact Nordinfra to verify
-      // compatibility" for it despite having a fully confirmed dedicated
-      // plate. Same fix pattern as Kempower Satellite/200117 above.
-      dedicatedPlate: true,
-    },
-  ],
+  // Siemens intentionally has NO entry here anymore (2026-09-17, Simon
+  // Gullberg, direct confirmation). The one model that used to live here —
+  // "SICHARGE FLEX - Dispenser Small", part 200116 — was moved to
+  // DC_FAST_CHARGER_PRESETS.Siemens below: Simon confirmed 200116 is a
+  // DCM (NordBase Medium) part, not DCS/Small. Corroborated physically —
+  // the freshly re-issued 200116 drawing (2026-09-16) is cut from the same
+  // 29"x25" DCM blank with the same 6-hole countersunk pattern as every
+  // other DCM adapter plate (200100-200115), unlike the genuinely
+  // DCS-family plates (200117-200120), which use a distinct, smaller
+  // 12.6"x12.6" blank. See partNumber/partName history on that entry for
+  // the full story, and flag to Simon: the drawing's OWN title-block text
+  // still reads "NI-ADP-DCS-..." (stale — only the filename was updated to
+  // DCM) — worth regenerating so the PDF's internal text matches.
+  //
+  // If Siemens ever gets a genuine Small/DCS-mountable model, add it back
+  // here with its own confirmed part number — do not reuse 200116.
 };
 
 // ---------------------------------------------------------------------------
@@ -1300,6 +1292,29 @@ export const DC_FAST_CHARGER_PRESETS = {
       partName: "NordBase Medium Adapter plate – Siemens SICHARGE FLEX - Dispenser Big",
       partNo: "200115",
       refPhotoUrl: "/adapter-plates/200115.png",
+    },
+    {
+      // Moved here from PEDESTAL_CHARGER_PRESETS.Siemens 2026-09-17 (Simon
+      // Gullberg, direct confirmation) — part 200116 is DCM, not DCS. See
+      // the comment left in PEDESTAL_CHARGER_PRESETS at the old location
+      // for the full story (physical corroboration + a stale title-block
+      // flag). Geometry/CC/weight below are unchanged from the original
+      // entry — only the tier (this array) and the partNumber/partName
+      // strings changed to match.
+      model: "SICHARGE FLEX - Dispenser Small",
+      w: 14.37,
+      d: 11.81,
+      h: 86.61,
+      weight: 275.58,
+      ccW: 11.22,
+      ccD: 8.66,
+      basePlateW: 14.37,
+      basePlateD: 11.81,
+      partNumber: "NI-ADP-DCM-Siemens-Sicharge-Flex-Dispenser-Small-US",
+      partName: "NordBase Medium Adapter plate – Siemens SICHARGE FLEX - Dispenser Small",
+      partNo: "200116",
+      refPhotoUrl: "/adapter-plates/200116.png",
+      dedicatedPlate: true,
     },
   ],
   Tesla: [
