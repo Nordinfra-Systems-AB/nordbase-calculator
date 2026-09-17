@@ -190,17 +190,31 @@ export default function InstallationApp() {
             >
               <Download className="h-4 w-4" /> Bollard manual (PDF)
             </a>
+            {/* 2026-09-17 (Simon, direct instruction): this section still
+                only linked the DCS/Small charger manual and said "Medium and
+                Large not yet published" — but NI_Manual_DCM_001_US.pdf has
+                been live since before this fix (confirmed 200 OK, and
+                already listed correctly on /resources.html). Added the
+                Medium manual button and corrected the caption to only flag
+                Large, which is genuinely still unpublished (404 confirmed). */}
             <a
               href="/docs/manuals/NI_Manual_DCS_001_US.pdf"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
             >
-              <Download className="h-4 w-4" /> Charger manual (PDF)
+              <Download className="h-4 w-4" /> Small charger manual (PDF)
+            </a>
+            <a
+              href="/docs/manuals/NI_Manual_DCM_001_US.pdf"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
+            >
+              <Download className="h-4 w-4" /> Medium charger manual (PDF)
             </a>
             <span className="text-xs text-steel">
-              Charger manual covers NordBase Small — Medium and Large not yet
-              published.
+              Large charger manual not yet published.
             </span>
             <a
               href="/resources.html"
