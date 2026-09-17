@@ -5185,19 +5185,17 @@ export default function NordBaseCalculator() {
           </div>
         </div>
 
-        <p
-          className="print:hidden text-center text-xs mt-6"
-          style={{ color: brand.steel }}
-        >
-          {/* 2026-09-17 textgenomgång fix: dropped the internal workbook
-              filename — no value to a customer reading this footer. (The
-              "Source: Nordinfra_Master_USA_ASCE7_v6" citation inside "Show
-              calculation details" is left as-is — that's a traceability
-              citation for the engineer reviewing the calc table, not
-              incidental footer text.) */}
-          NordBase Foundation Selector — Prototype v2. Not for construction
-          use without PE review.
-        </p>
+        {/* 2026-09-17 (Simon, direct instruction): removed the "NordBase
+            Foundation Selector — Prototype v2. Not for construction use
+            without PE review." footer line that sat here on every step
+            page. This is separate from the report-step disclaimer
+            ("Preliminary check per ... — not PE-stamped", further up in
+            this file) and from the "Source: Nordinfra_Master_USA_ASCE7_v6"
+            citation inside "Show calculation details" — neither of those
+            was touched, both stay as the safety/traceability-relevant
+            disclaimers for the actual submittal. This was just the generic
+            prototype-labeling footer, same family as the header PROTOTYPE
+            banner already removed earlier this round. */}
       </div>
 
       {cookieChoice === null && (
