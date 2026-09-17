@@ -138,10 +138,13 @@ export default function PartnersApp() {
         <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
           Find a distributor
         </h1>
+        {/* 2026-09-17 textgenomgång fix: "nearest partner" implied a choice
+            of several — see the regions below, most of which currently say
+            "No distribution partner confirmed yet." */}
         <p className="mt-3 max-w-2xl text-steel">
           Nordinfra sells NordBase foundations through authorized
-          distribution partners, not direct. Find your nearest partner below,
-          or use the{" "}
+          distribution partners, not direct. Find your partner below, or use
+          the{" "}
           <a
             href={CALCULATOR_URL}
             target="_blank"

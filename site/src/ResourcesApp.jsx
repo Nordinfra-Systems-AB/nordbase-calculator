@@ -262,9 +262,11 @@ export default function ResourcesApp() {
         <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
           Datasheets, manuals & drawings
         </h1>
+        {/* 2026-09-17 textgenomgång fix: three separate ideas (scope, "library
+            grows", order CTA) were run together in one paragraph; dropped
+            "check back for updates" (added nothing) and split the rest. */}
         <p className="mt-3 max-w-2xl text-steel">
-          Everything except your project's own calculation — that's
-          generated per-project in the{" "}
+          Everything except your project's own calculation report, which the{" "}
           <a
             href={CALCULATOR_URL}
             target="_blank"
@@ -272,9 +274,8 @@ export default function ResourcesApp() {
             className="font-semibold text-dark underline"
           >
             foundation calculator
-          </a>
-          . This library grows as new documents come in — check back for
-          updates. Looking to place an order?{" "}
+          </a>{" "}
+          generates per project. Ready to order?{" "}
           <a href="/partners.html" className="font-semibold text-dark underline">
             Find a distribution partner
           </a>

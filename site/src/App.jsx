@@ -41,7 +41,9 @@ const CALC_HIGHLIGHTS = [
   },
   {
     icon: MapPin,
-    text: "Points you to the nearest authorized distribution partner for that exact configuration.",
+    // 2026-09-17 textgenomgång fix: "nearest" implied a choice of several
+    // nearby partners — there's currently one, in one state.
+    text: "Points you to our authorized distribution partner for that exact configuration.",
   },
   {
     icon: FileDown,
@@ -231,35 +233,30 @@ function Reveal({ children, className = "", delay = 0 }) {
 }
 
 function PartnerMarquee() {
-  // Duplicate the row so the CSS animation can loop seamlessly, and repeat
-  // generously (8x) so the track is wide enough to fill the viewport with
-  // no visible gap even with just one confirmed partner today — otherwise
-  // the row reads as left-anchored/off-center instead of a continuous loop.
-  // translateX(-50%) always shifts by exactly one full copy of PARTNERS
-  // (half the track), so this stays seamless as more partners are added.
-  const row = [
-    ...PARTNERS,
-    ...PARTNERS,
-    ...PARTNERS,
-    ...PARTNERS,
-    ...PARTNERS,
-    ...PARTNERS,
-    ...PARTNERS,
-    ...PARTNERS,
-  ];
+  // 2026-09-17 textgenomgång fix: this used to loop a single confirmed
+  // partner (Postlane, NY) 8x to fill the track width, which read as an
+  // established multi-state distribution network rather than what it
+  // actually is — one partner, one state. Replaced the looping marquee
+  // with a plain static row. Once PARTNERS has more than a couple of
+  // entries, a real marquee (or just a wider static row) makes sense
+  // again — this is a stopgap for the current one-partner reality, not a
+  // permanent design decision.
   return (
-    <div className="overflow-hidden border-y border-white/10 bg-dark py-6 [mask-image:linear-gradient(90deg,transparent,black_10%,black_90%,transparent)]">
-      <div className="partner-track flex w-max items-center justify-center gap-16">
-        {row.map((p, i) => (
-          <div
+    <div className="border-y border-white/10 bg-dark py-6">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3 px-6 text-center">
+        <span className="text-xs font-medium uppercase tracking-wide text-white/40">
+          Our first confirmed US distribution partner
+        </span>
+        {PARTNERS.map((p, i) => (
+          <span
             key={i}
-            className="flex shrink-0 items-center gap-2 whitespace-nowrap text-lg font-bold tracking-tight text-white/40"
+            className="flex items-center gap-2 whitespace-nowrap text-lg font-bold tracking-tight text-white/70"
           >
             {p.name}
-            <span className="text-xs font-medium text-white/25">
+            <span className="text-xs font-medium text-white/40">
               {p.location}
             </span>
-          </div>
+          </span>
         ))}
       </div>
     </div>
@@ -304,7 +301,15 @@ export default function App() {
         </div>
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 md:py-28">
           <div className="max-w-xl">
-            <Badge>Practical. Proven. Progressive.</Badge>
+            {/* 2026-09-17 textgenomgång fix: "Proven" here sat right above
+                the footer's own "Nordinfra USA LLC ... in formation"
+                disclosure — a maturity claim the US entity can't back up
+                yet. (Note: the full Nordinfra logo lockup elsewhere on the
+                site also reads "Practical. Proven. Progressive." — that's
+                baked into the actual logo artwork as the company's real,
+                established tagline, so it's left untouched; this Badge is
+                separate rendered text specific to this hero section.) */}
+            <Badge>Steel foundations for EV charging</Badge>
             <h1 className="mt-6 text-5xl font-extrabold leading-[1.05] tracking-tight md:text-6xl">
               Foundations installed in days,{" "}
               <span className="text-gold">not weeks.</span>
@@ -332,7 +337,11 @@ export default function App() {
             </div>
 
             <div className="mt-12 grid grid-cols-2 gap-3">
-              <StatCard icon={Clock} value="Same-day" label="Typical install time" />
+              {/* 2026-09-17 textgenomgång fix: "Typical" implied a track
+                  record of completed US installs this new market entrant
+                  doesn't have yet — kept the concrete "Same-day" value,
+                  dropped the implied-history word from the label. */}
+              <StatCard icon={Clock} value="Same-day" label="Install time" />
               <StatCard icon={Leaf} value="Up to 60%" label="Lower CO2e vs. concrete" />
               <StatCard icon={ShieldCheck} value="ASCE 7-22" label="Wind & seismic method" />
               <StatCard icon={Factory} value="5" label="Foundation sizes" />
@@ -380,8 +389,13 @@ export default function App() {
               <span className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-semibold text-goldSoft">
                 Free engineering tool
               </span>
+              {/* 2026-09-17 textgenomgång fix: "engineered foundation spec"
+                  contradicted the footer's own disclaimer that calculator
+                  output is preliminary/not PE-stamped — and the other CTA
+                  further down this page already says "preliminary" here.
+                  Matched that wording. */}
               <h2 className="mt-6 text-3xl font-extrabold tracking-tight md:text-4xl">
-                Get an engineered foundation spec in under 5 minutes
+                Get a preliminary foundation spec in under 5 minutes
               </h2>
               <p className="mt-4 max-w-lg text-white/70">
                 The NordBase Foundation Selector runs a real preliminary wind
@@ -663,33 +677,27 @@ export default function App() {
                     </tbody>
                   </table>
                 </div>
+                {/* 2026-09-17 textgenomgång fix: this used to be two dense
+                    paragraphs of unit-weight and mile-by-mile CO2 math on
+                    top of a table that already makes the point — trimmed to
+                    one line, full math moved into the footnote below for
+                    anyone who wants it. */}
                 <p className="mt-4 max-w-2xl text-sm text-steel">
-                  Precast concrete doesn't nest, so a comparable delivery is
-                  bound by truck weight, not pallet count. Using typical
-                  published US unit weights for precast blocks (175 lb / 668
-                  lb / 1,750 lb for small, standard, and large sizes) against
-                  the same 42,000–45,000 lb payload cap, one truck carries
-                  roughly
-                  240–255 / 63–67 / 24–26 units — meaning matching
-                  Nordinfra's Small, Medium, and Large truckload counts takes
-                  about <strong className="text-dark">4×, 2×, and 5× as many
-                  trucks</strong>.
-                </p>
-                <p className="mt-4 max-w-2xl text-sm text-steel">
-                  Fewer trucks also means less freight carbon: at the same
-                  0.062 kg CO2/tonne-km factor cited below, each fully loaded
-                  44,000 lb truck emits roughly{" "}
-                  <strong className="text-dark">2 kg CO2 per mile
-                  driven</strong> — so every precast truck trip avoided saves
-                  on the order of 600 kg (1,300 lb) CO2 over a typical
-                  300-mile delivery, on top of the per-unit embodied-carbon
-                  savings below.
+                  Because NordBase nests on pallets, one truck carries what
+                  takes precast concrete{" "}
+                  <strong className="text-dark">2–5 trucks</strong> to
+                  deliver — fewer shipments, less freight carbon.
                 </p>
                 <p className="mt-4 text-xs text-steel">
                   Assumes 26 standard pallets/trailer and a 42,000–45,000 lb
-                  legal payload; precast figures per typical published US
-                  spec sheets for comparable blocks. Estimates, not a
-                  guaranteed freight plan.
+                  legal payload; precast figures (175 lb / 668 lb / 1,750 lb
+                  for small/standard/large blocks) per typical published US
+                  spec sheets for comparable blocks — matching Nordinfra's
+                  Small/Medium/Large truckload counts takes about 4×, 2×, and
+                  5× as many precast trucks, each avoided trip saving on the
+                  order of 600 kg (1,300 lb) CO2 over a typical 300-mile
+                  delivery at the 0.062 kg CO2/tonne-km factor cited below.
+                  Estimates, not a guaranteed freight plan.
                 </p>
               </div>
             </div>

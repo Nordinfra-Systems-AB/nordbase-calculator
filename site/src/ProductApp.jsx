@@ -354,13 +354,15 @@ export default function ProductApp() {
                 <h2 className="text-2xl font-extrabold tracking-tight">
                   Sized for the chargers you're already speccing
                 </h2>
+                {/* 2026-09-17 textgenomgång fix: two sentences with
+                    redundant phrasing ("fills in... automatically",
+                    "already dialed into") trimmed to one plus the list
+                    lead-in. */}
                 <p className="mt-2 max-w-2xl text-steel">
-                  Pick your pedestal in the calculator and it fills in the
-                  exact bolt spacing automatically wherever we have a
-                  confirmed hole pattern on file — otherwise it flags a quick
-                  compatibility check with Nordinfra instead of guessing.
-                  These manufacturers' pedestal footprints are already dialed
-                  into the calculator's sizing tool:
+                  Select your charger in the calculator and it auto-fills the
+                  bolt spacing when we have that model on file — otherwise it
+                  flags a quick compatibility check instead of guessing.
+                  Supported manufacturers:
                 </p>
               </>
             ) : (

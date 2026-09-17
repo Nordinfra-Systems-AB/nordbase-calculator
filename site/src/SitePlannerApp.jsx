@@ -663,13 +663,13 @@ export default function SitePlannerApp() {
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
             Sketch a layout on your own site
           </h1>
+          {/* 2026-09-17 textgenomgång fix: trimmed the 60+ word feature list
+              ahead of the disclaimer down to one sentence. */}
           <p className="mt-2 max-w-2xl text-steel">
-            Enter an address to pull up a satellite photo of the property,
-            drag to pan, drop correctly-scaled NordBase foundations, or add
-            your own custom-sized rectangles — one at a time, or a whole row
-            at once along a reference line. This is a rough visual sketch for
-            planning purposes — not a substitute for a surveyed site plan or
-            the calculator's stability calculation.
+            Enter an address to sketch NordBase foundations onto a satellite
+            photo of your site — place items individually or a whole row at
+            once. Rough planning tool only, not a substitute for a surveyed
+            site plan.
           </p>
         </div>
       </section>
