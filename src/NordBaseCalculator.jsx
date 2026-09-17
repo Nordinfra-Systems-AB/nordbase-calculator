@@ -4177,6 +4177,57 @@ export default function NordBaseCalculator() {
                 {CODE_EDITIONS[codeEdition].ibcLabel} — not PE-stamped.
               </p>
 
+              {/* Reference photos in the report itself — 2026-09-17 (launch
+                  checklist item F): the product-selection step already shows
+                  FoundationDiagram + the adapter-plate refPhotoUrl (see
+                  ~line 2718 / ~2957), but the printed report never carried
+                  either image, so a submittal package went out as text-only.
+                  Reuses the same components/fields, no new photo assets. */}
+              <div
+                className="flex gap-3 mb-4 print:break-inside-avoid"
+                style={{ flexWrap: "wrap" }}
+              >
+                <div
+                  className="flex-1 rounded-md border p-3"
+                  style={{ borderColor: "#D9D9D6", minWidth: 180 }}
+                >
+                  <div
+                    className="text-[10px] font-bold tracking-wide mb-1.5"
+                    style={{ color: brand.steel }}
+                  >
+                    {foundation.name.toUpperCase()}
+                  </div>
+                  <FoundationDiagram foundation={foundation} />
+                </div>
+                {presetModelData?.refPhotoUrl && (
+                  <div
+                    className="flex-1 rounded-md border p-3 flex flex-col items-center justify-center text-center"
+                    style={{ borderColor: "#D9D9D6", minWidth: 180 }}
+                  >
+                    <div
+                      className="text-[10px] font-bold tracking-wide mb-1.5 self-start"
+                      style={{ color: brand.steel }}
+                    >
+                      ADAPTER PLATE
+                    </div>
+                    <img
+                      src={presetModelData.refPhotoUrl}
+                      alt={`NordBase adapter plate for ${selectedChargerModelName}`}
+                      className="h-36 w-full object-contain"
+                    />
+                    <div
+                      className="text-xs mt-1 self-start"
+                      style={{ color: brand.steel }}
+                    >
+                      {selectedChargerModelName}
+                      {presetModelData.partNo
+                        ? ` — Part No. ${presetModelData.partNo}`
+                        : ""}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div
                 className="rounded-md p-4 mb-4"
                 style={{ background: brand.dark }}
