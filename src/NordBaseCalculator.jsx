@@ -749,7 +749,11 @@ const ADAPTER_PLATE_DRAWINGS = {
   //   "/drawings/adapter-plates/medium_siemens_sicharge-d.pdf",
   // [adapterDrawingKey("MEDIUM", "Siemens", "SICHARGE FLEX - Dispenser Big")]:
   //   "/drawings/adapter-plates/medium_siemens_sicharge-flex-dispenser-big.pdf",
-  // [adapterDrawingKey("SMALL", "Siemens", "SICHARGE FLEX - Dispenser Small")]:
+  // 2026-09-17: this model moved from SMALL to MEDIUM in shared/chargerData.js
+  // (200116 confirmed DCM, not DCS — see chargerData.js comment). Key below
+  // updated to match; filename kept as-is since the drawing itself is still
+  // 200116 either way.
+  // [adapterDrawingKey("MEDIUM", "Siemens", "SICHARGE FLEX - Dispenser Small")]:
   //   "/drawings/adapter-plates/small_siemens_sicharge-flex-dispenser-small.pdf",
   // Example (remove once the real PDF replaces it):
   // [adapterDrawingKey("MEDIUM", "Kempower", "Satellite C-Series")]:
