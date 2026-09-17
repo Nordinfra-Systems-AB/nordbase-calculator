@@ -83,9 +83,13 @@ export function SiteFooter() {
               alt="Nordinfra — Practical. Proven. Progressive."
               className="h-14 w-auto"
             />
+            {/* 2026-09-17 (Simon, direct instruction): dropped the Sweden
+                parent-company line and replaced the "Nordinfra USA LLC
+                (Delaware) — in formation" line with the entity's current
+                name. Also removed the PE-stamped disclaimer paragraph
+                below per the same instruction. */}
             <p className="mt-4 max-w-xs text-sm text-white/50">
-              Nordinfra Systems AB, Varberg, Sweden. Nordinfra USA LLC
-              (Delaware) — in formation.
+              NordBase USA Inc.
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-white/60">
@@ -94,11 +98,6 @@ export function SiteFooter() {
               info@nord-infra.com
             </a>
           </div>
-        </div>
-        <div className="mt-10 border-t border-white/10 pt-6 text-xs text-white/40">
-          Preliminary calculations from the NordBase Foundation Selector are
-          for planning purposes only and are not a substitute for a
-          PE-stamped engineering package.
         </div>
       </div>
     </footer>
