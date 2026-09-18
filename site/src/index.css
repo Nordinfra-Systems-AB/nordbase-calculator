@@ -39,3 +39,413 @@ html {
     display: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------
+   3D configurator 2D print sheet (Configurator3D.jsx / PrintSheet.jsx),
+   added 2026-09-18. Ported from the standalone prototype
+   (https://claude.ai/artifact/FuUJrPAo8FEkDPPsDCHnGs, "Print 2D drawing
+   (PDF)" button) -- same drafting-style ISO zoned-border sheet with a real
+   title block and drafted dimension lines (extension lines + arrowheads),
+   same real STEP-derived measured dimensions, just re-hosted as a React
+   portal instead of a hand-built DOM tree.
+
+   PrintSheet renders into a portal at the end of <body> (#print-sheet-root)
+   so it sits outside the React app root and can be shown full-page
+   regardless of where in the page tree Configurator3D itself is mounted.
+   A distinct "printing-foundation" class (not the SitePlannerApp's
+   "printing"/".no-print" pair above, which is a different, older print
+   flow) drives visibility so the two don't interact. */
+#print-sheet-root {
+  display: none;
+}
+body.printing-foundation > *:not(#print-sheet-root) {
+  display: none !important;
+}
+body.printing-foundation {
+  overflow: visible !important;
+  height: auto !important;
+}
+body.printing-foundation #print-sheet-root {
+  display: block;
+}
+
+#print-sheet-root {
+  font-family: "Archivo", system-ui, -apple-system, sans-serif;
+  color: #111;
+  background: #fff;
+}
+.ps-sheet {
+  position: relative;
+  width: 277mm;
+  height: 190mm;
+  margin: 0 auto;
+  box-sizing: border-box;
+  border: 1.1pt solid #111;
+  background: #fff;
+}
+.ps-zoneband {
+  position: absolute;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 7pt;
+  color: #333;
+}
+.ps-zoneband-top {
+  top: 0;
+  left: 7mm;
+  right: 7mm;
+  height: 7mm;
+  border-bottom: 0.6pt solid #111;
+}
+.ps-zoneband-bottom {
+  bottom: 0;
+  left: 7mm;
+  right: 7mm;
+  height: 7mm;
+  border-top: 0.6pt solid #111;
+}
+.ps-zoneband-left {
+  left: 0;
+  top: 7mm;
+  bottom: 7mm;
+  width: 7mm;
+  border-right: 0.6pt solid #111;
+}
+.ps-zoneband-right {
+  right: 0;
+  top: 7mm;
+  bottom: 7mm;
+  width: 7mm;
+  border-left: 0.6pt solid #111;
+}
+.ps-zone-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.ps-zoneband-top .ps-zone-label,
+.ps-zoneband-bottom .ps-zone-label {
+  top: 50%;
+}
+.ps-zoneband-left .ps-zone-label,
+.ps-zoneband-right .ps-zone-label {
+  left: 50%;
+}
+
+.ps-inner {
+  position: absolute;
+  top: 7mm;
+  left: 7mm;
+  right: 7mm;
+  bottom: 7mm;
+  padding: 5mm 5mm 41mm 5mm; /* extra bottom padding reserves room for the title block */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+.ps-header {
+  flex: none;
+  margin-bottom: 3mm;
+}
+.ps-header-top {
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  margin-bottom: 0.5mm;
+}
+.ps-header-logo {
+  height: 5mm;
+  width: auto;
+  display: block;
+  flex: none;
+}
+.ps-eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  color: #888;
+  text-transform: uppercase;
+}
+#print-sheet-root .ps-header h1 {
+  font-size: 14pt;
+  margin: 1mm 0 0.5mm;
+}
+#print-sheet-root .ps-sub {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 8pt;
+  color: #555;
+}
+.ps-overall {
+  flex: none;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9pt;
+  margin: 0 0 3mm;
+  padding: 2mm 3mm;
+  background: #f4f4f4;
+}
+.ps-views {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5mm;
+}
+.ps-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 0.5pt solid #ccc;
+  padding: 2mm;
+}
+.ps-view h3 {
+  flex: none;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  margin: 0 0 1.5mm;
+}
+.ps-view-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 7mm;
+  grid-template-rows: 7mm 1fr;
+  grid-template-areas:
+    "hdim   corner"
+    "imgw   vdim";
+}
+.ps-view-hdim {
+  grid-area: hdim;
+  position: relative;
+  overflow: visible;
+}
+.ps-view-vdim {
+  grid-area: vdim;
+  position: relative;
+  overflow: visible;
+}
+.ps-view-img-wrap {
+  grid-area: imgw;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+}
+.ps-view-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #f4f4f4;
+  border: 1px solid #e2e2e2;
+}
+
+/* Dimension lines: extension lines + a line with border-triangle arrowheads
+   at each end + a centered label -- built from the same real bounding-box
+   numbers as the "Overall dimensions" panel, just rendered as a drafting
+   dimension instead of plain text. Position along the strip is derived from
+   VIEW_PAD (the same camera padding factor the ortho capture uses, see
+   Configurator3D.jsx), so the arrows land on the actual rendered silhouette
+   edges, not a guessed margin. */
+.ps-dim-ext {
+  position: absolute;
+  background: #555;
+}
+.ps-view-hdim .ps-dim-ext {
+  top: 1.5mm;
+  bottom: 0;
+  width: 0.5pt;
+}
+.ps-view-vdim .ps-dim-ext {
+  left: 0;
+  right: 1.5mm;
+  height: 0.5pt;
+}
+.ps-dim-line {
+  position: absolute;
+  background: #111;
+}
+.ps-view-hdim .ps-dim-line {
+  top: 3.3mm;
+  height: 0.6pt;
+}
+.ps-view-vdim .ps-dim-line {
+  left: 3.3mm;
+  width: 0.6pt;
+}
+.ps-dim-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.ps-view-hdim .ps-dim-arrow {
+  top: 2.4mm;
+  border-top: 2.5px solid transparent;
+  border-bottom: 2.5px solid transparent;
+}
+.ps-view-hdim .ps-dim-arrow.left {
+  border-right: 6px solid #111;
+}
+.ps-view-hdim .ps-dim-arrow.right {
+  border-left: 6px solid #111;
+}
+.ps-view-vdim .ps-dim-arrow {
+  left: 2.4mm;
+  border-left: 2.5px solid transparent;
+  border-right: 2.5px solid transparent;
+}
+.ps-view-vdim .ps-dim-arrow.top {
+  border-bottom: 6px solid #111;
+}
+.ps-view-vdim .ps-dim-arrow.bottom {
+  border-top: 6px solid #111;
+}
+.ps-dim-label {
+  position: absolute;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 6.5pt;
+  color: #111;
+  background: #fff;
+  padding: 0 1px;
+  white-space: nowrap;
+}
+.ps-dim-label.h {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.ps-dim-label.v {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: center;
+}
+
+/* Footer band, bottom-left -- mirrors the title block on the right so the
+   full width of the sheet's reserved bottom margin is used instead of
+   being left blank. Same height/baseline as .ps-titleblock. */
+.ps-footerband {
+  position: absolute;
+  left: 7mm;
+  bottom: 0;
+  width: calc(100% - 122mm);
+  height: 36mm;
+  z-index: 2;
+  background: #fff;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 38mm 1fr;
+  border: 0.9pt solid #111;
+}
+.ps-footer-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.2mm;
+  padding: 2mm;
+  box-sizing: border-box;
+  border-right: 0.4pt solid #999;
+}
+.ps-footer-logo {
+  height: 6.5mm;
+  width: auto;
+  display: block;
+}
+.ps-footer-wordmark {
+  height: 4mm;
+  width: auto;
+  display: block;
+}
+.ps-footer-tagline {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 4.8pt;
+  letter-spacing: 0.06em;
+  color: #888;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ps-footer-notes {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1mm;
+  padding: 2mm 3mm;
+  box-sizing: border-box;
+  min-width: 0;
+}
+.ps-footer-notes-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 6pt;
+  letter-spacing: 0.06em;
+  color: #666;
+  text-transform: uppercase;
+}
+.ps-footer {
+  font-size: 6.5pt;
+  color: #444;
+  line-height: 1.4;
+}
+.ps-footer-scale {
+  font-size: 6.5pt;
+  color: #111;
+  font-weight: 600;
+}
+
+/* Title block, bottom-right corner -- fields match a standard ISO-style
+   drafting sheet (Dept / Technical reference / Created by / Approved by /
+   Document type / Document status / Title / DWG No. / Rev / Date of
+   issue / Sheet). */
+.ps-titleblock {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 115mm;
+  height: 36mm;
+  z-index: 2;
+  background: #fff;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  grid-template-areas:
+    "dept     techref  techref  createdby createdby approvedby"
+    "doctype  doctype  doctype  docstatus docstatus docstatus"
+    "title    title    title    dwgno     dwgno     dwgno"
+    "title    title    title    rev       dateissue sheet";
+  border: 0.9pt solid #111;
+}
+.tb-cell {
+  grid-area: var(--area);
+  border: 0.4pt solid #999;
+  padding: 0.8mm 1.5mm;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+.tb-label {
+  font-size: 5.5pt;
+  color: #666;
+  line-height: 1.1;
+}
+.tb-value {
+  font-size: 8pt;
+  color: #111;
+  line-height: 1.25;
+  margin-top: 0.5mm;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#tb-title {
+  font-weight: 600;
+  font-size: 8.5pt;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+@page {
+  size: A4 landscape;
+  margin: 10mm;
+}

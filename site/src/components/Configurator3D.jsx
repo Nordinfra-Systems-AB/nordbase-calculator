@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { RotateCw, RefreshCw } from "lucide-react";
+import { RotateCw, RefreshCw, Printer } from "lucide-react";
+import PrintSheet from "./PrintSheet.jsx";
 
 // ---------------------------------------------------------------------------
 // NordBase 3D configurator, ported into the real site from the standalone
@@ -115,6 +116,7 @@ export default function Configurator3D({ family, theme = "light" }) {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [autoRotate, setAutoRotate] = useState(true);
+  const [printData, setPrintData] = useState(null);
 
   // ---- one-time scene setup (mount) ----
   useEffect(() => {
@@ -361,6 +363,19 @@ export default function Configurator3D({ family, theme = "light" }) {
           const fullSize = full.getSize(new THREE.Vector3());
           setDims({ w: fullSize.x, d: fullSize.z, h: fullSize.y });
           frameCamera(full);
+
+          // Title / parts string for the print sheet's header + title block --
+          // same composition as the prototype (see project notes 2026-09-18).
+          const titleParts = [fnd.title];
+          if (adapter && adapter.id !== "none") titleParts.push(adapter.label.replace(/\s*—.*$/, ""));
+          addonsToLoad.forEach((addon) => titleParts.push(addon.label));
+
+          const partNos = [useKempowerFnd ? fnd.kempowerParts : fnd.parts];
+          if (adapter && adapter.parts) partNos.push(adapter.parts);
+          addonsToLoad.forEach((addon) => partNos.push(addon.label));
+
+          threeRef.current.meta = { title: titleParts.join(" + "), parts: partNos.join(" · ") };
+
           setLoading(false);
         } catch (err) {
           if (myToken !== loadTokenRef.current) return;
@@ -370,7 +385,68 @@ export default function Configurator3D({ family, theme = "light" }) {
         }
       }
 
-      threeRef.current = { ...threeRef.current, THREE, renderer, scene, camera, controls, group, loader, ro, el, rebuild };
+      // ---- 2D print / PDF export: Front, Top, Side orthographic captures ----
+      // Ported from the standalone prototype's captureOrthoView -- same
+      // VIEW_PAD framing (kept in sync with PrintSheet.jsx's DimStrip, which
+      // uses the same constant to place the dimension-line arrows), same
+      // offscreen 1000px-wide opaque render, same restore-afterward behavior.
+      const VIEW_PAD = 1.18;
+      function captureOrthoView(direction, size, center) {
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const pad = VIEW_PAD;
+        let viewW, viewH, camPos, upVec;
+        if (direction === "front") {
+          viewW = size.x;
+          viewH = size.y;
+          camPos = center.clone().add(new THREE.Vector3(0, 0, maxDim * 3));
+          upVec = new THREE.Vector3(0, 1, 0);
+        } else if (direction === "side") {
+          viewW = size.z;
+          viewH = size.y;
+          camPos = center.clone().add(new THREE.Vector3(maxDim * 3, 0, 0));
+          upVec = new THREE.Vector3(0, 1, 0);
+        } else {
+          viewW = size.x;
+          viewH = size.z;
+          camPos = center.clone().add(new THREE.Vector3(0, maxDim * 3, 0));
+          upVec = new THREE.Vector3(0, 0, -1);
+        }
+        const halfW = (viewW / 2) * pad,
+          halfH = (viewH / 2) * pad;
+        const ortho = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.01, maxDim * 8);
+        ortho.position.copy(camPos);
+        ortho.up.copy(upVec);
+        ortho.lookAt(center);
+        ortho.updateProjectionMatrix();
+
+        const outW = 1000,
+          outH = Math.max(1, Math.round(1000 * (viewH / viewW)));
+        const prevW = renderer.domElement.width,
+          prevH = renderer.domElement.height;
+        renderer.setSize(outW, outH, false);
+        renderer.setClearColor(0xf4f4f4, 1);
+        renderer.render(scene, ortho);
+        const dataURL = renderer.domElement.toDataURL("image/png");
+        renderer.setSize(prevW, prevH, false);
+        renderer.setClearColor(0x000000, 0);
+        return dataURL;
+      }
+
+      threeRef.current = {
+        ...threeRef.current,
+        THREE,
+        renderer,
+        scene,
+        camera,
+        controls,
+        group,
+        ground,
+        loader,
+        ro,
+        el,
+        rebuild,
+        captureOrthoView,
+      };
       setReady(true);
       rebuild(adapterId, addonIds);
     })();
@@ -423,6 +499,53 @@ export default function Configurator3D({ family, theme = "light" }) {
       return next;
     });
   }
+
+  function handlePrint() {
+    const t = threeRef.current;
+    if (!t.group || !t.THREE || !t.renderer || !t.scene || !t.captureOrthoView || !t.meta) return;
+
+    const { THREE, renderer, scene, camera, group, ground, captureOrthoView, meta } = t;
+    const box = new THREE.Box3().setFromObject(group);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // A tall pole's cast shadow across a top-down view reads as a dark blob,
+    // not useful on a line drawing -- hide ground + shadows for the capture,
+    // same as the prototype's btnPrint handler.
+    const prevGroundVisible = ground.visible;
+    const prevShadowMap = renderer.shadowMap.enabled;
+    ground.visible = false;
+    renderer.shadowMap.enabled = false;
+
+    const front = captureOrthoView("front", size, center);
+    const top = captureOrthoView("top", size, center);
+    const side = captureOrthoView("side", size, center);
+
+    ground.visible = prevGroundVisible;
+    renderer.shadowMap.enabled = prevShadowMap;
+    renderer.render(scene, camera);
+
+    setPrintData({
+      title: meta.title,
+      parts: meta.parts,
+      size: { wLabel: fmtIN(size.x), dLabel: fmtIN(size.z), hLabel: fmtIN(size.y) },
+      views: { front, top, side },
+      todayISO: new Date().toISOString().slice(0, 10),
+    });
+
+    document.body.classList.add("printing-foundation");
+    requestAnimationFrame(() => {
+      window.print();
+    });
+  }
+
+  useEffect(() => {
+    function onAfterPrint() {
+      document.body.classList.remove("printing-foundation");
+    }
+    window.addEventListener("afterprint", onAfterPrint);
+    return () => window.removeEventListener("afterprint", onAfterPrint);
+  }, []);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -536,11 +659,24 @@ export default function Configurator3D({ family, theme = "light" }) {
           </button>
         </div>
 
+        <button
+          type="button"
+          onClick={handlePrint}
+          disabled={!ready || loading || failed}
+          className={`inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 ${
+            dark ? "border-white/15 text-white/60 hover:bg-white/[0.06]" : "border-black/15 text-steel hover:bg-black/[0.03]"
+          }`}
+        >
+          <Printer className="h-3.5 w-3.5" /> Print 2D drawing (PDF)
+        </button>
+
         <p className={`text-xs ${dark ? "text-white/40" : "text-steel"}`}>
           Real STEP-derived CAD geometry. Adapter plate position is centered from bounding-box measurement, not verified against exact hole
           registration. Surface finish shown is a neutral placeholder, not Nordinfra's final coating spec.
         </p>
       </div>
+
+      <PrintSheet data={printData} />
     </div>
   );
 }
