@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
 import {
   ArrowRight,
   ArrowLeft,
@@ -6,10 +6,24 @@ import {
   Ruler,
   Layers,
   ShieldCheck,
+  Box,
 } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
 import { PRODUCTS, PRODUCT_ORDER, ACCESSORIES } from "./foundationData.js";
+
+// Code-split: three.js + the configurator only load when a product page that
+// actually has converted CAD geometry is opened, not on every page load.
+const Configurator3D = lazy(() => import("./components/Configurator3D.jsx"));
+
+// Only these three products have real STEP-derived 3D geometry converted so
+// far (Large and Power Block don't -- no CAD to show, so no placeholder is
+// built for them here, per the project's no-fabrication rule).
+const PRODUCT_TO_VIEWER_FAMILY = {
+  small: "dcs",
+  medium: "dcm",
+  bollard: "bollard",
+};
 
 // ---------------------------------------------------------------------------
 // PRODUCT DETAIL — one shared template, not four separate static pages
@@ -210,6 +224,32 @@ export default function ProductApp() {
           </div>
         </div>
       </section>
+
+      {/* 3D CONFIGURATOR — only for products with converted CAD geometry */}
+      {PRODUCT_TO_VIEWER_FAMILY[product.slug] && (
+        <section className="border-b border-black/10 bg-white py-14">
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gold">
+              <Box className="h-4 w-4" /> Configure &amp; preview in 3D
+            </div>
+            <p className="mt-2 max-w-2xl text-sm text-steel">
+              Rotate, compare adapter plates, and read real dimensions straight off the CAD model — the same geometry used to build the
+              foundation itself.
+            </p>
+            <div className="mt-6">
+              <Suspense
+                fallback={
+                  <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-black/10 bg-bgSoft text-sm text-steel sm:aspect-[16/10]">
+                    Loading 3D viewer…
+                  </div>
+                }
+              >
+                <Configurator3D family={PRODUCT_TO_VIEWER_FAMILY[product.slug]} />
+              </Suspense>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* DIMENSIONS */}
       <section className="border-b border-black/10 bg-bgSoft py-14">
