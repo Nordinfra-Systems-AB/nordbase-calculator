@@ -20,6 +20,7 @@ export default defineConfig({
         resources: resolve(__dirname, "resources.html"),
         partners: resolve(__dirname, "partners.html"),
         product: resolve(__dirname, "product.html"),
+        foundations: resolve(__dirname, "foundations.html"),
         installation: resolve(__dirname, "installation.html"),
         siteplanner: resolve(__dirname, "site-planner.html"),
       },
