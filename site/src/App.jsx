@@ -597,9 +597,9 @@ export default function App() {
           <Reveal delay={ASSEMBLIES.length * 80}>
             <a
               href="/foundations.html"
-              className="mt-8 inline-flex items-center gap-1.5 text-sm font-bold text-gold hover:text-goldSoft"
+              className="mt-8 inline-flex items-center gap-2.5 text-[28px] font-bold text-gold hover:text-goldSoft"
             >
-              Explore every foundation in 3D <ArrowRight className="h-4 w-4" />
+              Explore every foundation in 3D <ArrowRight className="h-8 w-8" />
             </a>
           </Reveal>
         </div>
