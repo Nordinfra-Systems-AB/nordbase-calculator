@@ -588,6 +588,20 @@ export default function App() {
               </Reveal>
             ))}
           </div>
+          {/* Links out to /foundations.html (added 2026-09-18) rather than
+              replacing these static renders in place — this grid's job is a
+              fast, at-a-glance product-line overview (see comment above),
+              while the dedicated page hosts one shared, lazy-loaded 3D
+              viewer with a family switcher. Keeps this section's load light
+              and avoids running three live WebGL scenes on page load. */}
+          <Reveal delay={ASSEMBLIES.length * 80}>
+            <a
+              href="/foundations.html"
+              className="mt-8 inline-flex items-center gap-1.5 text-sm font-bold text-gold hover:text-goldSoft"
+            >
+              Explore every foundation in 3D <ArrowRight className="h-4 w-4" />
+            </a>
+          </Reveal>
         </div>
       </section>
 

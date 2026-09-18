@@ -99,7 +99,8 @@ function fmtIN(m) {
   return (m * M_TO_IN).toFixed(2) + '"';
 }
 
-export default function Configurator3D({ family }) {
+export default function Configurator3D({ family, theme = "light" }) {
+  const dark = theme === "dark";
   const mountRef = useRef(null);
   const threeRef = useRef({});
   const loadTokenRef = useRef(0);
@@ -425,15 +426,27 @@ export default function Configurator3D({ family }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-black/10 bg-gradient-to-b from-bgSoft to-white sm:aspect-[16/10]">
+      <div
+        className={`relative aspect-[4/3] overflow-hidden rounded-xl border sm:aspect-[16/10] ${
+          dark ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-gradient-to-b from-bgSoft to-white"
+        }`}
+      >
         <div ref={mountRef} className="h-full w-full" />
         {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70 text-sm font-medium text-steel">
+          <div
+            className={`absolute inset-0 flex items-center justify-center text-sm font-medium ${
+              dark ? "bg-dark/70 text-white/70" : "bg-white/70 text-steel"
+            }`}
+          >
             Loading 3D model…
           </div>
         )}
         {failed && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/90 px-6 text-center text-sm font-medium text-steel">
+          <div
+            className={`absolute inset-0 flex items-center justify-center px-6 text-center text-sm font-medium ${
+              dark ? "bg-dark/90 text-white/70" : "bg-white/90 text-steel"
+            }`}
+          >
             Couldn't load the 3D model right now. Try a different selection, or reload the page.
           </div>
         )}
@@ -446,10 +459,12 @@ export default function Configurator3D({ family }) {
             <select
               value={adapterId}
               onChange={(e) => setAdapterId(e.target.value)}
-              className="mt-2 w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm text-dark"
+              className={`mt-2 w-full rounded-md border px-3 py-2 text-sm ${
+                dark ? "border-white/15 bg-white/5 text-white" : "border-black/15 bg-white text-dark"
+              }`}
             >
               {adapters.map((a) => (
-                <option key={a.id} value={a.id}>
+                <option key={a.id} value={a.id} className="text-dark">
                   {a.label}
                 </option>
               ))}
@@ -462,8 +477,13 @@ export default function Configurator3D({ family }) {
             <label className="text-xs font-semibold uppercase tracking-wider text-gold">Add-on</label>
             <div className="mt-2 flex flex-col gap-2">
               {addonList.map((a) => (
-                <label key={a.id} className="flex items-center gap-2 text-sm text-dark">
-                  <input type="checkbox" checked={addonIds.has(a.id)} onChange={() => toggleAddon(a.id)} className="h-4 w-4 rounded border-black/25" />
+                <label key={a.id} className={`flex items-center gap-2 text-sm ${dark ? "text-white" : "text-dark"}`}>
+                  <input
+                    type="checkbox"
+                    checked={addonIds.has(a.id)}
+                    onChange={() => toggleAddon(a.id)}
+                    className={`h-4 w-4 rounded ${dark ? "border-white/25" : "border-black/25"}`}
+                  />
                   {a.label}
                 </label>
               ))}
@@ -472,20 +492,20 @@ export default function Configurator3D({ family }) {
         )}
 
         {dims && (
-          <div className="rounded-xl border border-black/10 bg-white p-4">
+          <div className={`rounded-xl border p-4 ${dark ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-white"}`}>
             <div className="text-xs font-semibold uppercase tracking-wider text-gold">Overall dimensions</div>
             <div className="mt-2 grid grid-cols-3 gap-2 text-center">
               <div>
-                <div className="text-[11px] text-steel">Width</div>
-                <div className="text-sm font-bold text-dark">{fmtIN(dims.w)}</div>
+                <div className={`text-[11px] ${dark ? "text-white/50" : "text-steel"}`}>Width</div>
+                <div className={`text-sm font-bold ${dark ? "text-white" : "text-dark"}`}>{fmtIN(dims.w)}</div>
               </div>
               <div>
-                <div className="text-[11px] text-steel">Depth</div>
-                <div className="text-sm font-bold text-dark">{fmtIN(dims.d)}</div>
+                <div className={`text-[11px] ${dark ? "text-white/50" : "text-steel"}`}>Depth</div>
+                <div className={`text-sm font-bold ${dark ? "text-white" : "text-dark"}`}>{fmtIN(dims.d)}</div>
               </div>
               <div>
-                <div className="text-[11px] text-steel">Height</div>
-                <div className="text-sm font-bold text-dark">{fmtIN(dims.h)}</div>
+                <div className={`text-[11px] ${dark ? "text-white/50" : "text-steel"}`}>Height</div>
+                <div className={`text-sm font-bold ${dark ? "text-white" : "text-dark"}`}>{fmtIN(dims.h)}</div>
               </div>
             </div>
           </div>
@@ -496,7 +516,11 @@ export default function Configurator3D({ family }) {
             type="button"
             onClick={toggleAutoRotate}
             className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-bold ${
-              autoRotate ? "border-gold bg-gold/15 text-dark" : "border-black/15 text-steel hover:bg-black/[0.03]"
+              autoRotate
+                ? "border-gold bg-gold/15 " + (dark ? "text-white" : "text-dark")
+                : dark
+                ? "border-white/15 text-white/60 hover:bg-white/[0.06]"
+                : "border-black/15 text-steel hover:bg-black/[0.03]"
             }`}
           >
             <RotateCw className="h-3.5 w-3.5" /> Auto-rotate
@@ -504,13 +528,15 @@ export default function Configurator3D({ family }) {
           <button
             type="button"
             onClick={resetView}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-black/15 px-3 py-2 text-xs font-bold text-steel hover:bg-black/[0.03]"
+            className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-bold ${
+              dark ? "border-white/15 text-white/60 hover:bg-white/[0.06]" : "border-black/15 text-steel hover:bg-black/[0.03]"
+            }`}
           >
             <RefreshCw className="h-3.5 w-3.5" /> Reset view
           </button>
         </div>
 
-        <p className="text-xs text-steel">
+        <p className={`text-xs ${dark ? "text-white/40" : "text-steel"}`}>
           Real STEP-derived CAD geometry. Adapter plate position is centered from bounding-box measurement, not verified against exact hole
           registration. Surface finish shown is a neutral placeholder, not Nordinfra's final coating spec.
         </p>
