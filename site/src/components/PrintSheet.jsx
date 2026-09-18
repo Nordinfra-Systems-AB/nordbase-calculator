@@ -176,9 +176,11 @@ export default function PrintSheet({ data }) {
 
       <div className="ps-footerband">
         <div className="ps-footer-brand">
-          <img className="ps-footer-logo" src="/logo/logo-icon-dark.png" alt="" />
-          <img className="ps-footer-wordmark" src="/logo/logo-wordmark-dark.png" alt="" />
-          <div className="ps-footer-tagline">Practical. Proven. Progressive.</div>
+          {/* Single combined lockup (icon + gold divider + wordmark + tagline),
+              same asset/proportions as Nordinfra's official logo file -- see
+              index.css comment on .ps-footer-logo-full for why this replaced
+              a hand-assembled icon+wordmark+tagline stack. */}
+          <img className="ps-footer-logo-full" src="/logo/logo-full-dark.png" alt="Nordinfra — Practical. Proven. Progressive." />
         </div>
         <div className="ps-footer-notes">
           <div className="ps-footer-notes-label">General notes</div>

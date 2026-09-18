@@ -82,6 +82,12 @@ body.printing-foundation #print-sheet-root {
   box-sizing: border-box;
   border: 1.1pt solid #111;
   background: #fff;
+  /* Hard clip: the sheet is a fixed A4-landscape page, so nothing inside it
+     (a long combined title wrapping to 2 lines, an extreme aspect-ratio
+     object) should ever be able to push real print engines into allocating
+     a second page -- see the .ps-views fix below for the actual root cause,
+     this is a safety net on top of that fix, not a replacement for it. */
+  overflow: hidden;
 }
 .ps-zoneband {
   position: absolute;
@@ -167,6 +173,14 @@ body.printing-foundation #print-sheet-root {
 #print-sheet-root .ps-header h1 {
   font-size: 14pt;
   margin: 1mm 0 0.5mm;
+  /* A long combined title (foundation + adapter + several add-ons) must
+     never wrap to a 2nd line -- that grows .ps-header (flex:none, so it
+     doesn't shrink) and eats into .ps-views' fixed budget. Truncate
+     instead; the full title/part string is still fully readable on the
+     title block below (which does wrap, up to 3 lines -- see #tb-title). */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 #print-sheet-root .ps-sub {
   font-family: "IBM Plex Mono", monospace;
@@ -186,6 +200,26 @@ body.printing-foundation #print-sheet-root {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  /* Explicit row track, not the implicit "auto" default. Without this, the
+     browser sizes the single implicit row to the CONTENT's natural height
+     (a two-pass, circularity-prone computation, since the img inside is
+     itself height:100% of this same row) instead of simply filling this
+     grid's own already-definite height (it's a flex child with min-height:0
+     above, so its height IS definite by the time this runs).
+     Two real, related bugs traced back to exactly this:
+     1) the front/top/side capture images rendering visibly offset toward
+        one edge of their box instead of centered (object-fit:contain was
+        never wrong -- the *box* it was centering within was sized off an
+        inconsistent auto/content-based pass, most visible for a near-square
+        top view next to two taller front/side views);
+     2) real browser printing (not just an on-screen render) spilling the
+        whole sheet onto a 2nd/3rd page for a very tall, narrow object
+        (Bollard + Collision protection) or a long combined title (Small +
+        Sensor pole) -- the "auto" row carried a content-based minimum that
+        didn't shrink even though .ps-views' own container height was fixed.
+     minmax(0, 1fr) is the fix: the row is exactly this grid's height, full
+     stop, with no content-based floor to overflow with. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 5mm;
 }
 .ps-view {
@@ -337,31 +371,26 @@ body.printing-foundation #print-sheet-root {
 }
 .ps-footer-brand {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  gap: 1.2mm;
   padding: 2mm;
   box-sizing: border-box;
   border-right: 0.4pt solid #999;
 }
-.ps-footer-logo {
-  height: 6.5mm;
-  width: auto;
+/* Single combined lockup image (icon + gold divider + wordmark + tagline),
+   2026-09-19: replaced a hand-assembled icon+wordmark+tagline stack that
+   didn't match Nordinfra's actual logo file -- it was missing the gold
+   divider bar and used different relative spacing/sizing than the official
+   asset (Simon flagged it as "lite fel"). logo-full-dark.png is the
+   official logo-full-light.png (used elsewhere on the site's dark pages)
+   recolored pixel-for-pixel for a white background -- same proportions,
+   same divider, same tagline, nothing rebuilt from scratch. */
+.ps-footer-logo-full {
+  width: 100%;
+  height: auto;
+  max-height: 11mm;
+  object-fit: contain;
   display: block;
-}
-.ps-footer-wordmark {
-  height: 4mm;
-  width: auto;
-  display: block;
-}
-.ps-footer-tagline {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 4.8pt;
-  letter-spacing: 0.06em;
-  color: #888;
-  text-transform: uppercase;
-  white-space: nowrap;
 }
 .ps-footer-notes {
   display: flex;
