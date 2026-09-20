@@ -24,6 +24,8 @@
 // is set, this endpoint refuses all requests (fails closed, not open) and
 // returns "not_configured" — so there's no accidental unprotected window.
 
+import { rateLimit } from "./_rateLimit.js";
+
 const CLICKUP_FIELD_IDS = {
   state: "b3d0d0f2-7b4c-49bb-a558-9733f5c70bd8", // Delstat — converted short_text → dropdown 2026-09-04
   foundationType: "a64fcb4e-cfa7-4010-94e1-7aa6a6e4c3ee", // Fundamenttyp
@@ -81,6 +83,15 @@ async function fetchAllTasks(listId, token) {
 }
 
 export default async function handler(req, res) {
+  // Throttle BEFORE the password check — this is what actually stops a
+  // script from brute-forcing STATS_ACCESS_KEY by trying values rapidly.
+  const rl = rateLimit(req, { windowMs: 5 * 60 * 1000, max: 20, keyPrefix: "stats" });
+  if (rl.limited) {
+    res.setHeader("Retry-After", String(rl.retryAfterSeconds));
+    res.status(429).json({ ok: false, error: "rate_limited" });
+    return;
+  }
+
   const accessKey = process.env.STATS_ACCESS_KEY;
   if (!accessKey) {
     res.status(500).json({

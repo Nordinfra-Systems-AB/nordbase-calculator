@@ -55,6 +55,8 @@
 // fail) does this endpoint return an error and the UI falls back to the
 // old mailto: link — so this can go live with just one of the two set up.
 
+import { rateLimit } from "./_rateLimit.js";
+
 // Maps the calculator's internal foundation key to the matching option in
 // ClickUp's "Fundamenttyp" dropdown on Kalkylator-leads. These are the same
 // 5 real product names as FOUNDATIONS[key].name in NordBaseCalculator.jsx
@@ -319,6 +321,20 @@ async function createClickUpTask({ subject, text, meta }) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "method_not_allowed" });
+    return;
+  }
+
+  // Stops a script from spamming ClickUp/Resend (and burning their quota)
+  // with junk submissions — a real customer retrying a failed submit a
+  // couple of times will never hit this, a bot looping the endpoint will.
+  const rl = rateLimit(req, {
+    windowMs: 10 * 60 * 1000,
+    max: 5,
+    keyPrefix: "submit-lead",
+  });
+  if (rl.limited) {
+    res.setHeader("Retry-After", String(rl.retryAfterSeconds));
+    res.status(429).json({ ok: false, error: "rate_limited" });
     return;
   }
 
