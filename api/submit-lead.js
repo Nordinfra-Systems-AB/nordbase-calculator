@@ -182,6 +182,17 @@ const MANUFACTURER_TO_CLICKUP_OPTION = {
   WiLLev: "2f6889a1-042a-434b-affc-6aa4e67e63e3",
 };
 
+// Human-readable names for nordbase-backend's public lead endpoint (a free
+// text field there, not an enum) -- reuses the same names as the ClickUp
+// option comments above, just for readability in the created quote's notes.
+const FOUNDATION_DISPLAY_NAMES = {
+  BOLLARD: "NordBase Bollard",
+  SMALL: "NordBase Small",
+  MEDIUM: "NordBase Medium",
+  LARGE: "NordBase Large",
+  POWER_BLOCK: "NordBase Power Block",
+};
+
 async function sendEmail({ subject, text, meta }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { attempted: false };
@@ -318,6 +329,54 @@ async function createClickUpTask({ subject, text, meta }) {
   return { attempted: true };
 }
 
+// Third lead channel -- nordbase-backend's own database, added 2026-09-20
+// alongside the Resend/ClickUp pair above, per Simon's "database as a hub"
+// idea. Added IN PARALLEL, never replacing the other two -- same
+// Promise.allSettled pattern, so a bug here can never lose a lead the other
+// two channels would otherwise have caught. Creates a real customer
+// (status: prospect) + a draft quote in nordbase-backend.
+//
+// SETUP (optional -- this channel quietly no-ops until configured, exactly
+// like the Resend/ClickUp channels above before their env vars are set):
+//   In Vercel -> this project -> Settings -> Environment Variables, add:
+//     NORDBASE_API_URL = <the nordbase-backend deployment's base URL>
+//   Redeploy after adding it. No token needed -- this hits nordbase-backend's
+//   public, unauthenticated POST /public/leads endpoint (src/routes/public.ts
+//   in the nordbase-backend repo), rate-limited server-side there.
+async function createNordbaseLead({ text, meta }) {
+  const apiUrl = process.env.NORDBASE_API_URL;
+  if (!apiUrl) return { attempted: false };
+
+  const m = meta || {};
+  const foundationName =
+    (m.foundationKey && FOUNDATION_DISPLAY_NAMES[m.foundationKey]) || m.foundationKey || undefined;
+
+  const nordbaseRes = await fetch(`${apiUrl.replace(/\/$/, "")}/public/leads`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      companyName: m.companyName || undefined,
+      contactName: m.contactName || undefined,
+      contactEmail: m.contactEmail || undefined,
+      contactPhone: m.contactPhone || undefined,
+      projectState: m.projectState || undefined,
+      foundationName,
+      chargerManufacturer: m.presetMfr || undefined,
+      projectName: m.projectName || undefined,
+      note: text || undefined,
+      consent: true,
+    }),
+  });
+
+  if (!nordbaseRes.ok) {
+    const errText = await nordbaseRes.text().catch(() => "");
+    // eslint-disable-next-line no-console
+    console.error("nordbase-backend lead API error", nordbaseRes.status, errText);
+    throw new Error(`nordbase_${nordbaseRes.status}`);
+  }
+  return { attempted: true };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "method_not_allowed" });
@@ -368,18 +427,22 @@ export default async function handler(req, res) {
     return;
   }
 
-  const [emailResult, clickupResult] = await Promise.allSettled([
+  const [emailResult, clickupResult, nordbaseResult] = await Promise.allSettled([
     sendEmail({ subject, text, meta }),
     createClickUpTask({ subject, text, meta }),
+    createNordbaseLead({ text, meta }),
   ]);
 
   const emailOk = emailResult.status === "fulfilled" && emailResult.value.attempted;
   const clickupOk =
     clickupResult.status === "fulfilled" && clickupResult.value.attempted;
+  const nordbaseOk =
+    nordbaseResult.status === "fulfilled" && nordbaseResult.value.attempted;
   // "Configured" = the env var was set, whether or not the call itself
   // then succeeded — used only to pick the right error code below.
   const emailConfigured = emailResult.status === "rejected" || emailOk;
   const clickupConfigured = clickupResult.status === "rejected" || clickupOk;
+  const nordbaseConfigured = nordbaseResult.status === "rejected" || nordbaseOk;
 
   if (emailResult.status === "rejected") {
     // eslint-disable-next-line no-console
@@ -389,17 +452,21 @@ export default async function handler(req, res) {
     // eslint-disable-next-line no-console
     console.error("submit-lead: clickup channel failed", clickupResult.reason);
   }
+  if (nordbaseResult.status === "rejected") {
+    // eslint-disable-next-line no-console
+    console.error("submit-lead: nordbase-backend channel failed", nordbaseResult.reason);
+  }
 
-  if (emailOk || clickupOk) {
-    res.status(200).json({ ok: true, email: emailOk, clickup: clickupOk });
+  if (emailOk || clickupOk || nordbaseOk) {
+    res.status(200).json({ ok: true, email: emailOk, clickup: clickupOk, nordbase: nordbaseOk });
     return;
   }
 
-  // Neither channel is configured, or both attempts failed — let the
-  // client fall back to mailto: so the lead is never simply lost.
-  const neitherConfigured = !emailConfigured && !clickupConfigured;
-  res.status(neitherConfigured ? 500 : 502).json({
+  // No channel is configured, or all attempts failed — let the client fall
+  // back to mailto: so the lead is never simply lost.
+  const noneConfigured = !emailConfigured && !clickupConfigured && !nordbaseConfigured;
+  res.status(noneConfigured ? 500 : 502).json({
     ok: false,
-    error: neitherConfigured ? "not_configured" : "send_failed",
+    error: noneConfigured ? "not_configured" : "send_failed",
   });
 }
