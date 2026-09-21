@@ -2301,6 +2301,16 @@ export default function NordBaseCalculator() {
             quantity,
             foundationKey,
             presetMfr,
+            // Adapter plate part number for whatever the customer actually
+            // configured — added 2026-09-21 so nordbase-backend can attach a
+            // real (unpriced) product line to the auto-created quote. Same
+            // source data the on-screen "Adapter Plate: ..." label already
+            // reads from (Power Block uses its own model record; every other
+            // foundation uses presetModelData). Undefined/omitted when no
+            // charger model is selected yet — the backend just skips the line.
+            adapterPartNumber: foundation?.isPowerBlock
+              ? selectedPowerBlockModel?.partNumber
+              : presetModelData?.partNumber,
             windSpeed,
             sds,
             packageType,

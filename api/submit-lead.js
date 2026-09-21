@@ -193,6 +193,20 @@ const FOUNDATION_DISPLAY_NAMES = {
   POWER_BLOCK: "NordBase Power Block",
 };
 
+// nordbase-backend product_number for each foundation kit -- confirmed by a
+// direct DB check 2026-09-21 (product.level = 'kit'). SMALL always maps to
+// the plain NI-FDN-DCS; the NI-FDN-DCS-KEMPOWER variant exists in the
+// database too but nothing here can tell them apart yet, so a human
+// reviewing the quote picks the right one -- same "human always finishes
+// the line" pattern as the missing price (see createNordbaseLead below).
+const FOUNDATION_PRODUCT_NUMBERS = {
+  BOLLARD: "NI-FDN-BLD",
+  SMALL: "NI-FDN-DCS",
+  MEDIUM: "NI-FDN-DCM",
+  LARGE: "NI-FDN-DCL",
+  POWER_BLOCK: "NI-FDN-PB",
+};
+
 async function sendEmail({ subject, text, meta }) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { attempted: false };
@@ -351,6 +365,21 @@ async function createNordbaseLead({ text, meta }) {
   const foundationName =
     (m.foundationKey && FOUNDATION_DISPLAY_NAMES[m.foundationKey]) || m.foundationKey || undefined;
 
+  // What the customer configured, as real (but unpriced -- "option A+",
+  // chat 2026-09-21) quote lines. quantity comes straight from the
+  // calculator's own quantity field; the adapter plate is always 1 per
+  // foundation. nordbase-backend silently skips any productNumber it
+  // doesn't recognize, so an unmapped/renamed part never blocks the lead.
+  const lines = [];
+  const foundationProductNumber = m.foundationKey && FOUNDATION_PRODUCT_NUMBERS[m.foundationKey];
+  if (foundationProductNumber) {
+    const qty = Number(m.quantity);
+    lines.push({ productNumber: foundationProductNumber, quantity: qty > 0 ? qty : 1 });
+  }
+  if (m.adapterPartNumber) {
+    lines.push({ productNumber: m.adapterPartNumber, quantity: 1 });
+  }
+
   const nordbaseRes = await fetch(`${apiUrl.replace(/\/$/, "")}/public/leads`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -364,6 +393,7 @@ async function createNordbaseLead({ text, meta }) {
       chargerManufacturer: m.presetMfr || undefined,
       projectName: m.projectName || undefined,
       note: text || undefined,
+      lines: lines.length > 0 ? lines : undefined,
       consent: true,
     }),
   });
