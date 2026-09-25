@@ -192,8 +192,26 @@ function loadInitialConfig() {
 // Medium/Large are still in development — see each foundation's adapterPlate.note.
 // ---------------------------------------------------------------------------
 const FOUNDATIONS = {
+  // partNumber (2026-09-25): nordbase-backend's part_number for this
+  // foundation KIT (product.level = 'kit'), confirmed live against
+  // GET /public/products the same day -- see shared/productCatalog.
+  // generated.json and NordBase_Databas_Hemsida_Kalkylator_Radata_Synk_
+  // Skiss_20260925.md in the project for how this was verified. Pure
+  // reference/lookup metadata: NOT used by calcStability() or any other
+  // structural/DCR calculation, and never will be -- Simon, 2026-09-25:
+  // "DCR uträkningar ska fortsatt vara hårdkodade, dessa får inte
+  // ändras". Every dimension/weight field below this comment stays
+  // exactly as hand-confirmed; only this one field is DB-sourced.
   BOLLARD: {
     key: "BOLLARD",
+    // No confirmed nordbase-backend product yet -- "NI-FDN-BLD" (used in
+    // api/submit-lead.js's own FOUNDATION_PRODUCT_NUMBERS map) does not
+    // exist in the database as of 2026-09-25; it collides with an
+    // unrelated bolt/hardware SKU (see Offertverktyg_Excel_20260911.md,
+    // open item 9 -- flagged there weeks ago, still unresolved). Left
+    // out here rather than guessed; add it once Simon confirms the real
+    // part number and it exists in nordbase-backend.
+    partNumber: null,
     name: "NordBase Bollard",
     subtitle: "AC foundation",
     levelLabel: "Bollard",
@@ -231,6 +249,7 @@ const FOUNDATIONS = {
   },
   SMALL: {
     key: "SMALL",
+    partNumber: 100200, // NI-FDN-DCS, confirmed live 2026-09-25
     name: "NordBase Small",
     subtitle: "DC foundation",
     levelLabel: "Level 2",
@@ -296,6 +315,7 @@ const FOUNDATIONS = {
   },
   MEDIUM: {
     key: "MEDIUM",
+    partNumber: 100300, // NI-FDN-DCM, confirmed live 2026-09-25
     name: "NordBase Medium",
     subtitle: "DC foundation",
     levelLabel: "Level 3",
@@ -352,6 +372,7 @@ const FOUNDATIONS = {
   },
   LARGE: {
     key: "LARGE",
+    partNumber: 100400, // NI-FDN-DCL, confirmed live 2026-09-25
     name: "NordBase Large",
     subtitle: "DC foundation",
     levelLabel: "Level 4",
