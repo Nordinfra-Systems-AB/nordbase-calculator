@@ -10,24 +10,28 @@
 // HARD RULE, carried over from that doc and confirmed directly by Simon ("Jag tycker
 // inte att vi rör vår lastberäkning"): this file NEVER touches runCheck()/
 // calcStability() itself, and it NEVER invents or overwrites a physical/structural
-// value. An entry that already exists in PEDESTAL_CHARGER_PRESETS / DC_FAST_CHARGER_
-// PRESETS (shared/chargerData.js) is passed through completely untouched — its
-// hand-confirmed dimensions, weight and CC/bolt-pattern values always win, no matter
-// what the database says. This function only ADDS an entry for a charger model that
-// exists in the database's charger_compatibility but has no hand-maintained entry
-// yet, and that new entry carries ONLY identity data (model name, adapter-plate
-// part.no) — every physical field is left null, exactly like the existing
-// "we don't have a confirmed adapter-plate hole pattern yet" case already in the
-// hand-maintained data (see e.g. Autel "MaxiCharger DC Fast DF120" in chargerData.js).
+// value with a guessed or derived number. Every physical value that ends up in a
+// merged entry either came from a hand-maintained preset in chargerData.js, or was
+// read verbatim from a database row an admin explicitly marked confirmed (see the
+// UPDATE #1 and #2 notes below) -- nothing in this file computes or infers one.
 // NordBaseCalculator.jsx is responsible for never auto-filling a null field into the
 // structural inputs (chargerW/D/H/Weight, ccW/ccD) — see applyPreset there.
+//
+// Precedence between a hand-maintained preset and a database entry for the SAME
+// model name (see UPDATE #2 below for why this changed from the original,
+// unconditional "hand-maintained always wins"): an UNCONFIRMED database entry
+// always defers to a hand-maintained preset if one exists for that model, and
+// otherwise is added with every physical field null (identity data only) -- see
+// e.g. Autel "MaxiCharger DC Fast DF120" in chargerData.js for the same "not yet
+// confirmed" shape this produces. A CONFIRMED database entry wins over a
+// hand-maintained preset for the same model name.
 //
 // Deliberately scoped to SMALL/MEDIUM/LARGE only (PEDESTAL_CHARGER_PRESETS /
 // DC_FAST_CHARGER_PRESETS) — POWER_BLOCK_MODELS has a completely different shape
 // (unitCount, hat-profile group hardware, dataConfirmed/configPending flags) and is
 // not part of this pass. Bollard has no charger step at all.
 //
-// 2026-09-25 UPDATE to the hard rule above, confirmed directly by Simon in chat
+// 2026-09-25 UPDATE #1 to the hard rule above, confirmed directly by Simon in chat
 // the same day: a NEW charger model IS now allowed to carry real w/d/h/weight/
 // ccW/ccD values from the database -- but ONLY once an admin has explicitly
 // confirmed them in nordbase-backend (charger_model.dimensions_confirmed = true,
@@ -45,6 +49,16 @@
 // true, unchanged: calcStability()/runCheck() themselves are never touched by
 // this file -- this only changes which value (and whether it's editable)
 // prefills an already-existing input field.
+//
+// 2026-09-25 UPDATE #2, later the same day (Simon, after confirming Kempower
+// "Satellite" in the database did nothing because a hand-maintained preset with
+// that exact model name already existed): "databas blir master - det som redan
+// finns blir slav." A confirmed database entry now overrides a hand-maintained
+// preset for the same model name too, not just a brand-new model -- see the
+// precedence note above and the merge logic's existingIdx handling below. The
+// override MERGES onto the old preset object rather than replacing it outright,
+// so calculator-only routing fields the database doesn't model yet (dedicatedPlate/
+// dedicatedFoundationPartNo, refPhotoUrl, basePlateW/D) survive the override.
 
 // Foundation part.no -> the foundation key this preset set belongs under. Matches
 // the FOUNDATIONS.<KEY>.partNumber values added to NordBaseCalculator.jsx on
@@ -108,7 +122,7 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
     const existingKey = Object.keys(merged).find((k) => k.toLowerCase() === mfr.toLowerCase());
     const modelName = modelDisplayName(charger);
     const existingList = existingKey ? merged[existingKey] : (merged[mfr] = []);
-    if (existingList.some((m) => m.model === modelName)) continue; // hand-maintained entry wins, never overwritten
+    const existingIdx = existingList.findIndex((m) => m.model === modelName);
 
     const adapterLink = charger.compatibility.find((c) => c.fitType === "adapter_plate");
     // Physical/structural fields: null unless the backend has already
@@ -117,7 +131,20 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
     // here just means "present at all". Still never guessed or defaulted
     // to anything ourselves.
     const confirmed = charger.dimensionsConfirmed === true;
-    existingList.push({
+
+    // 2026-09-25 UPDATE #2, Simon: "databas blir master - det som redan
+    // finns blir slav." A hand-maintained preset no longer wins
+    // unconditionally -- it only wins while the database entry for that
+    // same model is UNconfirmed. The moment Simon checks "Dimensions
+    // verified" in charger-detail.html, the database's numbers take over
+    // even for a model that already had a hand-typed entry here (this is
+    // exactly how the bug Simon hit with Kempower "Satellite" was found:
+    // it already existed as a hand-maintained preset with a stale height,
+    // and confirming it in the database silently did nothing until this
+    // change).
+    if (existingIdx !== -1 && !confirmed) continue; // still unconfirmed -- hand-maintained keeps winning
+
+    const dbFields = {
       model: modelName,
       w: confirmed && charger.widthMm != null ? mmToIn(charger.widthMm) : null,
       d: confirmed && charger.depthMm != null ? mmToIn(charger.depthMm) : null,
@@ -125,8 +152,6 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
       weight: confirmed && charger.weightKg != null ? kgToLb(charger.weightKg) : null,
       ccW: confirmed && charger.ccSpacingBMm != null ? mmToIn(charger.ccSpacingBMm) : null,
       ccD: confirmed && charger.ccSpacingDMm != null ? mmToIn(charger.ccSpacingDMm) : null,
-      basePlateW: null,
-      basePlateD: null,
       // Identity fields: this is the actual payload Simon asked for.
       partNumber: adapterLink?.productNumber ?? null,
       partName: adapterLink?.name ?? null,
@@ -140,7 +165,21 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
       // the width/depth/height/weight inputs and shows a "verified" banner
       // instead of the usual editable fields when this is true.
       dimensionsConfirmed: confirmed,
-    });
+    };
+
+    if (existingIdx !== -1) {
+      // MERGE onto the existing hand-maintained entry rather than replacing
+      // it wholesale -- the database doesn't model everything a preset can
+      // carry yet (dedicatedPlate/dedicatedFoundationPartNo routing to a
+      // charger's own dedicated adapter plate variant, refPhotoUrl,
+      // basePlateW/D), so overwriting the whole object would silently drop
+      // that metadata and could regress an already-working CC/plate match.
+      // The now-confirmed database values still win for every field they
+      // actually cover.
+      existingList[existingIdx] = { ...existingList[existingIdx], ...dbFields };
+    } else {
+      existingList.push({ ...dbFields, basePlateW: null, basePlateD: null });
+    }
   }
 
   return merged;
