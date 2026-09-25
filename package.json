@@ -6,6 +6,7 @@
   "description": "NordBase Foundation Selector — Nordinfra USA calculator prototype",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run fetch:catalog || true",
     "build": "vite build",
     "preview": "vite preview",
     "fetch:catalog": "node scripts/fetchProductCatalog.mjs"
