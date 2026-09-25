@@ -23,10 +23,22 @@
 // (`npm run fetch:catalog`) to try it, and hook it into "prebuild" only
 // once you're happy with the output.
 //
+// 2026-09-25 update: also fetches /public/charger-compatibility (which
+// charger manufacturer/model pairs with which adapter-plate/foundation
+// part.no — see NordBase_Databas_Hemsida_Kalkylator_Radata_Synk_Skiss_
+// 20260925.md in the project for the narrowed scope this serves). Same
+// build-time-only, never-fail-the-build philosophy as products above.
+// Deliberately identity-only data (manufacturer, model name, part.no) —
+// nothing here is dimensional/structural, so it still does not feed
+// calcStability() or any hardcoded CC/bolt-pattern value in
+// NordBaseCalculator.jsx / shared/chargerData.js. Not wired into the
+// dropdown UI yet — this step only proves the fetch + file output, same
+// as products did on 2026-09-20.
+//
 // Usage:
 //   NORDBASE_API_URL=https://<your-nordbase-backend-domain> npm run fetch:catalog
 
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, access } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,23 +46,63 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const API_URL = process.env.NORDBASE_API_URL;
 const OUT_PATH = path.join(__dirname, "..", "shared", "productCatalog.generated.json");
 
+// 2026-09-25: this file went from "nothing reads it" to actually being
+// statically imported by NordBaseCalculator.jsx (see
+// shared/mergeGeneratedCharger.js). A static JSON import that resolves to
+// a MISSING file fails the whole Vite build/dev-server, which would be a
+// regression against this script's own "can only ever fail a build, never
+// take down the live site" rule -- so from here on this script must NEVER
+// finish without SOME valid file at OUT_PATH, even on a completely fresh
+// checkout with no NORDBASE_API_URL and no prior generated file at all.
+async function fileExists(p) {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function writeEmptyShell(reason) {
+  if (await fileExists(OUT_PATH)) {
+    // A previous successful run already left good data here -- keep it
+    // (the existing "worst case, next deploy just keeps last known data"
+    // philosophy), don't stomp it with an empty shell.
+    console.log(`[fetchProductCatalog] ${reason} -- keeping existing ${path.relative(process.cwd(), OUT_PATH)} as-is.`);
+    return;
+  }
+  await mkdir(path.dirname(OUT_PATH), { recursive: true });
+  await writeFile(
+    OUT_PATH,
+    JSON.stringify(
+      { fetchedAt: null, source: null, products: [], chargerCompatibilitySource: null, chargerCompatibility: [] },
+      null,
+      2
+    )
+  );
+  console.log(`[fetchProductCatalog] ${reason} -- wrote an empty shell to ${path.relative(process.cwd(), OUT_PATH)} so imports never crash.`);
+}
+
+async function fetchJson(url) {
+  console.log(`[fetchProductCatalog] fetching ${url} ...`);
+  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  if (!res.ok) {
+    throw new Error(`nordbase-backend responded ${res.status} ${res.statusText} for ${url}`);
+  }
+  return res.json();
+}
+
 async function main() {
   if (!API_URL) {
-    console.log(
-      "[fetchProductCatalog] NORDBASE_API_URL not set — skipping. " +
-        "(This is fine: nothing currently depends on this file yet.)"
-    );
+    await writeEmptyShell("NORDBASE_API_URL not set");
     return;
   }
 
-  const url = `${API_URL.replace(/\/$/, "")}/public/products`;
-  console.log(`[fetchProductCatalog] fetching ${url} ...`);
+  const base = API_URL.replace(/\/$/, "");
+  const productsUrl = `${base}/public/products`;
+  const compatUrl = `${base}/public/charger-compatibility`;
 
-  const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
-  if (!res.ok) {
-    throw new Error(`nordbase-backend responded ${res.status} ${res.statusText}`);
-  }
-  const products = await res.json();
+  const products = await fetchJson(productsUrl);
   if (!Array.isArray(products) || products.length === 0) {
     // Refuse to overwrite a good file with an empty/broken one — an empty
     // response is far more likely to mean "something's wrong" than "the
@@ -58,18 +110,35 @@ async function main() {
     throw new Error("nordbase-backend returned no products — refusing to overwrite existing data");
   }
 
+  const chargerCompatibility = await fetchJson(compatUrl);
+  if (!Array.isArray(chargerCompatibility)) {
+    throw new Error("nordbase-backend returned malformed charger-compatibility data — refusing to overwrite existing data");
+  }
+
   await mkdir(path.dirname(OUT_PATH), { recursive: true });
   await writeFile(
     OUT_PATH,
-    JSON.stringify({ fetchedAt: new Date().toISOString(), source: url, products }, null, 2)
+    JSON.stringify(
+      {
+        fetchedAt: new Date().toISOString(),
+        source: productsUrl,
+        products,
+        chargerCompatibilitySource: compatUrl,
+        chargerCompatibility,
+      },
+      null,
+      2
+    )
   );
   console.log(
-    `[fetchProductCatalog] wrote ${products.length} products to ` +
+    `[fetchProductCatalog] wrote ${products.length} products and ` +
+      `${chargerCompatibility.length} charger models (with compatibility) to ` +
       path.relative(process.cwd(), OUT_PATH)
   );
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("[fetchProductCatalog] failed (non-fatal, build continues):", err.message);
+  await writeEmptyShell("fetch failed").catch(() => {}); // never let the fallback write itself fail the build
   process.exit(0);
 });

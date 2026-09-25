@@ -33,6 +33,14 @@ import {
   PEDESTAL_CHARGER_PRESETS,
   DC_FAST_CHARGER_PRESETS,
 } from "../shared/chargerData.js";
+// Database-sourced charger identity (manufacturer/model/adapter-plate part.no),
+// layered on top of the hand-maintained presets above -- see
+// shared/mergeGeneratedCharger.js for the hard rule this follows (never touches
+// runCheck()/calcStability(), never overwrites a hand-confirmed physical value).
+// GENERATED_CATALOG is guaranteed to exist (possibly as an empty shell) by
+// scripts/fetchProductCatalog.mjs's own safety fix, 2026-09-25.
+import GENERATED_CATALOG from "../shared/productCatalog.generated.json";
+import { mergeGeneratedChargerCompatibility } from "../shared/mergeGeneratedCharger.js";
 
 // Standard USPS 2-letter state codes (+ DC) — used for the "State" select in
 // the project info step. Fixed to a controlled list (rather than free text)
@@ -678,9 +686,13 @@ const SDS_REFERENCE = [
 // the Power Block model family for Power Block, nothing for foundations
 // without a charger step (Bollard).
 function chargerPresetsForFoundation(foundationKey) {
-  if (foundationKey === "SMALL") return PEDESTAL_CHARGER_PRESETS;
+  const chargerCompatibility = GENERATED_CATALOG?.chargerCompatibility ?? [];
+  if (foundationKey === "SMALL")
+    return mergeGeneratedChargerCompatibility(PEDESTAL_CHARGER_PRESETS, chargerCompatibility, "SMALL");
   if (foundationKey === "MEDIUM" || foundationKey === "LARGE")
-    return DC_FAST_CHARGER_PRESETS;
+    return mergeGeneratedChargerCompatibility(DC_FAST_CHARGER_PRESETS, chargerCompatibility, foundationKey);
+  // Power Block is deliberately excluded from the database merge -- see
+  // shared/mergeGeneratedCharger.js's header comment for why.
   if (foundationKey === "POWER_BLOCK") return POWER_BLOCK_MODELS;
   return {};
 }
@@ -2410,10 +2422,14 @@ export default function NordBaseCalculator() {
 
   function applyPreset(mfr, modelIdx) {
     const m = chargerPresets[mfr][modelIdx];
-    setChargerW(String(m.w));
-    setChargerD(String(m.d));
-    setChargerH(String(m.h));
-    setChargerWeight(String(m.weight));
+    // m.w/d/h/weight are null for a database-sourced model whose cabinet
+    // dimensions aren't confirmed yet (see shared/mergeGeneratedCharger.js)
+    // -- leave the field blank rather than stringifying null, same as if
+    // nothing had been picked yet. Never invent a number here.
+    setChargerW(m.w != null ? String(m.w) : "");
+    setChargerD(m.d != null ? String(m.d) : "");
+    setChargerH(m.h != null ? String(m.h) : "");
+    setChargerWeight(m.weight != null ? String(m.weight) : "");
     // Every new model selection starts fresh in auto-fill/banner mode —
     // don't carry over a manual CC override from a previously selected model.
     setUseCustomCc(false);
@@ -2954,6 +2970,16 @@ export default function NordBaseCalculator() {
                   dimensions manually below, or contact Nord-Infra to confirm
                   compatibility.
                 </div>
+              )}
+              {presetModelData?.fromDatabase && presetModelData?.w == null && (
+                <Banner>
+                  <span className="font-semibold">
+                    {selectedChargerModelName} was just added and doesn't have
+                    confirmed cabinet dimensions yet.
+                  </span>{" "}
+                  Enter its width/depth/height/weight manually below, or
+                  contact Nord-Infra to confirm.
+                </Banner>
               )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Width (in)">
