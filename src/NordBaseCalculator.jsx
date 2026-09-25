@@ -2981,14 +2981,41 @@ export default function NordBaseCalculator() {
                   contact Nord-Infra to confirm.
                 </Banner>
               )}
+              {/* 2026-09-25, scope 3.2 follow-up: once Nordinfra has verified
+                  a database-linked model's dimensions against the manufacturer
+                  datasheet/drawing (dimensions_confirmed in nordbase-backend),
+                  those numbers are authoritative -- the fields below are
+                  disabled rather than left freely editable, per Simon:
+                  "Jag vill helst inte att en kund ska fylla i uppgifter som
+                  påverkar beräkningar." Same visual language (gold box, ✓) as
+                  the already-confirmed adapter-plate CC banner further down. */}
+              {presetModelData?.dimensionsConfirmed && (
+                <div
+                  className="mb-3 rounded-md border px-3 py-2.5"
+                  style={{ borderColor: brand.gold, background: "#FBF6E8" }}
+                >
+                  <div className="text-xs" style={{ color: brand.dark }}>
+                    <span className="font-semibold">
+                      ✓ Verified dimensions for {selectedChargerModelName}
+                    </span>
+                    <br />
+                    Sourced from the manufacturer datasheet/drawing and
+                    confirmed by Nordinfra -- filled in automatically below.
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Field label="Width (in)">
                   <input
                     type="number"
                     value={chargerW}
                     onChange={(e) => setChargerW(e.target.value)}
+                    disabled={!!presetModelData?.dimensionsConfirmed}
                     className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
+                    style={{
+                      borderColor: "#D9D9D6",
+                      background: presetModelData?.dimensionsConfirmed ? "#F5F5F3" : undefined,
+                    }}
                   />
                 </Field>
                 <Field label="Depth (in)">
@@ -2996,8 +3023,12 @@ export default function NordBaseCalculator() {
                     type="number"
                     value={chargerD}
                     onChange={(e) => setChargerD(e.target.value)}
+                    disabled={!!presetModelData?.dimensionsConfirmed}
                     className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
+                    style={{
+                      borderColor: "#D9D9D6",
+                      background: presetModelData?.dimensionsConfirmed ? "#F5F5F3" : undefined,
+                    }}
                   />
                 </Field>
                 <Field label="Height (in)">
@@ -3005,8 +3036,12 @@ export default function NordBaseCalculator() {
                     type="number"
                     value={chargerH}
                     onChange={(e) => setChargerH(e.target.value)}
+                    disabled={!!presetModelData?.dimensionsConfirmed}
                     className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
+                    style={{
+                      borderColor: "#D9D9D6",
+                      background: presetModelData?.dimensionsConfirmed ? "#F5F5F3" : undefined,
+                    }}
                   />
                 </Field>
                 <Field label="Weight (lb)">
@@ -3014,8 +3049,12 @@ export default function NordBaseCalculator() {
                     type="number"
                     value={chargerWeight}
                     onChange={(e) => setChargerWeight(e.target.value)}
+                    disabled={!!presetModelData?.dimensionsConfirmed}
                     className="w-full border rounded-md px-3 py-2 text-sm"
-                    style={{ borderColor: "#D9D9D6" }}
+                    style={{
+                      borderColor: "#D9D9D6",
+                      background: presetModelData?.dimensionsConfirmed ? "#F5F5F3" : undefined,
+                    }}
                   />
                 </Field>
               </div>

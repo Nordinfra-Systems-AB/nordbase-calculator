@@ -26,6 +26,25 @@
 // DC_FAST_CHARGER_PRESETS) — POWER_BLOCK_MODELS has a completely different shape
 // (unitCount, hat-profile group hardware, dataConfirmed/configPending flags) and is
 // not part of this pass. Bollard has no charger step at all.
+//
+// 2026-09-25 UPDATE to the hard rule above, confirmed directly by Simon in chat
+// the same day: a NEW charger model IS now allowed to carry real w/d/h/weight/
+// ccW/ccD values from the database -- but ONLY once an admin has explicitly
+// confirmed them in nordbase-backend (charger_model.dimensions_confirmed = true,
+// checked against the manufacturer datasheet/drawing; see chargerModels.ts and
+// charger-detail.js there). /public/charger-compatibility only ever includes the
+// six physical fields at all once that flag is true (see src/routes/public.ts) --
+// an unconfirmed model still comes through with every physical field absent, so
+// the "entry carries ONLY identity data" behavior above is exactly what still
+// happens for those. Simon: "Jag vill helst inte att en kund ska fylla i
+// uppgifter som påverkar beräkningar... beräkning hämtar sin beräkningsdata
+// från de inmatade dimensionerna och vikten" -- once Nordinfra has verified a
+// model's numbers, the customer shouldn't re-enter or be able to override them;
+// NordBaseCalculator.jsx enforces that by disabling the width/depth/height/
+// weight inputs whenever presetModelData.dimensionsConfirmed is true. STILL
+// true, unchanged: calcStability()/runCheck() themselves are never touched by
+// this file -- this only changes which value (and whether it's editable)
+// prefills an already-existing input field.
 
 // Foundation part.no -> the foundation key this preset set belongs under. Matches
 // the FOUNDATIONS.<KEY>.partNumber values added to NordBaseCalculator.jsx on
@@ -37,6 +56,13 @@ export const FOUNDATION_PART_NUMBER_TO_KEY = {
   100300: "MEDIUM",
   100400: "LARGE",
 };
+
+// Deliberate local duplicate of chargerData.js's own private mmToIn/kgToLb
+// (not exported from there on purpose -- see that file's comment above its
+// copies) rather than a new cross-file dependency; same formula, same reason
+// to keep this file decoupled from chargerData.js's data-authoring concerns.
+const mmToIn = (mm) => mm / 25.4;
+const kgToLb = (kg) => kg * 2.2046226;
 
 function modelDisplayName(charger) {
   return charger.modelVariant ? `${charger.modelName} ${charger.modelVariant}` : charger.modelName;
@@ -85,16 +111,20 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
     if (existingList.some((m) => m.model === modelName)) continue; // hand-maintained entry wins, never overwritten
 
     const adapterLink = charger.compatibility.find((c) => c.fitType === "adapter_plate");
+    // Physical/structural fields: null unless the backend has already
+    // confirmed them (see the 2026-09-25 update above) -- /public/charger-
+    // compatibility never sends a partial/unverified number, so "confirmed"
+    // here just means "present at all". Still never guessed or defaulted
+    // to anything ourselves.
+    const confirmed = charger.dimensionsConfirmed === true;
     existingList.push({
       model: modelName,
-      // Physical/structural fields: deliberately left unset. Never guessed,
-      // never defaulted to anything other than "not yet confirmed".
-      w: null,
-      d: null,
-      h: null,
-      weight: null,
-      ccW: null,
-      ccD: null,
+      w: confirmed && charger.widthMm != null ? mmToIn(charger.widthMm) : null,
+      d: confirmed && charger.depthMm != null ? mmToIn(charger.depthMm) : null,
+      h: confirmed && charger.heightMm != null ? mmToIn(charger.heightMm) : null,
+      weight: confirmed && charger.weightKg != null ? kgToLb(charger.weightKg) : null,
+      ccW: confirmed && charger.ccSpacingBMm != null ? mmToIn(charger.ccSpacingBMm) : null,
+      ccD: confirmed && charger.ccSpacingDMm != null ? mmToIn(charger.ccSpacingDMm) : null,
       basePlateW: null,
       basePlateD: null,
       // Identity fields: this is the actual payload Simon asked for.
@@ -105,6 +135,11 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
       // hand-confirmed entry and show the right "not yet confirmed" banner
       // instead of silently presenting blank structural fields.
       fromDatabase: true,
+      // Distinct from fromDatabase: true here means the six physical fields
+      // above are populated AND verified -- NordBaseCalculator.jsx disables
+      // the width/depth/height/weight inputs and shows a "verified" banner
+      // instead of the usual editable fields when this is true.
+      dimensionsConfirmed: confirmed,
     });
   }
 
