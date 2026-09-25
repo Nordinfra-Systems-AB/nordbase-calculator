@@ -65,9 +65,23 @@ export function mergeGeneratedChargerCompatibility(basePresets, chargerCompatibi
     if (!foundationLink) continue; // not linked to any foundation yet -- nothing to add
     if (FOUNDATION_PART_NUMBER_TO_KEY[foundationLink.partNumber] !== foundationKey) continue;
 
+    // Match the database's manufacturer name against an existing hand-
+    // maintained key case-insensitively before creating a new one --
+    // chargerData.js spells at least one manufacturer two different ways
+    // across the two preset sets ("Chargepoint" in PEDESTAL_CHARGER_PRESETS/
+    // SMALL, "ChargePoint" in DC_FAST_CHARGER_PRESETS/MEDIUM+LARGE -- see
+    // MANUFACTURER_TO_CLICKUP_OPTION's comment on the same inconsistency in
+    // the calculator's api/submit-lead.js), while nordbase-backend's
+    // manufacturer.name is always the single canonical "ChargePoint". Without
+    // this, linking a ChargePoint model to the SMALL foundation in the admin
+    // UI would silently create a SECOND, duplicate "ChargePoint" entry in the
+    // dropdown next to the existing "Chargepoint" one instead of joining it --
+    // confirmed reproducible against the actual manufacturer names on file.
+    // 2026-09-25.
     const mfr = charger.manufacturer;
+    const existingKey = Object.keys(merged).find((k) => k.toLowerCase() === mfr.toLowerCase());
     const modelName = modelDisplayName(charger);
-    const existingList = merged[mfr] || (merged[mfr] = []);
+    const existingList = existingKey ? merged[existingKey] : (merged[mfr] = []);
     if (existingList.some((m) => m.model === modelName)) continue; // hand-maintained entry wins, never overwritten
 
     const adapterLink = charger.compatibility.find((c) => c.fitType === "adapter_plate");
