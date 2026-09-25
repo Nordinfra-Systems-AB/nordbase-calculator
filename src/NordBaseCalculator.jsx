@@ -318,11 +318,12 @@ const FOUNDATIONS = {
       material: '1/4" A36, hot-dip galvanized',
       ccOptionsX: [],
       ccOptionsY: [],
-      // Updated 2026-08-31 (Simon Gullberg) — CC is now confirmed model-by-
-      // model above (see modelCcOnGrid); this general note now only needs to
-      // cover the two remaining gaps: chargers without confirmed CC yet, and
-      // downloadable drawings still being finalized even for confirmed models.
-      note: "Bolt spacing (CC) is now confirmed for most listed chargers above. Downloadable adapter-plate drawings are still being finalized — contact Nordinfra if you need one sooner, or if your charger isn't listed yet.",
+      // 2026-09-25 (Simon, direct instruction): note dropped -- it was
+      // internal progress-status text ("is now confirmed", "still being
+      // finalized"), not something a customer needs surfaced as a warning
+      // banner. Plate spec for Medium is fully confirmed (see
+      // adapterPlate.size/material above), so there is nothing left to flag.
+      note: null,
     },
     // Adapter-plate-to-FOUNDATION mounting bolts (separate from
     // adapterPlate.ccOptionsX/Y, which is empty here since Medium uses
@@ -1812,6 +1813,12 @@ export default function NordBaseCalculator() {
   const [backfillKey, setBackfillKey] = useState(savedData.backfillKey ?? "B");
   const [nevi, setNevi] = useState(savedData.nevi ?? false);
   const [showSdsRef, setShowSdsRef] = useState(false);
+  // 2026-09-25 (Simon, direct instruction): the Site step had a hint line
+  // under every field, permanently visible -- "fruktansvart mycket text...
+  // kunder kan nog bli trotta". Collapsed behind one toggle instead of
+  // trimming/deleting the explanations, since customers who DO need the
+  // ASCE/USGS lookup guidance still need it word-for-word.
+  const [showSiteHelp, setShowSiteHelp] = useState(false);
   // Code edition + exposure category (2026-09-08, Simon Gullberg — matches
   // a competitor tool's "code edition" selector he found, after we
   // discovered the report's citation mismatched IBC 2021 with ASCE 7-22).
@@ -3506,14 +3513,30 @@ export default function NordBaseCalculator() {
               >
                 Site conditions
               </h2>
-              <p className="text-sm mb-4" style={{ color: brand.steel }}>
+              <p className="text-sm mb-2" style={{ color: brand.steel }}>
                 Look up wind and seismic values for your address using the
                 official tools below, then enter them here.
               </p>
+              <button
+                onClick={() => setShowSiteHelp((v) => !v)}
+                className="text-xs flex items-center gap-1 mb-4"
+                style={{ color: brand.steel }}
+              >
+                {showSiteHelp ? (
+                  <ChevronUp size={12} />
+                ) : (
+                  <ChevronDown size={12} />
+                )}{" "}
+                {showSiteHelp ? "Hide field help" : "What do these fields mean?"}
+              </button>
 
               <Field
                 label="Code edition"
-                hint="Which ASCE 7 edition your jurisdiction has adopted — IBC 2021 references ASCE 7-16; IBC 2024 references ASCE 7-22. Check with your local building department (AHJ) if unsure."
+                hint={
+                  showSiteHelp
+                    ? "Which ASCE 7 edition your jurisdiction has adopted — IBC 2021 references ASCE 7-16; IBC 2024 references ASCE 7-22. Check with your local building department (AHJ) if unsure."
+                    : undefined
+                }
               >
                 <div className="flex gap-4">
                   {Object.entries(CODE_EDITIONS).map(([key, ed]) => (
@@ -3539,7 +3562,11 @@ export default function NordBaseCalculator() {
 
               <Field
                 label="Project address"
-                hint={`Auto-fills SDS below from USGS (${CODE_EDITIONS[codeEdition].label}, Site Class D, Risk Category II). Wind speed is not auto-filled yet — enter it manually.`}
+                hint={
+                  showSiteHelp
+                    ? `Auto-fills SDS below from USGS (${CODE_EDITIONS[codeEdition].label}, Site Class D, Risk Category II). Wind speed is not auto-filled yet — enter it manually.`
+                    : undefined
+                }
               >
                 <div className="relative">
                   <div className="flex gap-2">
@@ -3624,7 +3651,11 @@ export default function NordBaseCalculator() {
               <div className="grid sm:grid-cols-3 gap-4 mt-4">
                 <Field
                   label="Basic wind speed (mph)"
-                  hint={`Look up via ASCE Hazard Tool — select "${CODE_EDITIONS[codeEdition].label}" there too, the two editions' wind maps differ.`}
+                  hint={
+                    showSiteHelp
+                      ? `Look up via ASCE Hazard Tool — select "${CODE_EDITIONS[codeEdition].label}" there too, the two editions' wind maps differ.`
+                      : undefined
+                  }
                 >
                   <div className="flex gap-2">
                     <input
@@ -3648,7 +3679,11 @@ export default function NordBaseCalculator() {
                 </Field>
                 <Field
                   label="Exposure category"
-                  hint="ASCE 7 terrain roughness around the site — same table in both editions at this equipment's height."
+                  hint={
+                    showSiteHelp
+                      ? "ASCE 7 terrain roughness around the site — same table in both editions at this equipment's height."
+                      : undefined
+                  }
                 >
                   <select
                     value={exposureCategory}
@@ -3663,7 +3698,7 @@ export default function NordBaseCalculator() {
                 </Field>
                 <Field
                   label="SDS — seismic (g)"
-                  hint="Look up via USGS Design Maps"
+                  hint={showSiteHelp ? "Look up via USGS Design Maps" : undefined}
                 >
                   <div className="flex gap-2">
                     <input
@@ -3730,7 +3765,11 @@ export default function NordBaseCalculator() {
 
               <Field
                 label="Backfill material"
-                hint="Passive earth pressure (Kp,d) is pre-calculated per material — no separate friction-angle / unit-weight step needed."
+                hint={
+                  showSiteHelp
+                    ? "Passive earth pressure (Kp,d) is pre-calculated per material — no separate friction-angle / unit-weight step needed."
+                    : undefined
+                }
               >
                 <select
                   value={backfillKey}

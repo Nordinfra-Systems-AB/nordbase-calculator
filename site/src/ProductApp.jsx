@@ -2,7 +2,6 @@ import React, { useEffect, useState, Suspense, lazy } from "react";
 import {
   ArrowRight,
   ArrowLeft,
-  Download,
   Ruler,
   Layers,
   ShieldCheck,
@@ -39,32 +38,6 @@ function getSlugFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const f = params.get("f");
   return PRODUCTS[f] ? f : null;
-}
-
-function DocRow({ label, file, note }) {
-  const available = Boolean(file);
-  return (
-    <div className="flex flex-col gap-1 rounded-lg border border-black/10 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div className="text-sm font-semibold text-dark">{label}</div>
-        {note && <div className="mt-0.5 text-xs text-steel">{note}</div>}
-      </div>
-      {available ? (
-        <a
-          href={file}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md bg-gold px-3 py-1.5 text-xs font-bold text-dark hover:bg-goldSoft sm:self-auto"
-        >
-          <Download className="h-3.5 w-3.5" /> Download
-        </a>
-      ) : (
-        <span className="shrink-0 self-start rounded-md border border-black/10 px-3 py-1.5 text-xs font-semibold text-steel sm:self-auto">
-          Coming soon
-        </span>
-      )}
-    </div>
-  );
 }
 
 function DimRow({ label, value }) {
@@ -492,37 +465,26 @@ export default function ProductApp() {
         </div>
       </section>
 
-      {/* DOCUMENTS */}
+      {/* DOCUMENTS -- 2026-09-25 (Simon, direct instruction): this used to
+          duplicate document links (manual/warranty/spec/BABA) that also live
+          on /resources.html -- a second, independently-maintained copy that
+          can silently drift out of sync. Replaced with a single button into
+          Resources, the one place documents should live. */}
       <section className="border-b border-black/10 bg-bgSoft py-14">
         <div className="mx-auto max-w-6xl px-6">
           <h2 className="text-2xl font-extrabold tracking-tight">
             Drawings & documentation
           </h2>
-          <div className="mt-5 flex flex-col gap-2">
-            <DocRow
-              label={`${product.name} — Installation Manual`}
-              file={product.manual}
-            />
-            <DocRow
-              label="US Product & Function Warranty"
-              file="/docs/warranty/NI_WAR_001_US_Product_Warranty.pdf"
-            />
-            <DocRow
-              label="Technical Specifications, Durability & Lifecycle Analysis"
-              file="/docs/technical-specs/Nordinfra_Technical_Spec_US.pdf"
-            />
-            {product.baba && (
-              <DocRow
-                label="Buy America / BABA Certificate of Compliance"
-                file="/docs/certificates/NI_BABA_001_US_Certificate.pdf"
-              />
-            )}
-          </div>
+          <p className="mt-2 max-w-xl text-sm text-steel">
+            Installation manual, warranty, technical specs
+            {product.baba ? ", and Buy America certificate" : ""} for{" "}
+            {product.name} are in the resource library.
+          </p>
           <a
             href="/resources.html"
-            className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-dark hover:text-gold"
+            className="mt-5 inline-flex items-center gap-2 rounded-md bg-gold px-6 py-3 text-sm font-bold text-dark hover:bg-goldSoft"
           >
-            View the full resource library <ArrowRight className="h-3.5 w-3.5" />
+            View documentation <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </section>

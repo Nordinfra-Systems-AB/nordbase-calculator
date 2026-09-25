@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowRight, Download, ListChecks } from "lucide-react";
+import { ArrowRight, ListChecks } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome.jsx";
 
@@ -181,46 +181,18 @@ export default function InstallationApp() {
             ))}
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <a
-              href="/docs/manuals/NI_Manual_AC_001_US.pdf"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
-            >
-              <Download className="h-4 w-4" /> Bollard manual (PDF)
-            </a>
-            {/* 2026-09-17 (Simon, direct instruction): this section still
-                only linked the DCS/Small charger manual and said "Medium and
-                Large not yet published" — but NI_Manual_DCM_001_US.pdf has
-                been live since before this fix (confirmed 200 OK, and
-                already listed correctly on /resources.html). Added the
-                Medium manual button and corrected the caption to only flag
-                Large, which is genuinely still unpublished (404 confirmed). */}
-            <a
-              href="/docs/manuals/NI_Manual_DCS_001_US.pdf"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
-            >
-              <Download className="h-4 w-4" /> Small charger manual (PDF)
-            </a>
-            <a
-              href="/docs/manuals/NI_Manual_DCM_001_US.pdf"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-md bg-gold px-5 py-2.5 text-sm font-bold text-dark hover:bg-goldSoft"
-            >
-              <Download className="h-4 w-4" /> Medium charger manual (PDF)
-            </a>
-            <span className="text-xs text-steel">
-              Large charger manual not yet published.
-            </span>
+          {/* 2026-09-25 (Simon, direct instruction): replaced the four
+              individual manual-download buttons (+ "not yet published"
+              caption) with a single button into the Resources page --
+              that page is meant to be the one place documents live, so
+              this section shouldn't duplicate/maintain its own subset of
+              links that can drift out of date independently. */}
+          <div className="mt-8">
             <a
               href="/resources.html"
-              className="text-sm font-bold text-dark hover:text-gold"
+              className="inline-flex items-center gap-2 rounded-md bg-gold px-6 py-3 text-sm font-bold text-dark hover:bg-goldSoft"
             >
-              All documentation →
+              View all documentation <ArrowRight className="h-4 w-4" />
             </a>
           </div>
         </div>
