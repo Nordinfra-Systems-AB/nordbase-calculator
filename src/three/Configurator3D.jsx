@@ -486,12 +486,23 @@ export default function Configurator3D({
       setReady(true);
       const initialLoad = rebuild(adapterId, addonIds);
       if (autoPrint) {
-        initialLoad.then(() => {
-          if (disposed) return;
-          const ok = !!threeRef.current.meta;
-          if (ok) handlePrint();
-          onPrinted && onPrinted(ok);
-        });
+        // .catch() matters here: rebuild() can throw synchronously (e.g.
+        // an unrecognized `family`) or reject on a failed GLB fetch --
+        // without a rejection handler that becomes an unhandled promise
+        // rejection and the caller's "rendering" state never clears, which
+        // is exactly the silent-forever-"Preparing…" bug fixed 2026-09-27.
+        initialLoad
+          .then(() => {
+            if (disposed) return;
+            const ok = !!threeRef.current.meta;
+            if (ok) handlePrint();
+            onPrinted && onPrinted(ok);
+          })
+          .catch((err) => {
+            if (disposed) return;
+            console.error("Configurator3D autoPrint load failed:", err);
+            onPrinted && onPrinted(false);
+          });
       }
     })();
 

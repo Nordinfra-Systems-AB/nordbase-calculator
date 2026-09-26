@@ -5016,6 +5016,7 @@ export default function NordBaseCalculator() {
                     <Configurator3D
                       hidden
                       autoPrint
+                      family={configuratorFamily}
                       initialAdapterId={configuratorAdapterId}
                       initialAddonIds={configuratorAddonIds}
                       onPrinted={handleDrawingPrinted}
