@@ -41,6 +41,82 @@ import {
 // scripts/fetchProductCatalog.mjs's own safety fix, 2026-09-25.
 import GENERATED_CATALOG from "../shared/productCatalog.generated.json";
 import { mergeGeneratedChargerCompatibility } from "../shared/mergeGeneratedCharger.js";
+
+// Foundation part numbers, DB-sourced (2026-09-27, per Simon: "part number
+// hämtas från databas" -- these used to be hand-typed literals confirmed
+// once against nordbase-backend on 2026-09-25; now they're looked up live
+// from GENERATED_CATALOG.products (see scripts/fetchProductCatalog.mjs /
+// GET /public/products) by this product's own nordbase-backend
+// product_number, so a future part-number change in the database flows
+// through at the next build without anyone editing this file. `fallback`
+// is the last hand-confirmed value -- kept as a safety net in case the
+// generated catalog is stale, empty, or missing that product, same
+// resilience philosophy as everywhere else GENERATED_CATALOG is read
+// (a build-time fetch failure must never break the live calculator).
+function foundationPartNumberFromCatalog(productNumber, fallback) {
+  const match = (GENERATED_CATALOG.products || []).find(
+    (p) => p.product_number === productNumber
+  );
+  return match?.part_number ?? fallback;
+}
+
+// Foundation documents (datasheet/manual), DB-sourced (2026-09-27, same
+// Simon directive as above -- "det som redan finns blir slav" extended to
+// documents, not just part numbers). Reads the SAME per-product
+// `attachments` array nordbase-backend's GET /public/products already
+// returns (see src/routes/public.ts there: PUBLIC_ATTACHMENT_DOC_TYPES =
+// ['datasheet','photo','manual'] -- drawing/cad_step can never appear here,
+// enforced server-side, not by this file). Returns null for a doc_type this
+// product has nothing uploaded for yet, so callers can fall back to the
+// hand-maintained static PDF (FOUNDATION_MANUALS/FOUNDATION_DATASHEETS)
+// during the transition, exactly like foundationPartNumberFromCatalog's
+// `fallback` argument above.
+function foundationDocumentUrlFromCatalog(productNumber, docType) {
+  const product = (GENERATED_CATALOG.products || []).find(
+    (p) => p.product_number === productNumber
+  );
+  const match = (product?.attachments || []).find((a) => a.doc_type === docType);
+  return match?.file_url ?? null;
+}
+
+// Adapter-plate reference photos, DB-sourced (2026-09-27, per Simon: "vill
+// säkerställa att om jag lägger till ny adapterplåt i databas så ska det
+// synkas med kalkylator med part.no och bild på adapterplåt"). Part.no
+// already flows through mergeGeneratedChargerCompatibility (see
+// shared/mergeGeneratedCharger.js -- adapterLink.partNumber/partNo) for
+// both an existing hand-maintained model AND a brand-new one added purely
+// in the database; this fills in the piece that didn't yet: a reference
+// photo. Applied as a post-merge pass (see chargerPresetsForFoundation
+// below) rather than inside mergeGeneratedCharger.js itself, so that file's
+// existing, carefully-scoped merge/precedence logic (and its own tests
+// against Simon's "databas blir master" rule for STRUCTURAL fields) stays
+// untouched -- this only ever touches refPhotoUrl, never anything
+// calcStability()/runCheck() reads.
+//
+// A hand-typed refPhotoUrl already in chargerData.js is treated as a
+// fallback, not silently overwritten -- most adapter plates don't have a
+// DB photo yet (21 of ~65 as of 2026-09-27), so losing the existing photo
+// for the rest would be a regression, not an upgrade.
+function fillAdapterPlatePhotosFromCatalog(presets) {
+  const products = GENERATED_CATALOG?.products ?? [];
+  if (products.length === 0) return presets;
+
+  const photoByProductNumber = new Map();
+  for (const p of products) {
+    const photo = (p.attachments || []).find((a) => a.doc_type === "photo");
+    if (photo) photoByProductNumber.set(p.product_number, photo.file_url);
+  }
+  if (photoByProductNumber.size === 0) return presets;
+
+  const filled = {};
+  for (const [mfr, models] of Object.entries(presets)) {
+    filled[mfr] = models.map((m) => {
+      const dbPhotoUrl = m.partNumber ? photoByProductNumber.get(m.partNumber) : null;
+      return dbPhotoUrl ? { ...m, refPhotoUrl: dbPhotoUrl } : m;
+    });
+  }
+  return filled;
+}
 // Headless auto-generated configuration drawing (2026-09-26, Simon Gullberg
 // directive): reuses the site's existing 3D-configurator 2D print-sheet
 // export. This is a deliberate copy of site/src/components/Configurator3D.jsx
@@ -276,7 +352,8 @@ const FOUNDATIONS = {
   },
   SMALL: {
     key: "SMALL",
-    partNumber: 100200, // NI-FDN-DCS, confirmed live 2026-09-25
+    productNumber: "NI-FDN-DCS",
+    partNumber: foundationPartNumberFromCatalog("NI-FDN-DCS", 100200), // NI-FDN-DCS, DB-sourced (see helper above)
     name: "NordBase Small",
     subtitle: "DC foundation",
     levelLabel: "Level 2",
@@ -342,7 +419,8 @@ const FOUNDATIONS = {
   },
   MEDIUM: {
     key: "MEDIUM",
-    partNumber: 100300, // NI-FDN-DCM, confirmed live 2026-09-25
+    productNumber: "NI-FDN-DCM",
+    partNumber: foundationPartNumberFromCatalog("NI-FDN-DCM", 100300), // NI-FDN-DCM, DB-sourced (see helper above)
     name: "NordBase Medium",
     subtitle: "DC foundation",
     levelLabel: "Level 3",
@@ -399,7 +477,8 @@ const FOUNDATIONS = {
   },
   LARGE: {
     key: "LARGE",
-    partNumber: 100400, // NI-FDN-DCL, confirmed live 2026-09-25
+    productNumber: "NI-FDN-DCL",
+    partNumber: foundationPartNumberFromCatalog("NI-FDN-DCL", 100400), // NI-FDN-DCL, DB-sourced (see helper above)
     name: "NordBase Large",
     subtitle: "DC foundation",
     levelLabel: "Level 4",
@@ -707,9 +786,13 @@ const SDS_REFERENCE = [
 function chargerPresetsForFoundation(foundationKey) {
   const chargerCompatibility = GENERATED_CATALOG?.chargerCompatibility ?? [];
   if (foundationKey === "SMALL")
-    return mergeGeneratedChargerCompatibility(PEDESTAL_CHARGER_PRESETS, chargerCompatibility, "SMALL");
+    return fillAdapterPlatePhotosFromCatalog(
+      mergeGeneratedChargerCompatibility(PEDESTAL_CHARGER_PRESETS, chargerCompatibility, "SMALL")
+    );
   if (foundationKey === "MEDIUM" || foundationKey === "LARGE")
-    return mergeGeneratedChargerCompatibility(DC_FAST_CHARGER_PRESETS, chargerCompatibility, foundationKey);
+    return fillAdapterPlatePhotosFromCatalog(
+      mergeGeneratedChargerCompatibility(DC_FAST_CHARGER_PRESETS, chargerCompatibility, foundationKey)
+    );
   // Power Block is deliberately excluded from the database merge -- see
   // shared/mergeGeneratedCharger.js's header comment for why.
   if (foundationKey === "POWER_BLOCK") return POWER_BLOCK_MODELS;
@@ -2290,6 +2373,20 @@ export default function NordBaseCalculator() {
   const handleDrawingPrinted = (ok) => {
     setDrawingGeneration(ok ? "idle" : "error");
   };
+
+  // Foundation manual/datasheet: DB-sourced (nordbase-backend's uploaded
+  // attachment) wins when present, falling back to the hand-maintained
+  // static PDF in public/docs/... otherwise -- see
+  // foundationDocumentUrlFromCatalog above. Both still ultimately show the
+  // same "coming soon" placeholder below when neither source has one.
+  const dbManualUrl = foundation?.productNumber
+    ? foundationDocumentUrlFromCatalog(foundation.productNumber, "manual")
+    : null;
+  const dbDatasheetUrl = foundation?.productNumber
+    ? foundationDocumentUrlFromCatalog(foundation.productNumber, "datasheet")
+    : null;
+  const foundationManualUrl = dbManualUrl ?? FOUNDATION_MANUALS[foundation?.key];
+  const foundationDatasheetUrl = dbDatasheetUrl ?? FOUNDATION_DATASHEETS[foundation?.key];
 
   const result = useMemo(() => {
     if (foundation?.isPowerBlock) {
@@ -4648,6 +4745,8 @@ export default function NordBaseCalculator() {
                         {qty}× {foundation.name}
                         {presetModelData?.dedicatedFoundationPartNo
                           ? ` — Part No. ${presetModelData.dedicatedFoundationPartNo}`
+                          : foundation.partNumber
+                          ? ` — Part No. ${foundation.partNumber}`
                           : ""}
                       </div>
                       <div className="text-xs" style={{ color: brand.steel }}>
@@ -4881,9 +4980,9 @@ export default function NordBaseCalculator() {
                   <FileText size={14} /> DOCUMENTS FOR THIS FOUNDATION
                 </div>
                 <div className="flex flex-col gap-2">
-                  {FOUNDATION_MANUALS[foundation.key] ? (
+                  {foundationManualUrl ? (
                     <a
-                      href={FOUNDATION_MANUALS[foundation.key]}
+                      href={foundationManualUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
@@ -4903,9 +5002,9 @@ export default function NordBaseCalculator() {
                       soon. Contact Nordinfra for interim guidance.
                     </div>
                   )}
-                  {FOUNDATION_DATASHEETS[foundation.key] ? (
+                  {foundationDatasheetUrl ? (
                     <a
-                      href={FOUNDATION_DATASHEETS[foundation.key]}
+                      href={foundationDatasheetUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02]"
