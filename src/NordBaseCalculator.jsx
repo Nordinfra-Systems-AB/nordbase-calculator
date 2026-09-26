@@ -41,6 +41,25 @@ import {
 // scripts/fetchProductCatalog.mjs's own safety fix, 2026-09-25.
 import GENERATED_CATALOG from "../shared/productCatalog.generated.json";
 import { mergeGeneratedChargerCompatibility } from "../shared/mergeGeneratedCharger.js";
+// Headless auto-generated configuration drawing (2026-09-26, Simon Gullberg
+// directive): reuses the site's existing 3D-configurator 2D print-sheet
+// export. This is a deliberate copy of site/src/components/Configurator3D.jsx
+// (extended with hidden/autoPrint props) -- see that file's header comment
+// for why it isn't imported via shared/ like the charger data above.
+import Configurator3D, {
+  findAdapterIdByPartNo,
+} from "./three/Configurator3D.jsx";
+
+// Maps the calculator's foundation keys onto Configurator3D's own family
+// keys. LARGE and POWER_BLOCK have no CAD geometry in the 3D configurator
+// (see Configurator3D.jsx's own ADAPTERS/FOUNDATIONS), so they're left out
+// on purpose -- the configuration-drawing entry simply doesn't render for
+// those foundations (2026-09-26, Simon Gullberg directive).
+const FOUNDATION_KEY_TO_CONFIGURATOR_FAMILY = {
+  SMALL: "dcs",
+  MEDIUM: "dcm",
+  BOLLARD: "bollard",
+};
 
 // Standard USPS 2-letter state codes (+ DC) — used for the "State" select in
 // the project info step. Fixed to a controlled list (rather than free text)
@@ -1891,6 +1910,11 @@ export default function NordBaseCalculator() {
   const [bollardTier, setBollardTier] = useState(savedData.bollardTier ?? "sch10");
   const [addCover, setAddCover] = useState(savedData.addCover ?? false);
   const [addSensorPole, setAddSensorPole] = useState(savedData.addSensorPole ?? false);
+  // Headless "configuration drawing" auto-generation (2026-09-26): no new
+  // customer-facing step, no 3D UI shown in the calculator (Simon Gullberg:
+  // "Kund ska inte se 3D I kalkylator... Ritning på deras val ska bara dyka
+  // upp som vanligt i den pdf lista som är där idag.").
+  const [drawingGeneration, setDrawingGeneration] = useState("idle"); // idle | rendering | error
   const [packageType, setPackageType] = useState(savedData.packageType ?? "submittal");
   const [customAssets, setCustomAssets] = useState({
     datasheet: true,
@@ -2239,6 +2263,33 @@ export default function NordBaseCalculator() {
         ]
       : ADAPTER_PLATE_DRAWINGS[universalAdapterDrawingKey(foundation.key)]
     : undefined;
+
+  // See FOUNDATION_KEY_TO_CONFIGURATOR_FAMILY above.
+  const configuratorFamily = foundation?.key
+    ? FOUNDATION_KEY_TO_CONFIGURATOR_FAMILY[foundation.key]
+    : undefined;
+  const configuratorAdapterId = configuratorFamily
+    ? findAdapterIdByPartNo(configuratorFamily, presetModelData?.partNo)
+    : null;
+  // Bollard is the one foundation where an accessory (the visible post) maps
+  // onto a Configurator3D addon -- see BOLLARD's hasAccessories/addBollard
+  // semantics above (the footing vs. the post on top of it).
+  const configuratorAddonIds = useMemo(() => {
+    if (configuratorFamily === "bollard" && addBollard) {
+      return ["collision-protection"];
+    }
+    return [];
+  }, [configuratorFamily, addBollard]);
+  // Renders the current selection into the reused print sheet, then opens
+  // the browser print dialog (the same window.print() -> "Save as PDF" flow
+  // customers already use for the whole package below).
+  const generateConfigurationDrawing = () => {
+    if (!configuratorFamily || drawingGeneration === "rendering") return;
+    setDrawingGeneration("rendering");
+  };
+  const handleDrawingPrinted = (ok) => {
+    setDrawingGeneration(ok ? "idle" : "error");
+  };
 
   const result = useMemo(() => {
     if (foundation?.isPowerBlock) {
@@ -4911,6 +4962,65 @@ export default function NordBaseCalculator() {
                         <Lock size={14} color={brand.steel} />
                       </div>
                     ))}
+                  {/* Auto-generated 2D configuration drawing (2026-09-26,
+                      Simon Gullberg directive): no 3D UI is ever shown to
+                      the customer -- this reuses the site's existing 3D
+                      configurator headlessly, matching this same "just
+                      another PDF in the list" pattern used above. */}
+                  {configuratorFamily ? (
+                    <button
+                      type="button"
+                      onClick={generateConfigurationDrawing}
+                      disabled={drawingGeneration === "rendering"}
+                      className="flex items-center justify-between text-sm rounded-md border px-3 py-2 hover:bg-black/[0.02] disabled:opacity-60 disabled:cursor-wait"
+                      style={{ borderColor: "#F0F0EE" }}
+                    >
+                      <span style={{ color: brand.dark }}>
+                        Configuration drawing (PDF)
+                        {selectedChargerModelName
+                          ? ` — ${selectedChargerModelName}`
+                          : ""}
+                      </span>
+                      {drawingGeneration === "rendering" ? (
+                        <span className="text-xs" style={{ color: brand.steel }}>
+                          Preparing…
+                        </span>
+                      ) : (
+                        <Download size={14} color={brand.steel} />
+                      )}
+                    </button>
+                  ) : (
+                    <div
+                      className="text-xs rounded-md border px-3 py-2"
+                      style={{ borderColor: "#F0F0EE", color: brand.steel }}
+                    >
+                      Configuration drawing not yet available for{" "}
+                      {foundation.name}.
+                    </div>
+                  )}
+                  {drawingGeneration === "error" && (
+                    <div
+                      className="text-xs rounded-md border px-3 py-2"
+                      style={{
+                        borderColor: "#E0B0B0",
+                        color: "#A33",
+                        background: "#FBEAEA",
+                      }}
+                    >
+                      Couldn&apos;t generate the configuration drawing.
+                      Please try again, or contact Nordinfra for the
+                      manufacturer drawing.
+                    </div>
+                  )}
+                  {drawingGeneration === "rendering" && configuratorFamily && (
+                    <Configurator3D
+                      hidden
+                      autoPrint
+                      initialAdapterId={configuratorAdapterId}
+                      initialAddonIds={configuratorAddonIds}
+                      onPrinted={handleDrawingPrinted}
+                    />
+                  )}
                   <a
                     href={WARRANTY_PDF}
                     target="_blank"
