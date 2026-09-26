@@ -486,23 +486,51 @@ export default function Configurator3D({
       setReady(true);
       const initialLoad = rebuild(adapterId, addonIds);
       if (autoPrint) {
-        // .catch() matters here: rebuild() can throw synchronously (e.g.
-        // an unrecognized `family`) or reject on a failed GLB fetch --
-        // without a rejection handler that becomes an unhandled promise
-        // rejection and the caller's "rendering" state never clears, which
-        // is exactly the silent-forever-"Preparing…" bug fixed 2026-09-27.
-        initialLoad
-          .then(() => {
-            if (disposed) return;
-            const ok = !!threeRef.current.meta;
-            if (ok) handlePrint();
-            onPrinted && onPrinted(ok);
-          })
-          .catch((err) => {
-            if (disposed) return;
-            console.error("Configurator3D autoPrint load failed:", err);
-            onPrinted && onPrinted(false);
-          });
+        // 2026-09-27 fix #2: awaiting `initialLoad` directly isn't enough.
+        // setReady(true) just above ALSO fires the separate "react to
+        // selection changes" effect below on this same tick, which
+        // independently calls rebuild() again with the same args. Both
+        // calls race on rebuild()'s internal myToken guard, and it's
+        // common for THIS call (`initialLoad`) to lose that race and
+        // resolve via the early "myToken !== loadTokenRef.current" return
+        // -- i.e. it settles successfully without ever reaching the code
+        // that sets threeRef.current.meta, even though the OTHER call
+        // (the one that wins) goes on to set it correctly. Trusting
+        // initialLoad's own resolution here caused every autoPrint to
+        // silently report failure with no thrown error (2026-09-27, Simon
+        // Gullberg bug report: stuck on "Preparing…", then, after fixing
+        // the unrelated missing-`family`-prop bug, "Couldn't generate"
+        // with nothing in the console).
+        //
+        // Fix: still catch a genuine synchronous/rejected failure from
+        // this call fast (e.g. the missing-family case), but otherwise
+        // poll for threeRef.current.meta to actually appear -- set by
+        // whichever call wins the token race -- instead of trusting this
+        // specific call's own completion.
+        let settled = false;
+        const finish = (ok) => {
+          if (settled || disposed) return;
+          settled = true;
+          if (ok) handlePrint();
+          onPrinted && onPrinted(ok);
+        };
+        initialLoad.catch((err) => {
+          console.error("Configurator3D autoPrint load failed:", err);
+          finish(false);
+        });
+        (async () => {
+          const startedAt = Date.now();
+          const TIMEOUT_MS = 20000;
+          while (!disposed && !settled && !threeRef.current.meta) {
+            if (Date.now() - startedAt > TIMEOUT_MS) {
+              console.error("Configurator3D autoPrint timed out waiting for geometry to load");
+              finish(false);
+              return;
+            }
+            await new Promise((r) => setTimeout(r, 100));
+          }
+          if (!disposed) finish(!!threeRef.current.meta);
+        })();
       }
     })();
 
