@@ -1,6 +1,37 @@
 import React, { useState } from "react";
 import { Download, FileText, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { CALCULATOR_URL } from "./constants.js";
+import GENERATED_CATALOG from "../../shared/productCatalog.generated.json";
+
+// ---------------------------------------------------------------------------
+// DATABASE SYNC (2026-09-26, "Resource Library / All Documentation"
+// consolidation -- Simon Gullberg). Same build-time-only pattern as
+// nordbase-calculator's shared/mergeGeneratedCharger.js /
+// NordBaseCalculator.jsx helpers: GENERATED_CATALOG is fetched once at
+// `npm run build`/`npm run dev` time from nordbase-backend's public,
+// read-only API (see scripts/fetchProductCatalog.mjs, one level up --
+// shared with the calculator, never re-fetched at runtime) and never
+// fails the build if the fetch fails (falls back to an empty shell, or the
+// last-known-good file). A document or reference photo the database has
+// is preferred over the hand-maintained static path below, but this can
+// only ADD coverage, never remove or downgrade an existing static entry --
+// if the database doesn't have a given doc/photo yet, the row below is
+// used completely unchanged.
+function catalogDocUrl(productNumber, docType) {
+  const product = (GENERATED_CATALOG.products || []).find(
+    (p) => p.product_number === productNumber
+  );
+  const match = (product?.attachments || []).find((a) => a.doc_type === docType);
+  return match?.file_url ?? null;
+}
+
+function catalogPhotoUrlByPartNo(partNo) {
+  const product = (GENERATED_CATALOG.products || []).find(
+    (p) => String(p.part_number) === String(partNo)
+  );
+  const match = (product?.attachments || []).find((a) => a.doc_type === "photo");
+  return match?.file_url ?? null;
+}
 
 // ---------------------------------------------------------------------------
 // ADAPTER PLATE GALLERY — reference photos only, NOT the dimensioned PDF
@@ -34,7 +65,10 @@ const ADAPTER_PLATE_PHOTOS = [
   { partNo: "200118", manufacturer: "Universal", model: "Pedestal 6\"/8\"/9\" & Pedestal PRO 8\"x5\"", image: "/adapter-plates/200118.png" },
   { partNo: "200119", manufacturer: "Leviton", model: "EPED1-1 / EPED2-2 / EPCMX-6 / EPCMY-6", image: "/adapter-plates/200119.png" },
   { partNo: "200120", manufacturer: "Leviton", model: "EPED1 / EPED2", image: "/adapter-plates/200120.png" },
-];
+].map((p) => {
+  const dbPhotoUrl = catalogPhotoUrlByPartNo(p.partNo);
+  return dbPhotoUrl ? { ...p, image: dbPhotoUrl } : p;
+});
 
 const GALLERY_COLLAPSED_COUNT = 8;
 
@@ -125,16 +159,27 @@ const CATEGORIES = [
       {
         label: "NordBase AC & Bollard Foundation — Installation Manual",
         file: "/docs/manuals/NI_Manual_AC_001_US.pdf",
+        productNumber: "NI-FDN-BLD",
+        docType: "manual",
       },
       {
         label: "NordBase Small — Installation Manual",
         file: "/docs/manuals/NI_Manual_DCS_001_US.pdf",
+        productNumber: "NI-FDN-DCS",
+        docType: "manual",
       },
       {
         label: "NordBase Medium — Installation Manual",
         file: "/docs/manuals/NI_Manual_DCM_001_US.pdf",
+        productNumber: "NI-FDN-DCM",
+        docType: "manual",
       },
-      { label: "NordBase Large — Installation Manual", available: false },
+      {
+        label: "NordBase Large — Installation Manual",
+        available: false,
+        productNumber: "NI-FDN-DCL",
+        docType: "manual",
+      },
     ],
   },
   {
@@ -144,16 +189,27 @@ const CATEGORIES = [
       {
         label: "NordBase AC & Bollard Foundation — Datasheet",
         file: "/docs/datasheets/NI_DS_AC_001_US.pdf",
+        productNumber: "NI-FDN-BLD",
+        docType: "datasheet",
       },
       {
         label: "NordBase Small — Datasheet",
         file: "/docs/datasheets/NI_DS_DCS_001_US.pdf",
+        productNumber: "NI-FDN-DCS",
+        docType: "datasheet",
       },
       {
         label: "NordBase Medium — Datasheet",
         file: "/docs/datasheets/NI_DS_DCM_001_US.pdf",
+        productNumber: "NI-FDN-DCM",
+        docType: "datasheet",
       },
-      { label: "NordBase Large — Datasheet", available: false },
+      {
+        label: "NordBase Large — Datasheet",
+        available: false,
+        productNumber: "NI-FDN-DCL",
+        docType: "datasheet",
+      },
     ],
   },
   {
@@ -202,7 +258,14 @@ const CATEGORIES = [
     desc: "Independent pull-out / anchorage test results.",
     items: [{ label: "Pull-out test report", available: false }],
   },
-];
+].map((cat) => ({
+  ...cat,
+  items: cat.items.map((item) => {
+    if (!item.productNumber || !item.docType) return item;
+    const dbUrl = catalogDocUrl(item.productNumber, item.docType);
+    return dbUrl ? { ...item, file: dbUrl, available: true } : item;
+  }),
+}));
 
 function Row({ item }) {
   const available = item.file && item.available !== false;
