@@ -75,8 +75,20 @@ export const FOUNDATION_PART_NUMBER_TO_KEY = {
 // (not exported from there on purpose -- see that file's comment above its
 // copies) rather than a new cross-file dependency; same formula, same reason
 // to keep this file decoupled from chargerData.js's data-authoring concerns.
-const mmToIn = (mm) => mm / 25.4;
-const kgToLb = (kg) => kg * 2.2046226;
+//
+// 2026-09-26 fix: rounded to 2 decimals. Before this, a database-confirmed
+// mm/kg value (e.g. 300mm) came out as a raw float (11.811023622047244) and
+// was displayed verbatim in the Width/Depth/Height/Weight inputs on the
+// Charger/pedestal step -- Simon flagged this via screenshot. Rounding here
+// only changes DISPLAY precision (hundredths of an inch / hundredths of a
+// pound), well below manufacturing tolerance for this preliminary check --
+// it does NOT guess, invent, or override the underlying confirmed physical
+// value (still hard rule per this file's header comment), it just formats
+// it the same way every hand-maintained preset in chargerData.js already is
+// (e.g. w: 11.81, not 11.811023622047244).
+const round2 = (n) => Math.round(n * 100) / 100;
+const mmToIn = (mm) => round2(mm / 25.4);
+const kgToLb = (kg) => round2(kg * 2.2046226);
 
 function modelDisplayName(charger) {
   return charger.modelVariant ? `${charger.modelName} ${charger.modelVariant}` : charger.modelName;
