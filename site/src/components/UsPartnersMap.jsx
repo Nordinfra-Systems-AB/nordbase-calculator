@@ -34,6 +34,18 @@ import { MapPin } from "lucide-react";
 // it invisibly), pins outside the 0-100% range are left off the overlay
 // and listed in a line below the map instead. Widen MAP_ZOOM (zoom out) or
 // move MAP_CENTER if the partner network outgrows this frame.
+//
+// LOAD FAILURE: the <img> below has an onError handler (2026-09-28, after
+// the Mapbox Static Images API returned 403/503 for this project's token
+// live in production the same day this shipped -- unrelated to this
+// component's own code: Site Planner's separately-existing satellite
+// preview and address geocoding, which use the SAME VITE_MAPBOX_TOKEN,
+// failed identically at the same time, so the token/account itself needs
+// checking at account.mapbox.com, not this file). Without this handler a
+// failed request left a broken-image icon with pins floating over nothing
+// -- now it falls back to the same dashed-border message used when the
+// token is missing entirely, so partners are still reachable via the list
+// below the map either way.
 // ---------------------------------------------------------------------------
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
@@ -72,6 +84,7 @@ function project(lon, lat) {
 // pins, at their own locations, instead of sharing one state-centroid pin).
 export default function UsPartnersMap({ partners }) {
   const [hovered, setHovered] = useState(null);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const withCoords = (partners || []).filter(
     (p) => typeof p.lat === "number" && typeof p.lon === "number"
@@ -101,6 +114,18 @@ export default function UsPartnersMap({ partners }) {
     );
   }
 
+  // Token is present but the basemap image itself failed to load (see the
+  // LOAD FAILURE note above the component) -- degrade to the same style of
+  // message rather than a broken-image icon with pins floating over
+  // nothing. Partners are still listed in full below the map either way.
+  if (imgFailed) {
+    return (
+      <div className="rounded-xl border border-dashed border-black/15 bg-bgSoft p-6 text-sm text-steel">
+        Map temporarily unavailable. Partners are listed below.
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border border-black/10 bg-sky-50">
       <div className="relative">
@@ -108,6 +133,7 @@ export default function UsPartnersMap({ partners }) {
           src={MAP_IMAGE_URL}
           alt="Map of Nordinfra distribution partners across the United States"
           className="block h-auto w-full"
+          onError={() => setImgFailed(true)}
         />
         {onFrame.map((p) => {
           const key = `${p.name}-${p.city}`;
