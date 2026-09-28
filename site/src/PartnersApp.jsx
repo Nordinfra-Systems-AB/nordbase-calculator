@@ -23,7 +23,15 @@ const REGIONS = [
         partners: [
           {
             name: "Postlane",
-            city: "New York, NY",
+            city: "Brooklyn, NY",
+            // 2026-09-28 (Simon Gullberg): corrected from "New York, NY" --
+            // Postlane's branch is in Brooklyn specifically. lat/lon below
+            // are Brooklyn's approximate city-center (no confirmed street
+            // address on file yet -- see addressNote), used to place the
+            // map pin at the right borough instead of a New York STATE
+            // centroid (the old bug -- see UsPartnersMap.jsx).
+            lat: 40.6782,
+            lon: -73.9442,
             addressNote: "Exact branch address not yet on file",
             website: "https://www.postlaneusa.com/",
             phone: "718.355.1808",
@@ -37,10 +45,15 @@ const REGIONS = [
 
 // Feeds the map's pin set — US-only since Nordinfra is US-focused today
 // (the "Markets" section was removed site-wide 2026-08-26 for the same
-// reason). Add a state name here automatically once it appears in REGIONS.
-const US_PARTNER_STATES = new Set(
-  (REGIONS.find((r) => r.country === "United States")?.states || []).map((s) => s.state)
-);
+// reason). One entry per PARTNER (not per state) so UsPartnersMap can place
+// a pin at each partner's own lat/lon — rebuilt 2026-09-28, see
+// UsPartnersMap.jsx for why (previously one pin per state, at the state's
+// geographic centroid, which is how Postlane's pin ended up nowhere near
+// Brooklyn). Partners missing lat/lon are skipped by the map (filtered
+// there, not here) rather than guessed.
+const US_PARTNER_PINS = (
+  REGIONS.find((r) => r.country === "United States")?.states || []
+).flatMap((s) => s.partners.map((p) => ({ ...p, state: s.state })));
 
 // "Block" styling below (dark navy header bar + light body, chevron rows)
 // mirrors the state-directory layout Simon referenced from a competitor
@@ -157,7 +170,7 @@ export default function PartnersApp() {
         </p>
 
         <div className="mt-10">
-          <UsPartnersMap partnerStates={US_PARTNER_STATES} />
+          <UsPartnersMap partners={US_PARTNER_PINS} />
         </div>
 
         <div className="mt-10 flex flex-col gap-10">

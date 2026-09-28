@@ -182,8 +182,16 @@ export const POWER_BLOCK_MODELS = {
         model: "Station Charger C802",
         widthIn: 49.21,
         depthIn: 33.11,
-        heightIn: 94.29,
-        weightLb: 2039.27,
+        // 2026-09-28: heightIn/weightLb corrected to match Power Unit C802
+        // exactly -- Simon confirmed in chat that Station Charger C802 and
+        // Power Unit C802 are the same physical Kempower cabinet, same as
+        // the C801 pair above. Was 94.29/2039.27 (source of that original
+        // figure unclear/stale). ccWIn/ccDIn left as-is -- Simon's
+        // instruction was about dimensions/weight, and Power Unit C802
+        // doesn't have confirmed CC data on file to compare against (null
+        // below), so there's nothing to reconcile there yet.
+        heightIn: 86.42,
+        weightLb: 1631.42,
         ccWIn: 23.94, // Fundamentplatta confirmed by Simon 2026-08-31 (1350x800mm, now larger than CC)
         ccDIn: 37.01,
       },
@@ -1157,8 +1165,13 @@ export const DC_FAST_CHARGER_PRESETS = {
       model: "Station Charger C801",
       w: 25.59,
       d: 33.11,
-      h: 94.29,
-      weight: 1157.43,
+      // 2026-09-28: h/weight corrected to match Power Unit C801 exactly --
+      // Simon confirmed in chat that Station Charger C801 and Power Unit
+      // C801 are the same physical Kempower cabinet; the two names are
+      // just different labels used inconsistently across sources. Was
+      // 94.29/1157.43 (source of that original figure unclear/stale).
+      h: 86.42,
+      weight: 749.57,
       ccW: 23.94, // Fundamentplatta confirmed by Simon 2026-08-31 (750x800mm, now larger than CC — previous data-error flag resolved)
       ccD: 13.39,
       basePlateW: 29.53,

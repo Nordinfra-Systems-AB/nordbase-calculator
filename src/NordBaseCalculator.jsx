@@ -952,12 +952,19 @@ const PARTNERS = [
     // single placeholder stands in for the whole network until then.
     locations: [
       {
-        city: "New York",
+        // 2026-09-28 (Simon Gullberg): corrected from "New York" / 40.7128,
+        // -74.006 (generic Manhattan/NYC coordinate) -- the branch is
+        // specifically in Brooklyn, so the old pin (and any "get
+        // directions" link built from it) pointed to the wrong borough.
+        // lat/lon below are Brooklyn's approximate city-center -- still
+        // just an approximation per the note at the top of this file,
+        // pending a confirmed street address from Postlane.
+        city: "Brooklyn",
         state: "NY",
         address: "Address on file — confirm with Postlane before publishing",
         phone: "",
-        lat: 40.7128,
-        lon: -74.006,
+        lat: 40.6782,
+        lon: -73.9442,
       },
     ],
   },
