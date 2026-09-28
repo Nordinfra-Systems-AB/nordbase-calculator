@@ -51,7 +51,16 @@ import { MapPin } from "lucide-react";
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || "";
 
 const MAP_CENTER = { lon: -96.0, lat: 38.5 };
-const MAP_ZOOM = 4.3;
+// 2026-09-28 (fix, same day as launch): was 4.3 -- wrong on a false
+// assumption about Mapbox's tile size (see project() below). At 4.3 with
+// the CORRECT tile size the frame was actually zoomed in far enough to
+// clip the whole Northeast off the right edge (verified live: Postlane's
+// Brooklyn pin computed to 110% -- off the visible frame -- and the
+// basemap image itself only showed Wyoming to Ohio, not the full
+// continental US). 3.3 is the value that actually fits the continental US
+// in this W x H frame -- verified against Seattle/LA/Miami/Boston/Brooklyn
+// and the four continental-bbox corners all landing with sane padding.
+const MAP_ZOOM = 3.3;
 const MAP_W = 1030;
 const MAP_H = 610;
 
@@ -65,8 +74,18 @@ const MAP_IMAGE_URL = MAPBOX_TOKEN
 // Returned as a 0-100 percentage of the frame (not raw px) so a pin's
 // position stays correct no matter how large the responsive <img> actually
 // renders on screen.
+//
+// TILE SIZE = 512, not the "classic" 256: fixed 2026-09-28 after every pin
+// rendered roughly 2x too close to the map's center in production (e.g.
+// Brooklyn landed over Ohio instead of New York). Mapbox's newer vector
+// styles (light-v11 here, and satellite-v9 in SitePlannerApp.jsx) use a
+// 512px world-tile convention, not the legacy 256px raster-tile one this
+// formula originally (incorrectly) assumed -- confirmed by requesting the
+// same style/zoom/center from Mapbox with one of its own marker overlays
+// (?/pin-s+.../lon,lat/...) and comparing where MAPBOX itself drew the pin
+// against where this formula predicted it, at both tile sizes.
 function project(lon, lat) {
-  const scale = 256 * 2 ** MAP_ZOOM;
+  const scale = 512 * 2 ** MAP_ZOOM;
   const worldX = (lonV) => ((lonV + 180) / 360) * scale;
   const worldY = (latV) => {
     const rad = (latV * Math.PI) / 180;
