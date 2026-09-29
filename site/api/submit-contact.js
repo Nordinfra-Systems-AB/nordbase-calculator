@@ -20,9 +20,11 @@
 //   Optional overrides (same place):
 //     CONTACT_TO_EMAIL -- where messages land (default: info@nord-infra.com)
 //     FROM_EMAIL -- must be on a domain verified in Resend (default:
-//       contact@nordbaseusa.com; the calculator's own FROM_EMAIL default is
-//       leads@nordbaseusa.com -- kept distinct here so a reply-all mistake
-//       on either address is easy to trace back to which form sent it)
+//       contact@nord-infra.com -- 2026-09-28: nordbaseusa.com was tried
+//       first since that's the site's own domain, but Resend rejected it
+//       with "domain is not verified"; only nord-infra.com is actually
+//       verified on this account, confirmed by sending a real test message
+//       through the live Resend API with each candidate from-address).
 //   Redeploy after adding the env var -- Vercel only picks it up on the
 //   next deploy, not on an already-running one.
 //
@@ -37,7 +39,7 @@ async function sendEmail({ firstName, lastName, email, phone, message }) {
   if (!apiKey) return { attempted: false };
 
   const toEmail = process.env.CONTACT_TO_EMAIL || "info@nord-infra.com";
-  const fromEmail = process.env.FROM_EMAIL || "contact@nordbaseusa.com";
+  const fromEmail = process.env.FROM_EMAIL || "contact@nord-infra.com";
 
   const subject = `Website contact form: ${firstName} ${lastName}`;
   const lines = [
