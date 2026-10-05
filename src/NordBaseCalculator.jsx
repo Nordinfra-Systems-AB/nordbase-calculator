@@ -4603,7 +4603,7 @@ export default function NordBaseCalculator() {
 
               <button
                 onClick={() => setShowDetails((v) => !v)}
-                className="text-xs flex items-center gap-1 mb-3"
+                className="print:hidden text-xs flex items-center gap-1 mb-3"
                 style={{ color: brand.steel }}
               >
                 {showDetails ? (
@@ -4613,9 +4613,27 @@ export default function NordBaseCalculator() {
                 )}{" "}
                 Show calculation details (all {result.checks.length} checks)
               </button>
+              {/* Print-only static label replacing the interactive toggle
+                  above (2026-10-05, Simon Gullberg report): the button text
+                  + chevron printed into the PDF with nothing to click, and
+                  the table container below had no print:break-inside-avoid
+                  (every other report section does), so the browser's print
+                  pagination was free to split the checks table mid-row
+                  wherever the page boundary happened to fall — looked like
+                  a stray line break "in the middle of all the measured
+                  values". Fixed both: plain heading for print, and the
+                  table now keeps together or moves to the next page whole. */}
               {showDetails && (
                 <div
-                  className="border rounded-md mb-4 overflow-hidden"
+                  className="hidden print:block text-xs font-bold mb-3"
+                  style={{ color: brand.steel }}
+                >
+                  Calculation details (all {result.checks.length} checks)
+                </div>
+              )}
+              {showDetails && (
+                <div
+                  className="border rounded-md mb-4 overflow-hidden print:break-inside-avoid"
                   style={{ borderColor: "#D9D9D6" }}
                 >
                   <div className="overflow-x-auto">
