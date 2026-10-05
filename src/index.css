@@ -24,8 +24,15 @@
    A distinct "printing-foundation" class (not the SitePlannerApp's
    "printing"/".no-print" pair above, which is a different, older print
    flow) drives visibility so the two don't interact. */
+/* page: foundation-drawing (2026-10-05, Simon Gullberg) -- ties this
+   root to the named @page rule below instead of the old unscoped
+   `@page { size: A4 landscape }`, which forced landscape on every
+   print from this app -- including the Report step's own
+   window.print(), fighting the portrait A4 Simon actually wants
+   there and his own print-dialog orientation setting. */
 #print-sheet-root {
   display: none;
+  page: foundation-drawing;
 }
 body.printing-foundation > *:not(#print-sheet-root) {
   display: none !important;
@@ -443,7 +450,18 @@ body.printing-foundation #print-sheet-root {
   -webkit-box-orient: vertical;
 }
 
+/* Default page box: the Report step (and everything else in this
+   app that prints) is portrait A4 -- see the named page below for
+   the one feature that's deliberately landscape. */
 @page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+/* Named page for the 2D configuration drawing sheet only (.ps-sheet
+   below is sized 277mm x 190mm -- A4 landscape minus this margin).
+   Applied via `page: foundation-drawing` on #print-sheet-root above. */
+@page foundation-drawing {
   size: A4 landscape;
   margin: 10mm;
 }

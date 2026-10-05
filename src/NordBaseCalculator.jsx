@@ -4712,6 +4712,20 @@ export default function NordBaseCalculator() {
                 </div>
               )}
 
+              {/* Forced page break (2026-10-05, Simon Gullberg): Simon
+                  wants page 1 of the printed/PDF report to always end
+                  right after the calc-details table — header, diagram,
+                  governing-check banner, and the 8-check table together on
+                  one portrait A4 page — with BOM/documents/where-to-order
+                  flowing as normal continuation pages after that, rather
+                  than everything being squeezed to fit or leaving a big
+                  blank gap. print:break-inside-avoid (added earlier this
+                  round) stops the table itself from splitting, but doesn't
+                  pin the page boundary here — this does that explicitly. */}
+              {showDetails && (
+                <div className="hidden print:block print:break-after-page" />
+              )}
+
               <div
                 className="border rounded-md p-4 mb-4"
                 style={{ borderColor: "#D9D9D6" }}
