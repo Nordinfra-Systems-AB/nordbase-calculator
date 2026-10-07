@@ -390,7 +390,7 @@ const FOUNDATIONS = {
     // bultar") — a plain 4-corner square pattern, no mid-span bolts like
     // Medium/Large.
     mountingBolts: {
-      spec: "M12 A2-70 stainless (ISO 3506-1)",
+      spec: '1/2" A2-70 stainless (ASME B1.1 UNC)', // Simon Gullberg, 2026-10-08: confirmed 1/2" (not M12)
       count: 4, // confirmed by Simon Gullberg, 2026-09-01
       ccWIn: 270 / 25.4,
       ccDIn: 270 / 25.4,
@@ -453,17 +453,21 @@ const FOUNDATIONS = {
     // Adapter-plate-to-FOUNDATION mounting bolts (separate from
     // adapterPlate.ccOptionsX/Y, which is empty here since Medium uses
     // per-charger CC instead — see the comment on usesSharedPlateGrid further
-    // down). Confirmed by Simon Gullberg, 2026-09-01: "DC Medium = 462,5 x
-    // 612,5 (mitt emellan 612,5mm sitter det ett till bultpar alltå
-    // adapterplåt sitter med 6 bultar) M12" — SS304 A2-70. This is the SAME
-    // physical pattern Kempower C503's Power Block group reuses per
-    // foundation (boltGroups.plateToFoundation in shared/chargerData.js,
-    // pitchIn 612mm — cross-referenced 2026-09-01).
+    // down). UPDATED 2026-10-08 (Simon Gullberg, dimensioned drawing): 6
+    // bolts, 1/2" — 4 corner holes on a 22.8"×17.7" (579.1×449.6mm)
+    // rectangle, plus 1 hole centered on each of the two 22.8"-long
+    // (top/bottom) edges, 11.4" (289.6mm) in from each side. Supersedes the
+    // earlier 2026-09-01 verbal figure (462.5×612.5mm) — same topology (4
+    // corners + a mid-span pair on the two longer edges), corrected
+    // dimensions. This is the SAME physical pattern Kempower C503's Power
+    // Block group reuses per foundation (boltGroups.plateToFoundation in
+    // shared/chargerData.js — pitchIn there should be re-checked against
+    // this corrected figure, NOT changed here — see chat).
     mountingBolts: {
-      spec: "M12 A2-70 stainless (ISO 3506-1)",
-      count: 6, // 4 corners + 1 pair mid-span on the two 612.5mm sides
-      ccWIn: 462.5 / 25.4,
-      ccDIn: 612.5 / 25.4,
+      spec: '1/2" A2-70 stainless (ASME B1.1 UNC)',
+      count: 6, // 4 corners + 1 pair mid-span on the two 22.8"/579.1mm (longer) sides
+      ccWIn: 579.12 / 25.4, // = 22.8"
+      ccDIn: 449.58 / 25.4, // = 17.7"
     },
     blurb:
       "For Level 3 DC fast chargers. Rectangular base gives a larger stabilizing footprint for heavier equipment.",
@@ -513,7 +517,7 @@ const FOUNDATIONS = {
     // sides = 8 total (unlike Medium, which only got a mid-span pair on its
     // two longer sides — Large's square pattern gets one on every side).
     mountingBolts: {
-      spec: "M12 A2-70 stainless (ISO 3506-1)",
+      spec: '1/2" A2-70 stainless (ASME B1.1 UNC)', // Simon Gullberg, 2026-10-08: confirmed 1/2" (not M12)
       count: 8, // 4 corners + 1 mid-span bolt on each of the 4 sides
       ccWIn: 29.5,
       ccDIn: 29.5,
@@ -739,23 +743,29 @@ const BOLT_M12_AS_MM2 = 84.3;
 const BOLT_M12_TENSION_CAPACITY_KN =
   BOLT_TENSION_PHI * BOLT_M12_AS_MM2 * (BOLT_FUB_MPA / 1000); // = 50.58 kN — ONE bolt's capacity
 
-// M12 A2-70 stainless (ISO 3506-1) — the FOUNDATION-to-adapter-plate
-// connection specifically (Simon Gullberg, 2026-09-01: "M12 eller 1/2" som
-// bult i SS304 kvalite... Utgå från A2-70"), used both for Power Block's
+// 1/2" A2-70 stainless (ASME B1.1 UNC) — the FOUNDATION-to-adapter-plate
+// connection specifically. RESOLVED 2026-10-08 (Simon Gullberg): the
+// 2026-09-01 "M12 eller 1/2" som bult" ambiguity is settled — it's 1/2" UNC, not
+// metric M12 (every foundation uses 1/2" except Bollard, which Simon says
+// uses 3/8" — Bollard has no mountingBolts entry yet, see the note on that
+// check below; still needs its own adapter-plate/mounting-bolt data added
+// before it can use this spec). Used both for Power Block's
 // plate-to-foundation bolts and the standalone Small/Medium/Large mounting-
-// bolt check below. Property class "70" per ISO 3506-1 = 700 MPa minimum
-// tensile strength (same designation logic as steel's "8.8" = 800 MPa,
-// just a different, lower-strength stainless grade — same M12 tensile
-// stress area, 84.3mm², since that's geometry, not material). Unlike the
-// two constants above, THIS capacity is meant to be multiplied by the
+// bolt check below (same physical foundation-mount hardware, reused).
+// Property class "70" per ISO 3506-1 = 700 MPa minimum tensile strength.
+// Tensile stress area for 1/2"-13 UNC per ASME B1.1 = 91.5mm² (0.1419in²) —
+// supersedes the earlier 84.3mm² M12 figure (that number stays correct for
+// the unrelated M12 class 8.8 constants above, which are charger-OEM
+// hardware, not this spec). THIS capacity is meant to be multiplied by the
 // connection's actual bolt count (Simon, 2026-09-01: "Skala mot antal
 // bultar - alltid... Kapacitet ska vara baserat på antalet bultar mellan
 // fundament och adapterplåt ej skalad till endast 1 bult") — see each call
-// site for `count × BOLT_M12_A2_70_TENSION_CAPACITY_KN`.
-const BOLT_M12_A2_70_SPEC_LABEL = "M12 A2-70 stainless (ISO 3506-1)";
+// site for `count × BOLT_HALFIN_A2_70_TENSION_CAPACITY_KN`.
+const BOLT_HALFIN_A2_70_SPEC_LABEL = '1/2" A2-70 stainless (ASME B1.1 UNC)';
 const BOLT_A2_70_FUB_MPA = 700;
-const BOLT_M12_A2_70_TENSION_CAPACITY_KN =
-  BOLT_TENSION_PHI * BOLT_M12_AS_MM2 * (BOLT_A2_70_FUB_MPA / 1000); // = 44.26 kN — ONE bolt's capacity, multiply by count at each call site
+const BOLT_HALFIN_AS_MM2 = 91.5; // 1/2"-13 UNC tensile stress area, ASME B1.1
+const BOLT_HALFIN_A2_70_TENSION_CAPACITY_KN =
+  BOLT_TENSION_PHI * BOLT_HALFIN_AS_MM2 * (BOLT_A2_70_FUB_MPA / 1000); // = 48.04 kN — ONE bolt's capacity, multiply by count at each call site
 
 const SDS_REFERENCE = [
   { city: "Los Angeles, CA", sds: 1.25 },
@@ -1271,10 +1281,10 @@ function runCheck({
     const mb = foundation.mountingBolts;
     const ccShortIn = Math.min(mb.ccWIn, mb.ccDIn);
     const mountDemandKn = governingMomentKnm / inToM(ccShortIn);
-    const mountCapacityKn = mb.count * BOLT_M12_A2_70_TENSION_CAPACITY_KN;
+    const mountCapacityKn = mb.count * BOLT_HALFIN_A2_70_TENSION_CAPACITY_KN;
     checks.push({
       key: "bolt-mounting",
-      label: `Adapter-plate-to-foundation bolts (${mb.count}×${BOLT_M12_A2_70_SPEC_LABEL.split(" ")[0]})`,
+      label: `Adapter-plate-to-foundation bolts (${mb.count}×${BOLT_HALFIN_A2_70_SPEC_LABEL.split(" ")[0]})`,
       capacity: mountCapacityKn,
       demand: mountDemandKn,
       unit: "kN",
@@ -1508,7 +1518,7 @@ function runPowerBlockCheck({
   // pattern, per the pitchIn match above) — Simon's 2026-09-01 SS304 A2-70
   // spec for "bultar mellan fundament och adapterplåt" applies here too, so
   // this switches from the earlier (unconfirmed) M12 class 8.8 assumption
-  // to BOLT_M12_A2_70_TENSION_CAPACITY_KN. Charger-to-plate stays class 8.8
+  // to BOLT_HALFIN_A2_70_TENSION_CAPACITY_KN (1/2", not M12 — corrected 2026-10-08). Charger-to-plate stays class 8.8
   // — that's the charger OEM's own hardware, a separate, unconfirmed
   // assumption Simon has said Nordinfra doesn't own (see BOLT_M12_SPEC_LABEL
   // above), not the SS304 spec Simon just confirmed.
@@ -1517,8 +1527,8 @@ function runPowerBlockCheck({
     governingMomentKnm / inToM(bolts.plateToFoundation.pitchIn);
   checks.push({
     key: "bolt-plate-foundation",
-    label: `Plate-to-foundation bolts (${bolts.plateToFoundation.count}×${BOLT_M12_A2_70_SPEC_LABEL.split(" ")[0]}) — tension`,
-    capacity: bolts.plateToFoundation.count * BOLT_M12_A2_70_TENSION_CAPACITY_KN,
+    label: `Plate-to-foundation bolts (${bolts.plateToFoundation.count}×${BOLT_HALFIN_A2_70_SPEC_LABEL.split(" ")[0]}) — tension`,
+    capacity: bolts.plateToFoundation.count * BOLT_HALFIN_A2_70_TENSION_CAPACITY_KN,
     demand: demandPlateToFoundationKn,
     unit: "kN",
   });
