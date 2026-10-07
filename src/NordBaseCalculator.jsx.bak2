@@ -3734,7 +3734,7 @@ export default function NordBaseCalculator() {
                         <div>
                           Plate → foundations:{" "}
                           <span style={{ color: brand.dark, fontWeight: 600 }}>
-                            {selectedPowerBlockModel.boltGroups.plateToFoundation.count}×1/2"
+                            {selectedPowerBlockModel.boltGroups.plateToFoundation.count}×M12
                           </span>
                         </div>
                         <div>
@@ -4843,7 +4843,7 @@ export default function NordBaseCalculator() {
                           </>
                         )}
                         {selectedPowerBlockModel.boltGroups.plateToFoundation.count}
-                        ×1/2" to foundations,{" "}
+                        ×M12 to foundations,{" "}
                         {selectedPowerBlockModel.boltGroups.chargerToPlate.count}
                         ×M12 to charger
                       </div>

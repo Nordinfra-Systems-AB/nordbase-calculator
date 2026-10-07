@@ -165,7 +165,7 @@ export const POWER_BLOCK_MODELS = {
         // chargerToPlate: M12 class 8.8 — the charger OEM's own hardware,
         // different spec from the M16 8.8 used on Small/Medium/Large's own
         // charger-plate connection (BOLT_SPEC_LABEL/BOLT_TENSION_*).
-        plateToFoundation: { count: 18, pitchIn: mmToIn(579.12) }, // Simon Gullberg, 2026-10-08: Medium dimensioned-drawing correction (579.12x449.58mm, was assumed 462.5x612.5mm) - carries forward the same (longer) axis this field already used; axis-choice vs runCheck() shorter-axis convention is a separate open question, not changed here
+        plateToFoundation: { count: 18, pitchIn: mmToIn(612) },
         chargerToPlate: { count: 12, pitchIn: mmToIn(608) },
       },
     },
