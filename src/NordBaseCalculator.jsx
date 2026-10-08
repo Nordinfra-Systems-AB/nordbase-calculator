@@ -946,6 +946,13 @@ const TECHNICAL_SPEC_PDF = "/docs/technical-specs/Nordinfra_Technical_Spec_US.pd
 // Lat/long are only used to build a "get directions" Google Maps link, so
 // approximate values are fine; no map-tile/API dependency is required.
 // ---------------------------------------------------------------------------
+// Simon 2026-10-07: hide the "WHERE TO ORDER" distributor locator on
+// the report step for now -- real branch data (addresses, phone/email)
+// is still mostly placeholder (see comment below), and he wants it off
+// until that's filled in. Flip back to true to re-enable; PARTNERS data
+// and all the rendering logic are left untouched.
+const SHOW_PARTNER_LOCATOR = false;
+
 const PARTNERS = [
   {
     id: "postlane",
@@ -5231,6 +5238,7 @@ export default function NordBaseCalculator() {
                   not directly with Nordinfra. Generic partner list — see
                   PARTNERS above. Real branch data still needs to be filled in
                   by Nordinfra before go-live (placeholder marked below). */}
+              {SHOW_PARTNER_LOCATOR && (
               <div
                 className="border rounded-md p-4 mb-4 print:break-inside-avoid"
                 style={{ borderColor: "#D9D9D6" }}
@@ -5397,6 +5405,7 @@ export default function NordBaseCalculator() {
                   )}
                 </div>
               </div>
+              )}
 
               <label
                 className="print:hidden flex items-start gap-2 mb-2 text-xs"
