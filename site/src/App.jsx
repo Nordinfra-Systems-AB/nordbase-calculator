@@ -580,12 +580,12 @@ export default function App() {
               </Reveal>
             ))}
           </div>
-          {/* Links out to /foundations.html (added 2026-09-18) rather than
-              replacing these static renders in place — this grid's job is a
-              fast, at-a-glance product-line overview (see comment above),
-              while the dedicated page hosts one shared, lazy-loaded 3D
-              viewer with a family switcher. Keeps this section's load light
-              and avoids running three live WebGL scenes on page load. */}
+          {/* "Explore every foundation in 3D" CTA (-> /foundations.html) removed
+              2026-10-19 at Simon's request (IP/disclosure review ahead of US
+              patent filing) — no customer-facing entry point should exist
+              while the 3D tool is disabled. /foundations.html itself now hard-
+              redirects to / via vercel.json, so no dangling/broken page either.
+              Not deleted, just commented out below for easy revert:
           <Reveal delay={ASSEMBLIES.length * 80}>
             <a
               href="/foundations.html"
@@ -594,6 +594,7 @@ export default function App() {
               Explore every foundation in 3D <ArrowRight className="h-8 w-8" />
             </a>
           </Reveal>
+          */}
         </div>
       </section>
 

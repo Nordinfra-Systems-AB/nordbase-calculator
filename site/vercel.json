@@ -16,5 +16,8 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    { "source": "/foundations.html", "destination": "/", "permanent": false }
   ]
 }
