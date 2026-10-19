@@ -85,7 +85,7 @@ const PRODUCTS = [
     name: "NordBase Power Block",
     level: "Power Block",
     desc: "For grouped Power Units — multiple DC fast charging power cabinets sharing one modular steel base.",
-    image: "/photos/powerblock-bare-foundation.png",
+    image: "/photos/powerblock-kempower-mounted-bollards.png",
   },
 ];
 
@@ -155,14 +155,6 @@ const GALLERY = [
   {
     src: "/photos/excavator-wide.jpg",
     caption: "Standard excavation equipment, no specialty crew required.",
-  },
-  {
-    src: "/photos/steel-fabrication.jpg",
-    caption: "Laser-cut, hot-dip galvanized steel — no concrete cure time.",
-  },
-  {
-    src: "/photos/steel-detail.jpg",
-    caption: "Every mounting hole cut to spec before it leaves the shop.",
   },
 ];
 

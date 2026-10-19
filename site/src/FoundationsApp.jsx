@@ -49,38 +49,49 @@ export default function FoundationsApp() {
             Explore every foundation in 3D
           </h1>
           <p className="mt-3 max-w-2xl text-white/60">
-            Same steel platform, same install method, sized and adapted to whatever's going on top. Switch between the family lines below —
-            real STEP-derived CAD geometry, rotate and inspect freely.
+            Same steel platform, same install method, sized and adapted to whatever's going on top.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-2">
-            {FAMILIES.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFamilyId(f.id)}
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition-colors ${
-                  f.id === familyId
-                    ? "border-gold bg-gold/15 text-white"
-                    : "border-white/15 text-white/60 hover:bg-white/[0.06]"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 text-sm text-white/50">{active.desc}</p>
+          {/* 3D explorer temporarily disabled 2026-10-19 at Simon's request
+              (IP/disclosure review ahead of US patent filing). Not deleted —
+              flip `false &&` back to re-enable once cleared. GLB assets were
+              moved out of public/ at the same time, see site/_disabled-assets/. */}
+          {false && (
+            <>
+              <div className="mt-8 flex flex-wrap gap-2">
+                {FAMILIES.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setFamilyId(f.id)}
+                    className={`rounded-full border px-4 py-2 text-sm font-bold transition-colors ${
+                      f.id === familyId
+                        ? "border-gold bg-gold/15 text-white"
+                        : "border-white/15 text-white/60 hover:bg-white/[0.06]"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-white/50">{active.desc}</p>
 
-          <div className="mt-8">
-            <Suspense
-              fallback={
-                <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-sm text-white/60 sm:aspect-[16/10]">
-                  Loading 3D viewer…
-                </div>
-              }
-            >
-              <Configurator3D family={active.id} theme="dark" />
-            </Suspense>
+              <div className="mt-8">
+                <Suspense
+                  fallback={
+                    <div className="flex aspect-[4/3] items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-sm text-white/60 sm:aspect-[16/10]">
+                      Loading 3D viewer…
+                    </div>
+                  }
+                >
+                  <Configurator3D family={active.id} theme="dark" />
+                </Suspense>
+              </div>
+            </>
+          )}
+
+          <div className="mt-8 rounded-xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center text-sm text-white/60">
+            The 3D explorer is temporarily offline. Contact Nordinfra for CAD files or drawings.
           </div>
         </div>
       </section>

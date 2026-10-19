@@ -160,9 +160,6 @@ export const PRODUCTS = {
     images: [
       "/photos/product-medium.png",
       "/photos/assembly-medium.png",
-      "/photos/medium-nested-stack.png",
-      "/photos/medium-shells-angle1.png",
-      "/photos/medium-shells-angle2.png",
       "/photos/medium-array-front.png",
       "/photos/medium-single-iso.png",
       "/photos/medium-assembly-iso1.png",
@@ -239,7 +236,6 @@ export const PRODUCTS = {
     blurb:
       "NordBase Power Block extends the same modular steel platform to grouped Power Units — the multi-cabinet DC fast charging power blocks (like Kempower's multi-CPU units) that sit alongside dispenser pedestals on a DC fast charging site. It's built with adapter plates the same way as the rest of the NordBase line, sized to the cabinet count and footprint of the specific power block being installed, and shares the same laser-cut, hot-dip galvanized steel construction and dig-drop-backfill install method as every other NordBase tier.",
     images: [
-      "/photos/powerblock-bare-foundation.png",
       "/photos/powerblock-kempower-mounted-front.png",
       "/photos/powerblock-kempower-mounted-bollards.png",
     ],

@@ -198,8 +198,11 @@ export default function ProductApp() {
         </div>
       </section>
 
-      {/* 3D CONFIGURATOR — only for products with converted CAD geometry */}
-      {PRODUCT_TO_VIEWER_FAMILY[product.slug] && (
+      {/* 3D CONFIGURATOR — temporarily disabled 2026-10-19 at Simon's request
+          (IP/disclosure review ahead of US patent filing). Not deleted —
+          flip `false &&` back to re-enable once cleared. GLB assets were
+          moved out of public/ at the same time, see site/_disabled-assets/. */}
+      {false && PRODUCT_TO_VIEWER_FAMILY[product.slug] && (
         <section className="border-b border-black/10 bg-white py-14">
           <div className="mx-auto max-w-6xl px-6">
             <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gold">
