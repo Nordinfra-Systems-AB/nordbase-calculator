@@ -427,8 +427,10 @@ export default function App() {
         </div>
       </section>
 
-      {/* DISTRIBUTION PARTNERS */}
-      <PartnerMarquee />
+      {/* DISTRIBUTION PARTNERS — banner hidden 2026-10-19 at Simon's request
+          (Postlane contract not yet signed; PartnerMarquee/PARTNERS left
+          intact below for easy revert once it is). */}
+      {false && <PartnerMarquee />}
 
       {/* PRODUCTS — horizontally scrollable carousel (arrow buttons +
           drag/touch scroll via native overflow-x) so a 5th card (Power
